@@ -11,6 +11,8 @@ from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
 from tutorials.helpers import login_prohibited
 
+from .models import User
+
 
 @login_required
 def dashboard(request):
@@ -19,12 +21,28 @@ def dashboard(request):
     current_user = request.user
     return render(request, 'dashboard.html', {'user': current_user})
 
-
 @login_prohibited
 def home(request):
     """Display the application's start/home screen."""
 
     return render(request, 'home.html')
+
+""" <---- Admin Views ----> """
+
+def admin_dashboard(request):
+    return render(request, 'admin_dashboard.html')
+
+def admin_student_list(request):
+    students = {'students' : User.objects.all()}
+    return render(request, 'admin_student_list.html', students)
+
+def admin_tutor_list(request):
+    tutors = {'tutors' : User.objects.all()}
+    return render(request, 'admin_tutor_list.html', tutors)
+
+def admin_bookings_list(request):
+    bookings = {'bookings' : User.objects.all()}
+    return render(request, 'admin_bookings_list.html', bookings)
 
 
 class LoginProhibitedMixin:
@@ -121,7 +139,7 @@ class PasswordView(LoginRequiredMixin, FormView):
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Display user profile editing screen, and handle profile modifications."""
-
+    
     model = UserForm
     template_name = "profile.html"
     form_class = UserForm
@@ -133,7 +151,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         """Return redirect URL after successful update."""
-        messages.add_message(self.request, messages.SUCCESS, "Profile updated!")
+        messages.add_message(self.request, messages.SUCCESS, "rofile updated!")
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
 
 

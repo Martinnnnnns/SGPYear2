@@ -1,0 +1,21 @@
+{% extends 'base_admin_list.html' %}
+
+{% block page_heading %}Bookings{% endblock %}
+{% block add_button_text %}Add Booking{% endblock %}
+
+{% block table_headers %}
+  <th>Student</th>
+  <th>Tutor</th>
+  <th>Date</th>
+{% endblock %}
+
+{% block table_rows %}
+  {% for booking in bookings %}
+    <tr>
+      <td>{{ booking.first_name }} {{ booking.last_name }}</td>
+      <td>{{ booking.first_name }} {{ booking.last_name }}</td>
+      <td></td>
+    </tr>
+  {% endfor %}
+{% endblock %}
+

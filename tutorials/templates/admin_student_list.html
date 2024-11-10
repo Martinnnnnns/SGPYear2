@@ -1,0 +1,21 @@
+{% extends 'base_admin_list.html' %}
+
+{% block page_heading %}Students{% endblock %}
+{% block add_button_text %}Add Student{% endblock %}
+
+{% block table_headers %}
+  <th>Name</th>
+  <th>Email</th>
+  <th>Subject(s)</th>
+{% endblock %}
+
+{% block table_rows %}
+  {% for student in students %}
+    <tr>
+      <td>{{ student.first_name }} {{ student.last_name }}</td>
+      <td>{{ student.email }}</td>
+      <td></td>
+    </tr>
+  {% endfor %}
+{% endblock %}
+
