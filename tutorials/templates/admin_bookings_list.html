@@ -10,11 +10,17 @@
 {% endblock %}
 
 {% block table_rows %}
-  {% for booking in bookings %}
+  {% for booking in page_obj %}
     <tr>
       <td>{{ booking.first_name }} {{ booking.last_name }}</td>
       <td>{{ booking.first_name }} {{ booking.last_name }}</td>
       <td></td>
+      <td class="text-end">
+        <a href="{% url 'admin_student_list' %}" class="text-primary me-3"><i class="bi bi-calendar-fill" style="font-size: 1.5rem;"></i></a>
+        <a href="{% url 'admin_student_list' %}" class="text-primary me-3"><i class="bi bi-file-earmark-text-fill" style="font-size: 1.5rem;"></i></a>
+        <a href="{% url 'admin_student_list' %}" class="text-primary me-3"><i class="bi bi-pencil-fill" style="font-size: 1.5rem;"></i></a>
+        <a href="{% url 'admin_student_list' %}" class="text-primary me-3"><i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i></a>
+      </td>
     </tr>
   {% endfor %}
 {% endblock %}

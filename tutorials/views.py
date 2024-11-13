@@ -13,6 +13,8 @@ from tutorials.helpers import login_prohibited
 
 from .models import User
 
+from django.core.paginator import Paginator
+
 
 @login_required
 def dashboard(request):
@@ -33,17 +35,34 @@ def admin_dashboard(request):
     return render(request, 'admin_dashboard.html')
 
 def admin_student_list(request):
-    students = {'students' : User.objects.all()}
-    return render(request, 'admin_student_list.html', students)
+    students = User.objects.all()
 
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(students, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_student_list.html', {'page_obj': page_obj})
+    
 def admin_tutor_list(request):
-    tutors = {'tutors' : User.objects.all()}
-    return render(request, 'admin_tutor_list.html', tutors)
+    tutors = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(tutors, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
 
 def admin_bookings_list(request):
-    bookings = {'bookings' : User.objects.all()}
-    return render(request, 'admin_bookings_list.html', bookings)
+    bookings = User.objects.all()
 
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(bookings, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
