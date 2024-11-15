@@ -1,0 +1,53 @@
+{% extends 'base_content.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Welcome, {{ user.username }}!</h1>
+    <p class="text-muted">Here’s your dashboard. Manage your lessons, check schedules, and more.</p>
+
+    <!-- Lesson Schedule -->
+    <h2>Your Lessons</h2>
+    {% if lessons %}
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Tutor</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Duration</th>
+                <th>Location</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lesson in lessons %}
+            <tr>
+                <td>{{ lesson.subject }}</td>
+                <td>{{ lesson.tutor.username }}</td>
+                <td>{{ lesson.date }}</td>
+                <td>{{ lesson.time }}</td>
+                <td>{{ lesson.duration }}</td>
+                <td>{{ lesson.location }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No lessons scheduled.</p>
+    {% endif %}
+
+    <!-- Request Section -->
+    <h2>Requests</h2>
+    <p>Need a new lesson or a schedule change? <a href="#">Submit a request</a>.</p>
+
+    <!-- Notifications -->
+    <h2>Notifications</h2>
+    {% for message in messages %}
+    <div class="alert alert-info">{{ message }}</div>
+    {% endfor %}
+
+    <!-- Invoices -->
+    <h2>Invoices</h2>
+    <p>View your <a href="#">invoices</a> here.</p>
+</div>
+{% endblock %}
