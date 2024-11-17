@@ -1,4 +1,3 @@
-"""Tests for the profile view."""
 from django.contrib import messages
 from django.test import TestCase
 from django.urls import reverse
@@ -7,8 +6,6 @@ from tutorials.models import User
 from tutorials.tests.helpers import reverse_with_next
 
 class ProfileViewTest(TestCase):
-    """Test suite for the profile view."""
-
     fixtures = [
         'tutorials/tests/fixtures/default_user.json',
         'tutorials/tests/fixtures/other_users.json'
@@ -22,6 +19,7 @@ class ProfileViewTest(TestCase):
             'last_name': 'Doe2',
             'username': '@johndoe2',
             'email': 'johndoe2@example.org',
+            'role': User.STUDENT
         }
 
     def test_profile_url(self):
@@ -94,6 +92,7 @@ class ProfileViewTest(TestCase):
         self.assertEqual(self.user.first_name, 'John2')
         self.assertEqual(self.user.last_name, 'Doe2')
         self.assertEqual(self.user.email, 'johndoe2@example.org')
+        self.assertEqual(self.user.role, User.STUDENT)
 
     def test_post_profile_redirects_when_not_logged_in(self):
         redirect_url = reverse_with_next('log_in', self.url)
