@@ -117,7 +117,20 @@ class Command(BaseCommand):
         last_name = self.faker.last_name()
         email = create_email(first_name, last_name)
         username = create_username(first_name, last_name)
-        self.try_create_user({'username': username, 'email': email, 'first_name': first_name, 'last_name': last_name})
+        # Randomly assign roles, with more students than tutors and few admins
+        role = random.choices(
+            [User.STUDENT, User.TUTOR, User.ADMIN],
+            weights=[0.8, 0.15, 0.05],
+            k=1
+        )[0]
+        
+        self.try_create_user({
+            'username': username,
+            'email': email,
+            'first_name': first_name,
+            'last_name': last_name,
+            'role': role
+        })
        
     def try_create_user(self, data):
         try:
@@ -132,6 +145,7 @@ class Command(BaseCommand):
             password=Command.DEFAULT_PASSWORD,
             first_name=data['first_name'],
             last_name=data['last_name'],
+            role=data.get('role', User.STUDENT),  # Default to student if not specified
         )
     
     def create_programming_languages(self):
