@@ -4,7 +4,7 @@ from tutorials.models import User, ProgrammingLanguage, Subject, Lesson
 
 import pytz
 from faker import Faker
-from random import randint, random
+from random import randint, choices
 
 user_fixtures = [
     {'username': '@johndoe', 'email': 'john.doe@example.org', 'first_name': 'John', 'last_name': 'Doe'},
@@ -118,7 +118,7 @@ class Command(BaseCommand):
         email = create_email(first_name, last_name)
         username = create_username(first_name, last_name)
         # Randomly assign roles, with more students than tutors and few admins
-        role = random.choices(
+        role = choices(
             [User.STUDENT, User.TUTOR, User.ADMIN],
             weights=[0.8, 0.15, 0.05],
             k=1
