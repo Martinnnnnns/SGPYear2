@@ -12,6 +12,10 @@ from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
 from tutorials.helpers import login_prohibited
 from tutorials.models import User
 
+from .models import User
+
+from django.core.paginator import Paginator
+
 
 @login_required
 def dashboard(request):
@@ -20,13 +24,46 @@ def dashboard(request):
     current_user = request.user
     return render(request, 'dashboard.html', {'user': current_user})
 
-
 @login_prohibited
 def home(request):
     """Display the application's start/home screen."""
 
     return render(request, 'home.html')
 
+""" <---- Admin Views ----> """
+
+def admin_dashboard(request):
+    return render(request, 'admin_dashboard.html')
+
+def admin_student_list(request):
+    students = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(students, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_student_list.html', {'page_obj': page_obj})
+    
+def admin_tutor_list(request):
+    tutors = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(tutors, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
+
+def admin_bookings_list(request):
+    bookings = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(bookings, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
@@ -122,7 +159,7 @@ class PasswordView(LoginRequiredMixin, FormView):
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Display user profile editing screen, and handle profile modifications."""
-
+    
     model = UserForm
     template_name = "profile.html"
     form_class = UserForm
@@ -134,7 +171,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         """Return redirect URL after successful update."""
-        messages.add_message(self.request, messages.SUCCESS, "Profile updated!")
+        messages.add_message(self.request, messages.SUCCESS, "rofile updated!")
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
 
 

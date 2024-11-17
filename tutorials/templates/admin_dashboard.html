@@ -1,0 +1,34 @@
+{% extends 'base_content.html' %}
+{% block navbar %}
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'admin_dashboard' %}">
+        Task Manager
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      {% if user.is_authenticated %}
+        {% include 'partials/menu.html' %}
+      {% endif %}
+    </div>
+  </nav>
+{% endblock %}
+
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <h1>Admin Dashboard</h1>
+    </div>
+  </div>
+
+  <div class="row mt-5">
+    <div class="col-12 text-center">
+      <a href="{% url 'admin_student_list' %}" class="btn btn-primary btn-lg m-2">Students</a>
+      <a href="{% url 'admin_tutor_list' %}" class="btn btn-primary btn-lg m-2">Tutors</a>
+      <a href="{% url 'admin_bookings_list' %}" class="btn btn-primary btn-lg m-2">Bookings</a>  
+    </div>
+  </div>
+{% endblock %}
