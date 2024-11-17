@@ -1,4 +1,5 @@
 from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from libgravatar import Gravatar
@@ -49,5 +50,56 @@ class User(AbstractUser):
         return gravatar_url
 
     def mini_gravatar(self):
-        """Return a URL to a miniature version of the user's gravatar."""
+        """Return a URL to a miniature version of the user's gravatar."""        
         return self.gravatar(size=60)
+    
+class ProgrammingLanguage(models.Model):
+    """Model for programming languages that we offer lessons in."""
+    name = models.CharField(max_length=100, unique=True, blank=False)
+
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        ordering = ['name']
+
+class Subject(models.Model):
+    """Model for topics that a lesson in a given programming langauge can be about."""
+    name = models.CharField(max_length=100)
+    language = models.ForeignKey(ProgrammingLanguage, on_delete=models.CASCADE)
+    description = models.TextField(blank=True, null=True)  
+
+    def __str__(self):
+        return f"{self.language.name} - {self.name} - {self.description or 'No description'}"
+    
+    class Meta:
+        ordering = ["language", 'name']
+
+class Lesson(models.Model):
+    """Model for lessons that admins can book. Subjects are optional but must map correctly to a language."""
+    student = models.ForeignKey(User, related_name='lessons_as_student', on_delete=models.CASCADE)
+    tutor = models.ForeignKey(User, related_name='lessons_as_tutor', on_delete=models.CASCADE)
+    language = models.ForeignKey(ProgrammingLanguage, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, blank=True)
+    lesson_datetime = models.DateTimeField(null=False)
+
+    def __str__(self):
+        subject_str = self.subject.name if self.subject else "General"
+        return f"Lesson in {self.language.name} ({subject_str}) at {self.lesson_datetime}"
+
+    def clean(self):
+        """Ensure that if a subject is provided, its language matches the lesson's language"""
+        if self.subject and self.subject.language and self.subject.language != self.language:
+            raise ValidationError(f"The subject's language ({self.subject.language.name}) does not match the lesson's language ({self.language.name}).")
+
+    def save(self, *args, **kwargs):
+        """Run validation before saving"""
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def get_language(self):
+        """Returns the language directly if there's no subject; otherwise, it derives from the subject"""
+        return self.subject.language if self.subject else self.language
+    
+    class Meta:
+        ordering = ["tutor", "student", "language", 'subject']
