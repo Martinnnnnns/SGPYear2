@@ -7,11 +7,11 @@ from django.core.exceptions import ValidationError
 class ProgrammingLanguageTestCase(TestCase):
     def setUp(self):
         """Setup code for test database."""
-        self.langauge = ProgrammingLanguage.objects.create(name="Python")
+        self.language = ProgrammingLanguage.objects.create(name="Python")
 
     def test_model_string_representation(self):
         """Test string representation"""
-        self.assertEqual(str(self.langauge), "Python")
+        self.assertEqual(str(self.language), "Python")
 
     def test_create_language_with_same_name(self):
         """Try to add language with the same name to DB."""

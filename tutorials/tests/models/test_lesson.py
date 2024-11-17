@@ -11,8 +11,8 @@ class LessonTestCase(TestCase):
         self.general_subject = Subject.objects.create(name="General", language=self.python)
         
         # Mock users
-        self.student = User.objects.create_user(username="@student123", password="Password123")
-        self.tutor = User.objects.create_user(username="@tutor123", password="Password123")
+        self.student = User.objects.create_user(username="@student123", email="student.thuwa@mail.com", password="Password123", first_name="Billy", last_name="Bob")    
+        self.tutor = User.objects.create_user(username="@tutor123", email="tutor.jones@mail.com", password="Password123", first_name="Joe", last_name="Jones")
 
     def test_lesson_creation_with_subject(self):
         """Test that a lesson can be created with a valid subject and a datetime."""
@@ -42,6 +42,7 @@ class LessonTestCase(TestCase):
         self.assertEqual(lesson.language.name, "Python")
         self.assertIsNone(lesson.subject)
         self.assertEqual(lesson.lesson_datetime, lesson_datetime)
+        self.assertEqual(str(lesson), f"Lesson in Python (General) at {lesson_datetime}")
 
     def test_subject_language_match(self):
         """Test that a lesson raises a ValidationError if the subject's language does not match the lesson's language."""
