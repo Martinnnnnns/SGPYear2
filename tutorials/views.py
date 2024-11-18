@@ -68,7 +68,7 @@ def admin_bookings_list(request):
 @login_required
 def tutor_page(request):
     """Display the tutors' dashboard."""
-    if request.user.role == 'Tutor':
+    if request.user.role == 'tutor':
         current_user = request.user
         return render(request, 'tutor_page.html', {'user': current_user})
     else:
