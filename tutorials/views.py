@@ -19,6 +19,22 @@ def dashboard(request):
     current_user = request.user
     return render(request, 'dashboard.html', {'user': current_user})
 
+@login_required
+def tutor_page(request):
+    """Display the tutors' dashboard."""
+    if request.user.type == 'Tutor':
+        current_user = request.user
+        return render(request, 'tutor_page.html', {'user': current_user})
+    else:
+        return render(request, 'home.html')
+    
+@login_required
+def schedule_sessions(request):
+    return render(request, 'schedule_sessions.html')
+
+@login_required
+def reports(request):
+    return render(request, 'reports.html')
 
 @login_prohibited
 def home(request):
