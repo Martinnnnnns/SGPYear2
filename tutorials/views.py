@@ -23,27 +23,6 @@ def dashboard(request):
 
     current_user = request.user
     return render(request, 'dashboard.html', {'user': current_user})
-
-<<<<<<< HEAD
-@login_required
-def tutor_page(request):
-    """Display the tutors' dashboard."""
-    if request.user.type == 'Tutor':
-        current_user = request.user
-        return render(request, 'tutor_page.html', {'user': current_user})
-    else:
-        return render(request, 'home.html')
-    
-@login_required
-def schedule_sessions(request):
-    return render(request, 'schedule_sessions.html')
-
-@login_required
-def reports(request):
-    return render(request, 'reports.html')
-
-=======
->>>>>>> master
 @login_prohibited
 def home(request):
     """Display the application's start/home screen."""
@@ -84,6 +63,24 @@ def admin_bookings_list(request):
     page_obj = paginator.get_page(page_number)
     
     return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
+
+""" <---- Tutor Views ----> """
+@login_required
+def tutor_page(request):
+    """Display the tutors' dashboard."""
+    if request.user.role == 'Tutor':
+        current_user = request.user
+        return render(request, 'tutor_page.html', {'user': current_user})
+    else:
+        return render(request, 'home.html')
+    
+@login_required
+def schedule_sessions(request):
+    return render(request, 'schedule_sessions.html')
+
+@login_required
+def reports(request):
+    return render(request, 'reports.html')
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""

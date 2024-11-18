@@ -29,16 +29,12 @@ urlpatterns = [
     path('password/', views.PasswordView.as_view(), name='password'),
     path('profile/', views.ProfileUpdateView.as_view(), name='profile'),
     path('sign_up/', views.SignUpView.as_view(), name='sign_up'),
-<<<<<<< HEAD
-    path('tutor_page/', views.tutor_page, name='tutor_page'),
-    path('tutor_page/schedule_sessions', views.schedule_sessions, name='schedule_sessions'),
-    path('tutor_page/reports', views.reports, name='reports')
-    ]
-=======
     path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin_student_list/', views.admin_student_list, name='admin_student_list'),
     path('admin_tutor_list/', views.admin_tutor_list, name='admin_tutor_list'),
     path('admin_bookings_list/', views.admin_bookings_list, name='admin_bookings_list'),
+    path('tutor_page/', views.tutor_page, name='tutor_page'),
+    path('tutor_page/schedule_sessions', views.schedule_sessions, name='schedule_sessions'),
+    path('tutor_page/reports', views.reports, name='reports'),
 ]
->>>>>>> master
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
