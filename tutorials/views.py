@@ -14,6 +14,11 @@ from tutorials.models import User
 from .models import User,Lesson,Invoice
 from django.core.paginator import Paginator
 
+from .models import User
+
+from django.core.paginator import Paginator
+
+
 @login_required
 def dashboard(request):
     """Display the current user's dashboard."""
@@ -27,6 +32,40 @@ def home(request):
 
     return render(request, 'home.html')
 
+""" <---- Admin Views ----> """
+
+def admin_dashboard(request):
+    return render(request, 'admin_dashboard.html')
+
+def admin_student_list(request):
+    students = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(students, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_student_list.html', {'page_obj': page_obj})
+    
+def admin_tutor_list(request):
+    tutors = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(tutors, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
+
+def admin_bookings_list(request):
+    bookings = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(bookings, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
 
 
 def student_dashboard(request):

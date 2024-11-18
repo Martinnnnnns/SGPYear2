@@ -151,8 +151,12 @@ class Command(BaseCommand):
     def create_programming_languages(self):
         """Populate programming language table."""
         for lang in programming_languages:
+          
             if not ProgrammingLanguage.objects.filter(name=lang).exists():
                 ProgrammingLanguage.objects.create(name=lang)
+
+            ProgrammingLanguage.objects.create(name=lang)
+
 
     def create_subjects(self):
         """Create subtjects for each programming language."""

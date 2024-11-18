@@ -1,4 +1,5 @@
 from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from libgravatar import Gravatar
@@ -108,9 +109,8 @@ class Lesson(models.Model):
     
     class Meta:
         ordering = ["tutor", "student", "language", 'subject']
-        
-        
-        
+
+                
         
 class Invoice(models.Model):
     """
@@ -129,3 +129,4 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"Invoice {self.id} for {self.student.username} - {self.status}"
+
