@@ -36,7 +36,7 @@ def admin_dashboard(request):
     return render(request, 'admin_dashboard.html')
 
 def admin_student_list(request):
-    students = User.objects.all()
+    students = User.objects.filter(role=User.STUDENT)
 
     # Creates a Paginator object and renders the specified page
     paginator = Paginator(students, 20)
@@ -46,8 +46,8 @@ def admin_student_list(request):
     return render(request, 'admin_student_list.html', {'page_obj': page_obj})
     
 def admin_tutor_list(request):
-    tutors = User.objects.all()
-
+    tutors = User.objects.filter(role=User.TUTOR)
+    
     # Creates a Paginator object and renders the specified page
     paginator = Paginator(tutors, 20)
     page_number = request.GET.get('page')
