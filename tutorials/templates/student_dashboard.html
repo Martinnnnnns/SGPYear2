@@ -1,0 +1,121 @@
+{% extends 'base_content.html' %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
+  <div class="container">
+    <a class="navbar-brand" href="{% url 'student_dashboard' %}">
+      Student Portal
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    {% if user.is_authenticated %}
+      {% include 'partials/menu.html' %}
+    {% endif %}
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <h1 class="mb-4">Welcome, {{ user.first_name }}!</h1>
+    </div>
+  </div>
+
+  <!-- Lessons Section -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <h2>Your Lessons</h2>
+      {% if lessons %}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Language</th>
+              <th>Subject</th>
+              <th>Tutor</th>
+              <th>Date</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lesson in lessons %}
+            <tr>
+              <td>{{ lesson.language.name }}</td>
+              <td>
+                {% if lesson.subject %}
+                  {{ lesson.subject.name }}
+                {% else %}
+                  General
+                {% endif %}
+              </td>
+              <td>{{ lesson.tutor.first_name }}</td>
+              <td>{{ lesson.lesson_datetime|date:"F j, Y" }}</td>
+              <td>{{ lesson.lesson_datetime|time:"h:i A" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-warning">No lessons scheduled.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Invoices Section -->
+  <div class="row mt-5">
+    <div class="col-12">
+      <h2>Your Invoices</h2>
+      {% if invoices %}
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead class="table-dark">
+            <tr>
+              <th>Invoice ID</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for invoice in invoices %}
+            <tr>
+              <td>{{ invoice.id }}</td>
+              <td>{{ invoice.date|date:"F j, Y" }}</td>
+              <td>${{ invoice.amount }}</td>
+              <td>
+                {% if invoice.status == 'paid' %}
+                  <span class="badge bg-success">Paid</span>
+                {% else %}
+                  <span class="badge bg-danger">Unpaid</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'download_invoice' invoice.id %}" class="btn btn-sm btn-primary">Download</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-warning">No invoices available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row mt-5 text-center">
+    <div class="col-12">
+      <a href="{% url 'request_lesson' %}" class="btn btn-primary btn-lg m-2">Request Lesson</a>
+      <a href="{% url 'student_profile' %}" class="btn btn-primary btn-lg m-2">View Profile</a>
+      <a href="{% url 'student_support' %}" class="btn btn-primary btn-lg m-2">Contact Support</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+ß
