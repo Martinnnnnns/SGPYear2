@@ -1,15 +1,10 @@
-"""Unit tests of the user form."""
 from django import forms
 from django.test import TestCase
 from tutorials.forms import UserForm
 from tutorials.models import User
 
 class UserFormTestCase(TestCase):
-    """Unit tests of the user form."""
-
-    fixtures = [
-        'tutorials/tests/fixtures/default_user.json'
-    ]
+    fixtures = ['tutorials/tests/fixtures/default_user.json']
 
     def setUp(self):
         self.form_input = {
@@ -17,6 +12,7 @@ class UserFormTestCase(TestCase):
             'last_name': 'Doe',
             'username': '@janedoe',
             'email': 'janedoe@example.org',
+            'role': User.STUDENT
         }
 
     def test_form_has_necessary_fields(self):
@@ -25,8 +21,11 @@ class UserFormTestCase(TestCase):
         self.assertIn('last_name', form.fields)
         self.assertIn('username', form.fields)
         self.assertIn('email', form.fields)
+        self.assertIn('role', form.fields)
         email_field = form.fields['email']
         self.assertTrue(isinstance(email_field, forms.EmailField))
+        role_field = form.fields['role']
+        self.assertTrue(isinstance(role_field, forms.ChoiceField))
 
     def test_valid_user_form(self):
         form = UserForm(data=self.form_input)
@@ -48,3 +47,4 @@ class UserFormTestCase(TestCase):
         self.assertEqual(user.first_name, 'Jane')
         self.assertEqual(user.last_name, 'Doe')
         self.assertEqual(user.email, 'janedoe@example.org')
+        self.assertEqual(user.role, User.STUDENT)

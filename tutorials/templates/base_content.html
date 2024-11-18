@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block body %}
-  {% include 'partials/navbar.html' %}
+  <!-- Navbar in block so it can be overriden -->
+  {% block navbar %}
+    {% include 'partials/navbar.html' %}
+  {% endblock %}
   {% include 'partials/messages.html' %}
   {% block content %}
   {% endblock %}

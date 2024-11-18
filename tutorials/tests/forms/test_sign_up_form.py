@@ -15,7 +15,8 @@ class SignUpFormTestCase(TestCase):
             'username': '@janedoe',
             'email': 'janedoe@example.org',
             'new_password': 'Password123',
-            'password_confirmation': 'Password123'
+            'password_confirmation': 'Password123',
+            'role': User.STUDENT  # Add default role
         }
 
     def test_valid_sign_up_form(self):
@@ -28,8 +29,11 @@ class SignUpFormTestCase(TestCase):
         self.assertIn('last_name', form.fields)
         self.assertIn('username', form.fields)
         self.assertIn('email', form.fields)
+        self.assertIn('role', form.fields)  # Test for role field
         email_field = form.fields['email']
         self.assertTrue(isinstance(email_field, forms.EmailField))
+        role_field = form.fields['role']
+        self.assertTrue(isinstance(role_field, forms.ChoiceField))  # Test role field type
         self.assertIn('new_password', form.fields)
         new_password_widget = form.fields['new_password'].widget
         self.assertTrue(isinstance(new_password_widget, forms.PasswordInput))
@@ -75,5 +79,6 @@ class SignUpFormTestCase(TestCase):
         self.assertEqual(user.first_name, 'Jane')
         self.assertEqual(user.last_name, 'Doe')
         self.assertEqual(user.email, 'janedoe@example.org')
+        self.assertEqual(user.role, User.STUDENT)  # Test role was saved
         is_password_correct = check_password('Password123', user.password)
         self.assertTrue(is_password_correct)
