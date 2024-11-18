@@ -3,14 +3,26 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from libgravatar import Gravatar
 from django.contrib.auth.models import User
-
+from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+from libgravatar import Gravatar
 
 class User(AbstractUser):
-    """Model used for user authentication, and team member-related information."""
-    USER_TYPES=[
-        ('tutor','Tutor'),
-        ('student','Student'),
+    """Model used for user authentication, and team member related information."""
+    
+    # User role choices
+    STUDENT = 'student'
+    TUTOR = 'tutor'
+    ADMIN = 'admin'
+    
+    ROLE_CHOICES = [
+        (STUDENT, 'Student'),
+        (TUTOR, 'Tutor'),
+        (ADMIN, 'Admin'),
     ]
+    
     username = models.CharField(
         max_length=30,
         unique=True,
@@ -22,11 +34,11 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=50, blank=False)
     last_name = models.CharField(max_length=50, blank=False)
     email = models.EmailField(unique=True, blank=False)
-    user_type = models.CharField(
-        max_length=10, 
-        choices=USER_TYPES, 
-        default='student',
-        verbose_name='User Type')
+    role = models.CharField(
+        max_length=10,
+        choices=ROLE_CHOICES,
+        default=STUDENT,
+    )
 
     class Meta:
         """Model options."""
@@ -43,27 +55,40 @@ class User(AbstractUser):
         return gravatar_url
 
     def mini_gravatar(self):
-        """Return a URL to a miniature version of the user's gravatar."""
+        """Return a URL to a miniature version of the user's gravatar."""        
         return self.gravatar(size=60)
-
-class Lesson(models.Model):
-    """Model for storing lesson information."""
-    tutor = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="lessons_as_tutor"
-    )
-    student = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="lessons_as_student"
-    )
-    subject = models.CharField(max_length=255)
-    date = models.DateField()
-    time = models.TimeField()
-    duration = models.DurationField()  # e.g., timedelta(hours=1)
-    location = models.CharField(max_length=255, blank=True, null=True)
+    
+class ProgrammingLanguage(models.Model):
+    """Model for programming languages that we offer lessons in."""
+    name = models.CharField(max_length=100, unique=True, blank=False)
 
     def __str__(self):
-<<<<<<< Updated upstream
-        return f"{self.subject} - {self.tutor.username} tutoring {self.student.username}"
-=======
+        return self.name
+    
+    class Meta:
+        ordering = ['name']
+
+class Subject(models.Model):
+    """Model for topics that a lesson in a given programming langauge can be about."""
+    name = models.CharField(max_length=100)
+    language = models.ForeignKey(ProgrammingLanguage, on_delete=models.CASCADE)
+    description = models.TextField(blank=True, null=True)  
+
+    def __str__(self):
+        return f"{self.language.name} - {self.name} - {self.description or 'No description'}"
+    
+    class Meta:
+        ordering = ["language", 'name']
+
+class Lesson(models.Model):
+    """Model for lessons that admins can book. Subjects are optional but must map correctly to a language."""
+    student = models.ForeignKey(User, related_name='lessons_as_student', on_delete=models.CASCADE)
+    tutor = models.ForeignKey(User, related_name='lessons_as_tutor', on_delete=models.CASCADE)
+    language = models.ForeignKey(ProgrammingLanguage, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, blank=True)
+    lesson_datetime = models.DateTimeField(null=False)
+
+    def __str__(self):
         subject_str = self.subject.name if self.subject else "General"
         return f"Lesson in {self.language.name} ({subject_str}) at {self.lesson_datetime}"
 
@@ -101,4 +126,3 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"Invoice {self.id} for {self.student.username} - {self.status}"
->>>>>>> Stashed changes

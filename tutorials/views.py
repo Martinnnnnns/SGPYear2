@@ -10,14 +10,10 @@ from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
 from tutorials.helpers import login_prohibited
-<<<<<<< Updated upstream
-from .models import Lesson 
-=======
 from tutorials.models import User
 from .models import Lesson, Invoice
 from .models import User
 from django.core.paginator import Paginator
->>>>>>> Stashed changes
 
 @login_required
 def dashboard(request):
@@ -42,8 +38,6 @@ def home(request):
 
     return render(request, 'home.html')
 
-<<<<<<< Updated upstream
-=======
 def student_dashboard(request):
     lessons = Lesson.objects.filter(student=request.user)
     invoices = Invoice.objects.filter(student=request.user)  
@@ -97,7 +91,6 @@ def admin_bookings_list(request):
     page_obj = paginator.get_page(page_number)
     
     return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
->>>>>>> Stashed changes
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
@@ -148,9 +141,9 @@ class LogInView(LoginProhibitedMixin, View):
         if user is not None:
             login(request, user)
             
-            if user.user_type=='student':
+            if user.user_type=='Student':
                 return redirect('student_interface')
-            elif user.user_type=='tutor':
+            elif user.user_type=='Tutor':
                 return redirect('dashboard')
             else:
                 return redirect(self.next)

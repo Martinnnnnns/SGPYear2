@@ -31,10 +31,6 @@ urlpatterns = [
     path('password/', views.PasswordView.as_view(), name='password'),
     path('profile/', views.ProfileUpdateView.as_view(), name='profile'),
     path('sign_up/', views.SignUpView.as_view(), name='sign_up'),
-<<<<<<< Updated upstream
-    path('student_interface/', student_interface, name='student_interface'),
-]
-=======
     path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin_student_list/', views.admin_student_list, name='admin_student_list'),
     path('admin_tutor_list/', views.admin_tutor_list, name='admin_tutor_list'),
@@ -45,5 +41,4 @@ urlpatterns = [
     path('student_support/', views.student_support, name='student_support'),  
     path('download_invoice/<int:invoice_id>/', views.download_invoice, name='download_invoice'), 
     ]
->>>>>>> Stashed changes
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
