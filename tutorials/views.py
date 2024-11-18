@@ -11,9 +11,7 @@ from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
 from tutorials.helpers import login_prohibited
 from tutorials.models import User
-
 from .models import User,Lesson,Invoice
-
 from django.core.paginator import Paginator
 
 @login_required
@@ -47,6 +45,17 @@ def download_invoice(request,invoice_id):
     response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.id}.pdf"'
     response.write("the amount paid is this number")  
     return response
+
+def student_support(request):
+    faqs = [
+        {"question": "How do I reset my password?", "answer": "Go to the login page and click 'Forgot Password'."},
+        {"question": "How do I contact my instructor?", "answer": "Navigate to the Lessons section and click on the instructor's name."},
+        {"question": "What are the system requirements?", "answer": "The platform works best on modern web browsers like Chrome or Firefox."}
+    ]
+    return render(request, 'student_support.html', {'faqs': faqs})
+
+def profile(request):
+    return render(request, 'student_profile.html')
     
 
 """ <---- Admin Views ----> """

@@ -1,5 +1,30 @@
 {% extends 'base_content.html' %}
+
 {% block content %}
-<h1>Contact Support</h1>
-<p>Support options go here!</p>
+<div class="container mt-5">
+  <h1 class="mb-4">Student Support</h1>
+
+  <!-- FAQ Section -->
+  <div class="row">
+    <div class="col-md-12">
+      <h2>Frequently Asked Questions</h2>
+      <div class="accordion" id="faqAccordion">
+        {% for faq in faqs %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
+                {{ faq.question }}
+              </button>
+            </h2>
+            <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                {{ faq.answer }}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
