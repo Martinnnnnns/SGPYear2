@@ -10,8 +10,14 @@ from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
 from tutorials.helpers import login_prohibited
+<<<<<<< Updated upstream
 from .models import Lesson 
-
+=======
+from tutorials.models import User
+from .models import Lesson, Invoice
+from .models import User
+from django.core.paginator import Paginator
+>>>>>>> Stashed changes
 
 @login_required
 def dashboard(request):
@@ -36,6 +42,62 @@ def home(request):
 
     return render(request, 'home.html')
 
+<<<<<<< Updated upstream
+=======
+def student_dashboard(request):
+    lessons = Lesson.objects.filter(student=request.user)
+    invoices = Invoice.objects.filter(student=request.user)  
+    return render(request, 'student_dashboard.html', {'lessons': lessons , 'invoices':invoices})
+def request_lesson(request):
+    return render(request,'request_lesson.html')
+def student_profile(request):
+    return render(request,'student_profile.html')
+def student_support(request):
+    return render(request,'student_support.html')
+def download_invoice(request,invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id, student=request.user)
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.id}.pdf"'
+    response.write("the amount paid is this number")  
+    return response
+    
+
+
+""" <---- Admin Views ----> """
+
+def admin_dashboard(request):
+    return render(request, 'admin_dashboard.html')
+
+def admin_student_list(request):
+    students = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(students, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_student_list.html', {'page_obj': page_obj})
+    
+def admin_tutor_list(request):
+    tutors = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(tutors, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
+
+def admin_bookings_list(request):
+    bookings = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(bookings, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
+>>>>>>> Stashed changes
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
@@ -170,3 +232,8 @@ class SignUpView(LoginProhibitedMixin, FormView):
 
     def get_success_url(self):
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+    
+    
+    
+    
+    

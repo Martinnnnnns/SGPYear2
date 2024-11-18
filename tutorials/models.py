@@ -2,6 +2,8 @@ from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from libgravatar import Gravatar
+from django.contrib.auth.models import User
+
 
 class User(AbstractUser):
     """Model used for user authentication, and team member-related information."""
@@ -59,4 +61,44 @@ class Lesson(models.Model):
     location = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
+<<<<<<< Updated upstream
         return f"{self.subject} - {self.tutor.username} tutoring {self.student.username}"
+=======
+        subject_str = self.subject.name if self.subject else "General"
+        return f"Lesson in {self.language.name} ({subject_str}) at {self.lesson_datetime}"
+
+    def clean(self):
+        """Ensure that if a subject is provided, its language matches the lesson's language"""
+        if self.subject and self.subject.language and self.subject.language != self.language:
+            raise ValidationError(f"The subject's language ({self.subject.language.name}) does not match the lesson's language ({self.language.name}).")
+
+    def save(self, *args, **kwargs):
+        """Run validation before saving"""
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def get_language(self):
+        """Returns the language directly if there's no subject; otherwise, it derives from the subject"""
+        return self.subject.language if self.subject else self.language
+    
+    class Meta:
+        ordering = ["tutor", "student", "language", 'subject']
+        
+class Invoice(models.Model):
+    """
+    Represents an invoice for a student.
+    """
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
+    date = models.DateField(auto_now_add=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(
+        max_length=10,
+        choices=[
+            ('paid', 'Paid'),
+            ('unpaid', 'Unpaid'),
+        ]
+    )
+
+    def __str__(self):
+        return f"Invoice {self.id} for {self.student.username} - {self.status}"
+>>>>>>> Stashed changes
