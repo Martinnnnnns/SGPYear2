@@ -11,8 +11,9 @@ from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
 from tutorials.helpers import login_prohibited
 from tutorials.models import User
-from .models import Lesson, Invoice
-from .models import User
+
+from .models import User,Lesson,Invoice
+
 from django.core.paginator import Paginator
 
 @login_required
@@ -22,21 +23,13 @@ def dashboard(request):
     current_user = request.user
     return render(request, 'dashboard.html', {'user': current_user})
 
-@login_required
-def student_interface(request):
-    """Display the student dashboard with their lessons and notifications."""
-    lessons = Lesson.objects.filter(student=request.user).order_by('date', 'time')  # Fetch lessons for the logged-in student
-    messages.info(request, "Welcome to your dashboard!")
-    return render(request, 'student_interface.html', {
-        'user': request.user,
-        'lessons': lessons
-    })
-
 @login_prohibited
 def home(request):
     """Display the application's start/home screen."""
 
     return render(request, 'home.html')
+
+
 
 def student_dashboard(request):
     lessons = Lesson.objects.filter(student=request.user)
@@ -55,7 +48,6 @@ def download_invoice(request,invoice_id):
     response.write("the amount paid is this number")  
     return response
     
-
 
 """ <---- Admin Views ----> """
 
@@ -137,17 +129,8 @@ class LogInView(LoginProhibitedMixin, View):
         form = LogInForm(request.POST)
         self.next = request.POST.get('next') or settings.REDIRECT_URL_WHEN_LOGGED_IN
         user = form.get_user()
-        
         if user is not None:
             login(request, user)
-            
-            if user.user_type=='Student':
-                return redirect('student_interface')
-            elif user.user_type=='Tutor':
-                return redirect('dashboard')
-            else:
-                return redirect(self.next)
-            
             return redirect(self.next)
         messages.add_message(request, messages.ERROR, "The credentials provided were invalid!")
         return self.render()
@@ -195,7 +178,7 @@ class PasswordView(LoginRequiredMixin, FormView):
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Display user profile editing screen, and handle profile modifications."""
-
+    
     model = UserForm
     template_name = "profile.html"
     form_class = UserForm
@@ -207,7 +190,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         """Return redirect URL after successful update."""
-        messages.add_message(self.request, messages.SUCCESS, "Profile updated!")
+        messages.add_message(self.request, messages.SUCCESS, "rofile updated!")
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
 
 
@@ -225,8 +208,3 @@ class SignUpView(LoginProhibitedMixin, FormView):
 
     def get_success_url(self):
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
-    
-    
-    
-    
-    

@@ -109,6 +109,9 @@ class Lesson(models.Model):
     class Meta:
         ordering = ["tutor", "student", "language", 'subject']
         
+        
+        
+        
 class Invoice(models.Model):
     """
     Represents an invoice for a student.
