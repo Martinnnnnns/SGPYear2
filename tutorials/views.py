@@ -4,7 +4,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ImproperlyConfigured
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render,get_object_or_404
 from django.views import View
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
@@ -67,17 +67,22 @@ def admin_bookings_list(request):
     
     return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
 
-
+""" <---- Student Views ----> """
+@login_required
 def student_dashboard(request):
     lessons = Lesson.objects.filter(student=request.user)
     invoices = Invoice.objects.filter(student=request.user)  
-    return render(request, 'student_dashboard.html', {'lessons': lessons , 'invoices':invoices})
+    return render(request, 'student_dashboard.html',{'lessons': lessons , 'invoices':invoices})
+
 def request_lesson(request):
     return render(request,'request_lesson.html')
+
 def student_profile(request):
     return render(request,'student_profile.html')
+
 def student_support(request):
     return render(request,'student_support.html')
+
 def download_invoice(request,invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id, student=request.user)
     response = HttpResponse(content_type='application/pdf')
@@ -96,41 +101,10 @@ def student_support(request):
 def profile(request):
     return render(request, 'student_profile.html')
     
+def lesson_detail(request, lesson_id):
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    return render(request, 'lesson_detail.html', {'lesson': lesson})
 
-""" <---- Admin Views ----> """
-
-def admin_dashboard(request):
-    return render(request, 'admin_dashboard.html')
-
-def admin_student_list(request):
-    students = User.objects.all()
-
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(students, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_student_list.html', {'page_obj': page_obj})
-    
-def admin_tutor_list(request):
-    tutors = User.objects.all()
-
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(tutors, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
-
-def admin_bookings_list(request):
-    bookings = User.objects.all()
-
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(bookings, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
