@@ -76,11 +76,19 @@ def tutor_page(request):
     
 @login_required
 def schedule_sessions(request):
-    return render(request, 'schedule_sessions.html')
+    if request.user.role == 'tutor':
+        return render(request, 'schedule_sessions.html')
+    else:
+        return render(request, 'home.html')
 
 @login_required
 def reports(request):
-    return render(request, 'reports.html')
+    if request.user.role == 'tutor':
+        return render(request, 'reports.html')
+    elif request.user.role == 'admin':
+        return render(request, 'reports.html')
+    else:
+        return render(request, 'home.html')
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
