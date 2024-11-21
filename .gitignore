@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python,django,venv,virtualenv,macos,windows,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,django,venv,virtualenv,macos,windows,linux
 
+.vscode/
+*.code-workspace
+
 ### Django ###
 *.log
 *.pot

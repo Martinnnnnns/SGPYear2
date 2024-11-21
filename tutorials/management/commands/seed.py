@@ -1,10 +1,12 @@
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 
 from tutorials.models import User, ProgrammingLanguage, Subject, Lesson
 
 import pytz
 from faker import Faker
-from random import randint, choices
+from random import randint, choices, choice
+from datetime import datetime, timedelta
 
 user_fixtures = [
     {'username': '@johndoe', 'email': 'john.doe@example.org', 'first_name': 'John', 'last_name': 'Doe'},
@@ -95,6 +97,7 @@ class Command(BaseCommand):
         self.create_programming_languages()
         self.create_subjects()
         self.users = User.objects.all()
+        self.create_lessons()
 
     def create_users(self):
         self.generate_user_fixtures()
@@ -164,12 +167,34 @@ class Command(BaseCommand):
                                        language=language_instance,
                                        description=subject["description"])
                 
-    def create_lessons():
-        """TO IMPLEMENT ONCE BERNARDO HAS SORTED OUT ROLES"""
-        pass
+    def create_lessons(self):
+        """Create some lessons. Only to be called after users, languages and subjects have been seeded."""
+        start_time = datetime(2024, 1, 1)
+        end_time = datetime(2024, 12, 31)
+        for i in range(50):
+            tutor = choice(User.objects.filter(role="tutor"))
+            student = choice(User.objects.filter(role="student"))
+            language = choice(ProgrammingLanguage.objects.all())
+            subject = choice(Subject.objects.filter(language=language))
+            random_date = random_datetime(start_time, end_time)
+            lesson_datetime = timezone.make_aware(random_date)
+
+            Lesson.objects.create(student=student, 
+                                  tutor=tutor, 
+                                  language=language, 
+                                  subject=subject, 
+                                  lesson_datetime=lesson_datetime)
+
+
 
 def create_username(first_name, last_name):
     return '@' + first_name.lower() + last_name.lower()
 
 def create_email(first_name, last_name):
     return first_name + '.' + last_name + '@example.org'
+
+def random_datetime(start_time, end_time):
+    """Create random times within the given window."""
+    delta = end_time - start_time
+    random_seconds = randint(0, int(delta.total_seconds()))
+    return start_time + timedelta(seconds=random_seconds)

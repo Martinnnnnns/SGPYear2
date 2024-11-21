@@ -85,7 +85,7 @@ class Lesson(models.Model):
 
     def __str__(self):
         subject_str = self.subject.name if self.subject else "General"
-        return f"Lesson in {self.language.name} ({subject_str}) at {self.lesson_datetime}"
+        return f"{self.language.name} Lesson ({subject_str}) at {self.lesson_datetime} between tutor {self.tutor.full_name()} and student {self.student.full_name()}"
 
     def clean(self):
         """Ensure that if a subject is provided, its language matches the lesson's language"""
