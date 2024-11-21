@@ -59,38 +59,54 @@ def reports(request):
 
 """ <---- Admin Views ----> """
 
+@login_required
 def admin_dashboard(request):
-    return render(request, 'admin_dashboard.html')
+    if request.user.role == 'admin':
+        return render(request, 'admin_dashboard.html')
+    else:
+        return render(request, 'home.html')
 
+@login_required
 def admin_student_list(request):
-    students = User.objects.filter(role=User.STUDENT)
+    if request.user.role == 'admin':
+        students = User.objects.filter(role=User.STUDENT)
 
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(students, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_student_list.html', {'page_obj': page_obj})
-    
+        # Creates a Paginator object and renders the specified page
+        paginator = Paginator(students, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        return render(request, 'admin_student_list.html', {'page_obj': page_obj})
+    else:
+        return render(request, 'home.html')
+
+@login_required
 def admin_tutor_list(request):
-    tutors = User.objects.filter(role=User.TUTOR)
-    
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(tutors, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
+    if request.user.role == 'admin':
+        tutors = User.objects.filter(role=User.TUTOR)
+        
+        # Creates a Paginator object and renders the specified page
+        paginator = Paginator(tutors, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
+    else:
+        return render(request, 'home.html')
 
+@login_required
 def admin_bookings_list(request):
-    bookings = User.objects.all()
+    if request.user.role == 'admin':
+        bookings = User.objects.all()
 
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(bookings, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
+        # Creates a Paginator object and renders the specified page
+        paginator = Paginator(bookings, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
+    else:
+        return render(request, 'home.html')
 
 
 def student_dashboard(request):
@@ -121,41 +137,6 @@ def student_support(request):
 def profile(request):
     return render(request, 'student_profile.html')
     
-
-""" <---- Admin Views ----> """
-
-def admin_dashboard(request):
-    return render(request, 'admin_dashboard.html')
-
-def admin_student_list(request):
-    students = User.objects.all()
-
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(students, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_student_list.html', {'page_obj': page_obj})
-    
-def admin_tutor_list(request):
-    tutors = User.objects.all()
-
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(tutors, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
-
-def admin_bookings_list(request):
-    bookings = User.objects.all()
-
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(bookings, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
