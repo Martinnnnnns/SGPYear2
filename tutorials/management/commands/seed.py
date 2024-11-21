@@ -195,6 +195,7 @@ def create_username(first_name, last_name):
 def create_email(first_name, last_name):
     return first_name + '.' + last_name + '@example.org'
 
+
 def random_datetime(start_time, end_time):
     """Create random times within the given window."""
     delta = end_time - start_time

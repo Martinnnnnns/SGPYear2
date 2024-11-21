@@ -11,6 +11,12 @@ from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
 from tutorials.helpers import login_prohibited
 from tutorials.models import User
+from .models import User,Lesson,Invoice
+from django.core.paginator import Paginator
+
+from .models import User
+
+from django.core.paginator import Paginator
 
 
 @login_required
@@ -19,14 +25,137 @@ def dashboard(request):
 
     current_user = request.user
     return render(request, 'dashboard.html', {'user': current_user})
-
-
 @login_prohibited
 def home(request):
     """Display the application's start/home screen."""
 
     return render(request, 'home.html')
 
+""" <---- Tutor Views ----> """
+@login_required
+def tutor_page(request):
+    """Display the tutors' dashboard."""
+    if request.user.role == 'tutor':
+        current_user = request.user
+        return render(request, 'tutor_page.html', {'user': current_user})
+    else:
+        return render(request, 'home.html')
+    
+@login_required
+def schedule_sessions(request):
+    if request.user.role == 'tutor':
+        return render(request, 'schedule_sessions.html')
+    else:
+        return render(request, 'home.html')
+
+@login_required
+def reports(request):
+    if request.user.role == 'tutor':
+        return render(request, 'reports.html')
+    elif request.user.role == 'admin':
+        return render(request, 'reports.html')
+    else:
+        return render(request, 'home.html')
+
+""" <---- Admin Views ----> """
+
+def admin_dashboard(request):
+    return render(request, 'admin_dashboard.html')
+
+def admin_student_list(request):
+    students = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(students, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_student_list.html', {'page_obj': page_obj})
+    
+def admin_tutor_list(request):
+    tutors = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(tutors, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
+
+def admin_bookings_list(request):
+    bookings = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(bookings, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
+
+
+def student_dashboard(request):
+    lessons = Lesson.objects.filter(student=request.user)
+    invoices = Invoice.objects.filter(student=request.user)  
+    return render(request, 'student_dashboard.html', {'lessons': lessons , 'invoices':invoices})
+def request_lesson(request):
+    return render(request,'request_lesson.html')
+def student_profile(request):
+    return render(request,'student_profile.html')
+def student_support(request):
+    return render(request,'student_support.html')
+def download_invoice(request,invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id, student=request.user)
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.id}.pdf"'
+    response.write("the amount paid is this number")  
+    return response
+
+def student_support(request):
+    faqs = [
+        {"question": "How do I reset my password?", "answer": "Go to the login page and click 'Forgot Password'."},
+        {"question": "How do I contact my instructor?", "answer": "Navigate to the Lessons section and click on the instructor's name."},
+        {"question": "What are the system requirements?", "answer": "The platform works best on modern web browsers like Chrome or Firefox."}
+    ]
+    return render(request, 'student_support.html', {'faqs': faqs})
+
+def profile(request):
+    return render(request, 'student_profile.html')
+    
+
+""" <---- Admin Views ----> """
+
+def admin_dashboard(request):
+    return render(request, 'admin_dashboard.html')
+
+def admin_student_list(request):
+    students = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(students, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_student_list.html', {'page_obj': page_obj})
+    
+def admin_tutor_list(request):
+    tutors = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(tutors, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
+
+def admin_bookings_list(request):
+    bookings = User.objects.all()
+
+    # Creates a Paginator object and renders the specified page
+    paginator = Paginator(bookings, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
@@ -122,7 +251,7 @@ class PasswordView(LoginRequiredMixin, FormView):
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Display user profile editing screen, and handle profile modifications."""
-
+    
     model = UserForm
     template_name = "profile.html"
     form_class = UserForm
@@ -134,7 +263,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         """Return redirect URL after successful update."""
-        messages.add_message(self.request, messages.SUCCESS, "Profile updated!")
+        messages.add_message(self.request, messages.SUCCESS, "rofile updated!")
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
 
 
