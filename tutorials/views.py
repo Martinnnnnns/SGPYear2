@@ -97,7 +97,8 @@ def admin_tutor_list(request):
 @login_required
 def admin_bookings_list(request):
     if request.user.role == 'admin':
-        bookings = User.objects.all()
+        #bookings = User.objects.all()
+        bookings = Lesson.objects.all()
 
         # Creates a Paginator object and renders the specified page
         paginator = Paginator(bookings, 20)
@@ -170,6 +171,10 @@ class LogInView(LoginProhibitedMixin, View):
 
     http_method_names = ['get', 'post']
     redirect_when_logged_in_url = settings.REDIRECT_URL_WHEN_LOGGED_IN
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.next = settings.REDIRECT_URL_WHEN_LOGGED_IN  # Initialises self.next for self.render further down
 
     def get(self, request):
         """Display log in template."""
@@ -178,14 +183,27 @@ class LogInView(LoginProhibitedMixin, View):
         return self.render()
 
     def post(self, request):
+        
         """Handle log in attempt."""
-
         form = LogInForm(request.POST)
-        self.next = request.POST.get('next') or settings.REDIRECT_URL_WHEN_LOGGED_IN
         user = form.get_user()
+
+        # Determine the redirect URL before checking login success
         if user is not None:
+            if user.role == 'admin':
+                self.next = 'admin_dashboard' 
+            elif user.role == 'tutor':
+                self.next = 'tutor_page' 
+            elif user.role == 'student':
+                self.next = 'student_dashboard'  
+            else:
+                self.next = request.POST.get('next') or settings.REDIRECT_URL_WHEN_LOGGED_IN
+
+            # Log the user in and redirect
             login(request, user)
             return redirect(self.next)
+
+        # If authentication fails, show an error and re-render the form
         messages.add_message(request, messages.ERROR, "The credentials provided were invalid!")
         return self.render()
 
@@ -232,20 +250,31 @@ class PasswordView(LoginRequiredMixin, FormView):
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Display user profile editing screen, and handle profile modifications."""
-    
+
     model = UserForm
     template_name = "profile.html"
     form_class = UserForm
 
     def get_object(self):
         """Return the object (user) to be updated."""
-        user = self.request.user
-        return user
+        return self.request.user
 
     def get_success_url(self):
         """Return redirect URL after successful update."""
-        messages.add_message(self.request, messages.SUCCESS, "rofile updated!")
-        return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+        user = self.request.user
+
+        # URL is determined by role
+        if user.role == 'admin':
+            redirect_url_name = 'admin_dashboard'
+        elif user.role == 'tutor':
+            redirect_url_name = 'tutor_page'
+        elif user.role == 'student':
+            redirect_url_name = 'student_dashboard'
+        else:
+            redirect_url_name = settings.REDIRECT_URL_WHEN_LOGGED_IN
+
+        messages.add_message(self.request, messages.SUCCESS, "Profile updated!")
+        return reverse(redirect_url_name) 
 
 
 class SignUpView(LoginProhibitedMixin, FormView):
@@ -258,7 +287,20 @@ class SignUpView(LoginProhibitedMixin, FormView):
     def form_valid(self, form):
         self.object = form.save()
         login(self.request, self.object)
+        
+        # Set the redirection URL based on user role
+        if self.object.role == 'admin':
+            self.success_url = reverse('admin_dashboard')
+        elif self.object.role == 'tutor':
+            self.success_url = reverse('tutor_page')
+        elif self.object.role == 'student':
+            self.success_url = reverse('student_dashboard')
+        else:
+            # Default URL
+            self.success_url = reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+            
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+        #return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+        return self.success_url
