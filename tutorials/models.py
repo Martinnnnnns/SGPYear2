@@ -3,6 +3,12 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from libgravatar import Gravatar
+from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+from libgravatar import Gravatar
 
 class User(AbstractUser):
     """Model used for user authentication, and team member related information."""
@@ -103,3 +109,24 @@ class Lesson(models.Model):
     
     class Meta:
         ordering = ["tutor", "student", "language", 'subject']
+
+                
+        
+class Invoice(models.Model):
+    """
+    Represents an invoice for a student.
+    """
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
+    date = models.DateField(auto_now_add=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(
+        max_length=10,
+        choices=[
+            ('paid', 'Paid'),
+            ('unpaid', 'Unpaid'),
+        ]
+    )
+
+    def __str__(self):
+        return f"Invoice {self.id} for {self.student.username} - {self.status}"
+
