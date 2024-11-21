@@ -12,3 +12,4 @@ class Command(BaseCommand):
         User.objects.filter(is_staff=False).delete()
         ProgrammingLanguage.objects.filter().delete() 
         Subject.objects.filter().delete() 
+        Lesson.objects.filter().delete()
