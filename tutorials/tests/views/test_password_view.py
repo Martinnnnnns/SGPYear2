@@ -6,6 +6,7 @@ from django.urls import reverse
 from tutorials.forms import PasswordForm
 from tutorials.models import User
 from tutorials.tests.helpers import reverse_with_next
+from tutorials.views import PasswordView
 
 class PasswordViewTest(TestCase):
     """Test suite for the password view."""
@@ -104,11 +105,23 @@ class PasswordViewTest(TestCase):
         is_password_correct = check_password('NewPassword123', self.student_user.password)
         self.assertTrue(is_password_correct)
         
-    def tearDown(self):
-        # Remove test users to clean up after the test
-        """
-        self.admin_user.delete()
-        self.tutor_user.delete()
-        self.student_user.delete()
-        self.user.delete()"""
-        User.objects.all().delete()
+    def test_get_success_url_for_admin(self):
+        view = PasswordView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.admin_user
+
+        self.assertEqual(view.get_success_url(), reverse('admin_dashboard'))
+
+    def test_get_success_url_for_tutor(self):
+        view = PasswordView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.tutor_user
+
+        self.assertEqual(view.get_success_url(), reverse('tutor_page'))
+
+    def test_get_success_url_for_student(self):
+        view = PasswordView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.student_user
+
+        self.assertEqual(view.get_success_url(), reverse('student_dashboard'))

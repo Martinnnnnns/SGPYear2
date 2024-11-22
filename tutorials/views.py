@@ -154,7 +154,7 @@ class LoginProhibitedMixin:
         url = self.get_redirect_when_logged_in_url()
         return redirect(url)
 
-    def get_redirect_when_logged_in_url(self):
+    def get_redirect_when_logged_in_url(self): 
         """Returns the url to redirect to when not logged in."""
         if self.redirect_when_logged_in_url is None:
             raise ImproperlyConfigured(
@@ -196,7 +196,8 @@ class LogInView(LoginProhibitedMixin, View):
                 self.next = 'tutor_page' 
             elif user.role == 'student':
                 self.next = 'student_dashboard'  
-            else:
+            else: 
+                """come back"""
                 self.next = request.POST.get('next') or settings.REDIRECT_URL_WHEN_LOGGED_IN
 
             # Log the user in and redirect
@@ -255,8 +256,8 @@ class PasswordView(LoginRequiredMixin, FormView):
             return reverse('student_dashboard')
         else:
             # Default
-            return reverse('home')
-
+            return reverse('home') 
+            
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Display user profile editing screen, and handle profile modifications."""
 
@@ -283,7 +284,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
             redirect_url_name = settings.REDIRECT_URL_WHEN_LOGGED_IN
 
         messages.add_message(self.request, messages.SUCCESS, "Profile updated!")
-        return reverse(redirect_url_name) 
+        return reverse(redirect_url_name)  
 
 
 class SignUpView(LoginProhibitedMixin, FormView):
@@ -293,7 +294,8 @@ class SignUpView(LoginProhibitedMixin, FormView):
     template_name = "sign_up.html"
     redirect_when_logged_in_url = settings.REDIRECT_URL_WHEN_LOGGED_IN
 
-    def form_valid(self, form):
+    def form_valid(self, form): 
+        """come back"""
         self.object = form.save()
         login(self.request, self.object)
         
@@ -310,7 +312,8 @@ class SignUpView(LoginProhibitedMixin, FormView):
             
         return super().form_valid(form)
 
-    def get_success_url(self):
+    def get_success_url(self): 
+        """come back"""
         #return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
         return self.success_url
     
@@ -324,4 +327,5 @@ class SignUpView(LoginProhibitedMixin, FormView):
         elif user.role == 'student':
             return reverse('student_dashboard')
         else:
-            return super().get_redirect_when_logged_in_url()
+            return super().get_redirect_when_logged_in_url() 
+            """come back"""

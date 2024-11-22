@@ -40,7 +40,4 @@ class AdminDashboardTestCase(TestCase):
         self.assertContains(response, 'Tutors')
         self.assertContains(response, 'Bookings')
         
-    def tearDown(self):
-        # Remove test users to clean up after the test
-        #self.admin_user.delete()
-        User.objects.all().delete()
+    

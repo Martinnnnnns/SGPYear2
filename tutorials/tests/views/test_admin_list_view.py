@@ -1,6 +1,5 @@
 from django.test import TestCase
 from django.urls import reverse
-import pdb
 
 from tutorials.models import User
 
@@ -22,11 +21,6 @@ class AdminListTestMixin:
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, f'{self.url_name}.html')
-
-    def tearDown(self):
-        # Remove test users to clean up after the test
-        #self.admin_user.delete()
-        User.objects.all().delete()
 
 class AdminStudentListTestCase(AdminListTestMixin, TestCase):
     url_name = 'admin_student_list'

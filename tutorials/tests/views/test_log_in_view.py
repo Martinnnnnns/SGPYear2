@@ -87,26 +87,6 @@ class LogInViewTestCase(TestCase, LogInTester, MenuTesterMixin):
         self.assertEqual(len(messages_list), 1)
         self.assertEqual(messages_list[0].level, messages.ERROR)
 
-    """ < ----- I don't understand why this test case is here ----- >
-    def test_succesful_log_in_with_redirect(self):
-        redirect_url = reverse('profile')
-        form_input = { 'username': '@johndoe', 'password': 'Password123', 'next': redirect_url }
-        response = self.client.post(self.url, form_input, follow=True)
-        self.assertTrue(self._is_logged_in())
-        self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
-        self.assertTemplateUsed(response, 'profile.html')
-        messages_list = list(response.context['messages'])
-        self.assertEqual(len(messages_list), 0)"""
-
-    """ < ----- I don't understand why this test case is here ----- >
-    def test_post_log_in_with_incorrect_credentials_and_redirect(self):
-        redirect_url = reverse('profile')
-        form_input = { 'username': '@johndoe', 'password': 'WrongPassword123', 'next': redirect_url }
-        response = self.client.post(self.url, form_input)
-        next = response.context['next']
-        self.assertEqual(next, redirect_url)
-    """
-
     def test_valid_log_in_by_inactive_user(self):
         self.user.is_active = False
         self.user.save()
@@ -134,13 +114,6 @@ class LogInViewTestCase(TestCase, LogInTester, MenuTesterMixin):
         response = self.client.post(reverse('log_in'), {'username': '@student', 'password': 'Password123'})
         self.assertRedirects(response, reverse('student_dashboard'))
         
-    def tearDown(self):
-        # Remove test users to clean up after the test
-        """
-        self.admin_user.delete()
-        self.tutor_user.delete()
-        self.student_user.delete()
-        self.user.delete()"""
-        User.objects.all().delete()
+  
     
 

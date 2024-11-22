@@ -4,6 +4,7 @@ from django.urls import reverse
 from tutorials.forms import UserForm
 from tutorials.models import User
 from tutorials.tests.helpers import reverse_with_next
+from tutorials.views import ProfileUpdateView
 
 class ProfileViewTest(TestCase):
     fixtures = [
@@ -175,12 +176,24 @@ class ProfileViewTest(TestCase):
         self.assertEqual(self.student_user.last_name, 'smith')
         self.assertEqual(self.student_user.email, 'liam@gmail.com')
         self.assertEqual(self.student_user.role, 'student')
-        
-    def tearDown(self):
-        # Remove test users to clean up after the test
-        """
-        self.admin_user.delete()
-        self.tutor_user.delete()
-        self.student_user.delete()
-        self.user.delete()"""
-        User.objects.all().delete()
+  
+    def test_get_success_url_for_admin(self):
+        view = ProfileUpdateView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.admin_user
+
+        self.assertEqual(view.get_success_url(), reverse('admin_dashboard'))
+
+    def test_get_success_url_for_tutor(self):
+        view = ProfileUpdateView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.tutor_user
+
+        self.assertEqual(view.get_success_url(), reverse('tutor_page'))
+
+    def test_get_success_url_for_student(self):
+        view = ProfileUpdateView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.student_user
+
+        self.assertEqual(view.get_success_url(), reverse('student_dashboard'))

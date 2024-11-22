@@ -184,11 +184,4 @@ class SignUpViewTestCase(TestCase, LogInTester):
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'student_dashboard.html')
 
-    def tearDown(self):
-        # Remove test users to clean up after the test
-        """
-        self.admin_user.delete()
-        self.tutor_user.delete()
-        self.student_user.delete()
-        self.user.delete()"""
-        User.objects.all().delete()
+    
