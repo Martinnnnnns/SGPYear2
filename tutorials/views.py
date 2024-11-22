@@ -245,8 +245,17 @@ class PasswordView(LoginRequiredMixin, FormView):
         """Redirect the user after successful password change."""
 
         messages.add_message(self.request, messages.SUCCESS, "Password updated!")
-        return reverse('dashboard')
 
+        # Redirect based on user role
+        if self.request.user.role == 'admin':
+            return reverse('admin_dashboard')
+        elif self.request.user.role == 'tutor':
+            return reverse('tutor_page')
+        elif self.request.user.role == 'student':
+            return reverse('student_dashboard')
+        else:
+            # Default
+            return reverse('home')
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Display user profile editing screen, and handle profile modifications."""
@@ -304,3 +313,15 @@ class SignUpView(LoginProhibitedMixin, FormView):
     def get_success_url(self):
         #return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
         return self.success_url
+    
+    def get_redirect_when_logged_in_url(self):
+        """Redirect logged-in users based on their role."""
+        user = self.request.user
+        if user.role == 'admin':
+            return reverse('admin_dashboard')
+        elif user.role == 'tutor':
+            return reverse('tutor_page')
+        elif user.role == 'student':
+            return reverse('student_dashboard')
+        else:
+            return super().get_redirect_when_logged_in_url()
