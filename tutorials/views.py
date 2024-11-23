@@ -4,7 +4,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ImproperlyConfigured
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render,get_object_or_404
 from django.views import View
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
@@ -109,17 +109,22 @@ def admin_bookings_list(request):
     else:
         return render(request, 'home.html')
 
-
+""" <---- Student Views ----> """
+@login_required
 def student_dashboard(request):
     lessons = Lesson.objects.filter(student=request.user)
     invoices = Invoice.objects.filter(student=request.user)  
-    return render(request, 'student_dashboard.html', {'lessons': lessons , 'invoices':invoices})
+    return render(request, 'student_dashboard.html',{'lessons': lessons , 'invoices':invoices})
+
 def request_lesson(request):
     return render(request,'request_lesson.html')
+
 def student_profile(request):
     return render(request,'student_profile.html')
+
 def student_support(request):
     return render(request,'student_support.html')
+
 def download_invoice(request,invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id, student=request.user)
     response = HttpResponse(content_type='application/pdf')
@@ -138,6 +143,9 @@ def student_support(request):
 def profile(request):
     return render(request, 'student_profile.html')
     
+def lesson_detail(request, lesson_id):
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    return render(request, 'lesson_detail.html', {'lesson': lesson})
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
