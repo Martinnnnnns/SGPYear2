@@ -43,3 +43,10 @@ class ScheduleSessionsViewTests(TestCase):
         response = self.client.get(reverse('schedule_sessions'))
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith('/log_in/'))
+        
+    def tearDown(self):
+        # Remove test users to clean up after the test
+        """
+        self.tutor_user.delete()
+        self.student_user.delete()"""
+        User.objects.all().delete()

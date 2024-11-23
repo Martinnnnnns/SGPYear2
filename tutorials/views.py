@@ -59,38 +59,55 @@ def reports(request):
 
 """ <---- Admin Views ----> """
 
+@login_required
 def admin_dashboard(request):
-    return render(request, 'admin_dashboard.html')
+    if request.user.role == 'admin':
+        return render(request, 'admin_dashboard.html')
+    else:
+        return render(request, 'home.html')
 
+@login_required
 def admin_student_list(request):
-    students = User.objects.all()
+    if request.user.role == 'admin':
+        students = User.objects.filter(role=User.STUDENT)
 
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(students, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_student_list.html', {'page_obj': page_obj})
-    
+        # Creates a Paginator object and renders the specified page
+        paginator = Paginator(students, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        return render(request, 'admin_student_list.html', {'page_obj': page_obj})
+    else:
+        return render(request, 'home.html')
+
+@login_required
 def admin_tutor_list(request):
-    tutors = User.objects.all()
+    if request.user.role == 'admin':
+        tutors = User.objects.filter(role=User.TUTOR)
+        
+        # Creates a Paginator object and renders the specified page
+        paginator = Paginator(tutors, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
+    else:
+        return render(request, 'home.html')
 
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(tutors, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
-
+@login_required
 def admin_bookings_list(request):
-    bookings = User.objects.all()
+    if request.user.role == 'admin':
+        #bookings = User.objects.all()
+        bookings = Lesson.objects.all()
 
-    # Creates a Paginator object and renders the specified page
-    paginator = Paginator(bookings, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
+        # Creates a Paginator object and renders the specified page
+        paginator = Paginator(bookings, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
+    else:
+        return render(request, 'home.html')
 
 """ <---- Student Views ----> """
 @login_required
@@ -130,7 +147,6 @@ def lesson_detail(request, lesson_id):
     lesson = get_object_or_404(Lesson, id=lesson_id)
     return render(request, 'lesson_detail.html', {'lesson': lesson})
 
-
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
 
@@ -146,7 +162,7 @@ class LoginProhibitedMixin:
         url = self.get_redirect_when_logged_in_url()
         return redirect(url)
 
-    def get_redirect_when_logged_in_url(self):
+    def get_redirect_when_logged_in_url(self): 
         """Returns the url to redirect to when not logged in."""
         if self.redirect_when_logged_in_url is None:
             raise ImproperlyConfigured(
@@ -163,6 +179,10 @@ class LogInView(LoginProhibitedMixin, View):
 
     http_method_names = ['get', 'post']
     redirect_when_logged_in_url = settings.REDIRECT_URL_WHEN_LOGGED_IN
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.next = settings.REDIRECT_URL_WHEN_LOGGED_IN  # Initialises self.next for self.render further down
 
     def get(self, request):
         """Display log in template."""
@@ -171,14 +191,28 @@ class LogInView(LoginProhibitedMixin, View):
         return self.render()
 
     def post(self, request):
+        
         """Handle log in attempt."""
-
         form = LogInForm(request.POST)
-        self.next = request.POST.get('next') or settings.REDIRECT_URL_WHEN_LOGGED_IN
         user = form.get_user()
+
+        # Determine the redirect URL before checking login success
         if user is not None:
+            if user.role == 'admin':
+                self.next = 'admin_dashboard' 
+            elif user.role == 'tutor':
+                self.next = 'tutor_page' 
+            elif user.role == 'student':
+                self.next = 'student_dashboard'  
+            else: 
+                """come back"""
+                self.next = request.POST.get('next') or settings.REDIRECT_URL_WHEN_LOGGED_IN
+
+            # Log the user in and redirect
             login(request, user)
             return redirect(self.next)
+
+        # If authentication fails, show an error and re-render the form
         messages.add_message(request, messages.ERROR, "The credentials provided were invalid!")
         return self.render()
 
@@ -220,25 +254,45 @@ class PasswordView(LoginRequiredMixin, FormView):
         """Redirect the user after successful password change."""
 
         messages.add_message(self.request, messages.SUCCESS, "Password updated!")
-        return reverse('dashboard')
 
-
+        # Redirect based on user role
+        if self.request.user.role == 'admin':
+            return reverse('admin_dashboard')
+        elif self.request.user.role == 'tutor':
+            return reverse('tutor_page')
+        elif self.request.user.role == 'student':
+            return reverse('student_dashboard')
+        else:
+            # Default
+            return reverse('home') 
+            
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Display user profile editing screen, and handle profile modifications."""
-    
+
     model = UserForm
     template_name = "profile.html"
     form_class = UserForm
 
     def get_object(self):
         """Return the object (user) to be updated."""
-        user = self.request.user
-        return user
+        return self.request.user
 
     def get_success_url(self):
         """Return redirect URL after successful update."""
-        messages.add_message(self.request, messages.SUCCESS, "rofile updated!")
-        return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+        user = self.request.user
+
+        # URL is determined by role
+        if user.role == 'admin':
+            redirect_url_name = 'admin_dashboard'
+        elif user.role == 'tutor':
+            redirect_url_name = 'tutor_page'
+        elif user.role == 'student':
+            redirect_url_name = 'student_dashboard'
+        else:
+            redirect_url_name = settings.REDIRECT_URL_WHEN_LOGGED_IN
+
+        messages.add_message(self.request, messages.SUCCESS, "Profile updated!")
+        return reverse(redirect_url_name)  
 
 
 class SignUpView(LoginProhibitedMixin, FormView):
@@ -248,10 +302,38 @@ class SignUpView(LoginProhibitedMixin, FormView):
     template_name = "sign_up.html"
     redirect_when_logged_in_url = settings.REDIRECT_URL_WHEN_LOGGED_IN
 
-    def form_valid(self, form):
+    def form_valid(self, form): 
+        """come back"""
         self.object = form.save()
         login(self.request, self.object)
+        
+        # Set the redirection URL based on user role
+        if self.object.role == 'admin':
+            self.success_url = reverse('admin_dashboard')
+        elif self.object.role == 'tutor':
+            self.success_url = reverse('tutor_page')
+        elif self.object.role == 'student':
+            self.success_url = reverse('student_dashboard')
+        else:
+            # Default URL
+            self.success_url = reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+            
         return super().form_valid(form)
 
-    def get_success_url(self):
-        return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+    def get_success_url(self): 
+        """come back"""
+        #return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+        return self.success_url
+    
+    def get_redirect_when_logged_in_url(self):
+        """Redirect logged-in users based on their role."""
+        user = self.request.user
+        if user.role == 'admin':
+            return reverse('admin_dashboard')
+        elif user.role == 'tutor':
+            return reverse('tutor_page')
+        elif user.role == 'student':
+            return reverse('student_dashboard')
+        else:
+            return super().get_redirect_when_logged_in_url() 
+            """come back"""

@@ -4,6 +4,7 @@ from django.urls import reverse
 from tutorials.forms import UserForm
 from tutorials.models import User
 from tutorials.tests.helpers import reverse_with_next
+from tutorials.views import ProfileUpdateView
 
 class ProfileViewTest(TestCase):
     fixtures = [
@@ -21,6 +22,39 @@ class ProfileViewTest(TestCase):
             'email': 'johndoe2@example.org',
             'role': User.STUDENT
         }
+        self.admin_form_input = {
+            'first_name': 'bob',
+            'last_name': 'bobby',
+            'username': '@admin',
+            'email': 'bobby@gmail.com',
+            'new_password': 'Password123',
+            'password_confirmation': 'Password123',
+            'role': User.ADMIN
+        }
+
+        self.tutor_form_input = {
+            'first_name': 'angela',
+            'last_name': 'fred',
+            'username': '@tutor',
+            'email': 'angela@gmail.com',
+            'new_password': 'Password123',
+            'password_confirmation': 'Password123',
+            'role': User.TUTOR
+        }
+
+        self.student_form_input = {
+            'first_name': 'liam',
+            'last_name': 'smith',
+            'username': '@student',
+            'email': 'liam@gmail.com',
+            'new_password': 'Password123',
+            'password_confirmation': 'Password123',
+            'role': User.STUDENT
+        }
+        self.admin_user = User.objects.create_user(email="bobby@gmail.com", first_name="bob", last_name="bobby", username='@admin', password='Password123', role='admin')
+        self.tutor_user = User.objects.create_user(email="angela@gmail.com",first_name="angela", last_name="fred",username='@tutor', password='Password123', role='tutor')
+        self.student_user = User.objects.create_user(email="liam@gmail.com",first_name="liam", last_name="smith",username='@student', password='Password123', role='student')
+
 
     def test_profile_url(self):
         self.assertEqual(self.url, '/profile/')
@@ -75,26 +109,91 @@ class ProfileViewTest(TestCase):
         self.assertEqual(self.user.last_name, 'Doe')
         self.assertEqual(self.user.email, 'johndoe@example.org')
 
-    def test_succesful_profile_update(self):
-        self.client.login(username=self.user.username, password='Password123')
-        before_count = User.objects.count()
-        response = self.client.post(self.url, self.form_input, follow=True)
-        after_count = User.objects.count()
-        self.assertEqual(after_count, before_count)
-        response_url = reverse('dashboard')
-        self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
-        self.assertTemplateUsed(response, 'dashboard.html')
-        messages_list = list(response.context['messages'])
-        self.assertEqual(len(messages_list), 1)
-        self.assertEqual(messages_list[0].level, messages.SUCCESS)
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.username, '@johndoe2')
-        self.assertEqual(self.user.first_name, 'John2')
-        self.assertEqual(self.user.last_name, 'Doe2')
-        self.assertEqual(self.user.email, 'johndoe2@example.org')
-        self.assertEqual(self.user.role, User.STUDENT)
-
     def test_post_profile_redirects_when_not_logged_in(self):
         redirect_url = reverse_with_next('log_in', self.url)
         response = self.client.post(self.url, self.form_input)
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
+        
+    def test_successful_profile_update_admin(self):
+        self.client.login(username=self.admin_user.username, password='Password123')
+        before_count = User.objects.count()
+        response = self.client.post(self.url, self.admin_form_input, follow=True)
+        after_count = User.objects.count()
+        
+        self.assertEqual(after_count, before_count)
+        response_url = reverse('admin_dashboard')  # Redirect URL for admin
+        self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
+        self.assertTemplateUsed(response, 'admin_dashboard.html')  # Change this to actual template
+        messages_list = list(response.context['messages'])
+        self.assertEqual(len(messages_list), 1)
+        self.assertEqual(messages_list[0].level, messages.SUCCESS)
+        
+        self.admin_user.refresh_from_db()
+        self.assertEqual(self.admin_user.username, '@admin')
+        self.assertEqual(self.admin_user.first_name, 'bob')
+        self.assertEqual(self.admin_user.last_name, 'bobby')
+        self.assertEqual(self.admin_user.email, 'bobby@gmail.com')
+        self.assertEqual(self.admin_user.role, 'admin')
+    
+    def test_successful_profile_update_tutor(self):
+        self.client.login(username=self.tutor_user.username, password='Password123')
+        before_count = User.objects.count()
+        response = self.client.post(self.url, self.tutor_form_input, follow=True)
+        after_count = User.objects.count()
+        
+        self.assertEqual(after_count, before_count)
+        response_url = reverse('tutor_page')  # Redirect URL for tutor
+        self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
+        self.assertTemplateUsed(response, 'tutor_page.html')  # Change this to actual template
+        messages_list = list(response.context['messages'])
+        self.assertEqual(len(messages_list), 1)
+        self.assertEqual(messages_list[0].level, messages.SUCCESS)
+        
+        self.tutor_user.refresh_from_db()
+        self.assertEqual(self.tutor_user.username, '@tutor')
+        self.assertEqual(self.tutor_user.first_name, 'angela')
+        self.assertEqual(self.tutor_user.last_name, 'fred')
+        self.assertEqual(self.tutor_user.email, 'angela@gmail.com')
+        self.assertEqual(self.tutor_user.role, 'tutor')
+    
+    def test_successful_profile_update_student(self):
+        self.client.login(username=self.student_user.username, password='Password123')
+        before_count = User.objects.count()
+        response = self.client.post(self.url, self.student_form_input, follow=True)
+        after_count = User.objects.count()
+        
+        self.assertEqual(after_count, before_count)
+        response_url = reverse('student_dashboard')  # Redirect URL for student
+        self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
+        self.assertTemplateUsed(response, 'student_dashboard.html')  # Change this to actual template
+        messages_list = list(response.context['messages'])
+        self.assertEqual(len(messages_list), 1)
+        self.assertEqual(messages_list[0].level, messages.SUCCESS)
+        
+        self.student_user.refresh_from_db()
+        self.assertEqual(self.student_user.username, '@student')
+        self.assertEqual(self.student_user.first_name, 'liam')
+        self.assertEqual(self.student_user.last_name, 'smith')
+        self.assertEqual(self.student_user.email, 'liam@gmail.com')
+        self.assertEqual(self.student_user.role, 'student')
+  
+    def test_get_success_url_for_admin(self):
+        view = ProfileUpdateView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.admin_user
+
+        self.assertEqual(view.get_success_url(), reverse('admin_dashboard'))
+
+    def test_get_success_url_for_tutor(self):
+        view = ProfileUpdateView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.tutor_user
+
+        self.assertEqual(view.get_success_url(), reverse('tutor_page'))
+
+    def test_get_success_url_for_student(self):
+        view = ProfileUpdateView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.student_user
+
+        self.assertEqual(view.get_success_url(), reverse('student_dashboard'))

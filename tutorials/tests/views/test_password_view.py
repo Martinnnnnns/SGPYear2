@@ -6,6 +6,7 @@ from django.urls import reverse
 from tutorials.forms import PasswordForm
 from tutorials.models import User
 from tutorials.tests.helpers import reverse_with_next
+from tutorials.views import PasswordView
 
 class PasswordViewTest(TestCase):
     """Test suite for the password view."""
@@ -22,6 +23,10 @@ class PasswordViewTest(TestCase):
             'new_password': 'NewPassword123',
             'password_confirmation': 'NewPassword123',
         }
+        self.admin_user = User.objects.create_user(email="bobby@gmail.com", first_name="bob", last_name="bobby", username='@admin', password='Password123', role='admin')
+        self.tutor_user = User.objects.create_user(email="angela@gmail.com",first_name="angela", last_name="fred",username='@tutor', password='Password123', role='tutor')
+        self.student_user = User.objects.create_user(email="liam@gmail.com",first_name="liam", last_name="smith",username='@student', password='Password123', role='student')
+
 
     def test_password_url(self):
         self.assertEqual(self.url, '/password/')
@@ -38,16 +43,6 @@ class PasswordViewTest(TestCase):
         redirect_url = reverse_with_next('log_in', self.url)
         response = self.client.get(self.url)
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
-
-    def test_succesful_password_change(self):
-        self.client.login(username=self.user.username, password='Password123')
-        response = self.client.post(self.url, self.form_input, follow=True)
-        response_url = reverse('dashboard')
-        self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
-        self.assertTemplateUsed(response, 'dashboard.html')
-        self.user.refresh_from_db()
-        is_password_correct = check_password('NewPassword123', self.user.password)
-        self.assertTrue(is_password_correct)
 
     def test_password_change_unsuccesful_without_correct_old_password(self):
         self.client.login(username=self.user.username, password='Password123')
@@ -79,3 +74,54 @@ class PasswordViewTest(TestCase):
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
         is_password_correct = check_password('Password123', self.user.password)
         self.assertTrue(is_password_correct)
+        
+    def test_successful_password_change_admin(self):
+        self.client.login(username=self.admin_user.username, password='Password123')
+        response = self.client.post(self.url, self.form_input, follow=True)
+        response_url = reverse('admin_dashboard')  
+        self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
+        self.assertTemplateUsed(response, 'admin_dashboard.html')  
+        self.admin_user.refresh_from_db()
+        is_password_correct = check_password('NewPassword123', self.admin_user.password)
+        self.assertTrue(is_password_correct)
+    
+    def test_successful_password_change_tutor(self):
+        self.client.login(username=self.tutor_user.username, password='Password123')
+        response = self.client.post(self.url, self.form_input, follow=True)
+        response_url = reverse('tutor_page')  
+        self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
+        self.assertTemplateUsed(response, 'tutor_page.html')  
+        self.tutor_user.refresh_from_db()
+        is_password_correct = check_password('NewPassword123', self.tutor_user.password)
+        self.assertTrue(is_password_correct)
+
+    def test_successful_password_change_student(self):
+        self.client.login(username=self.student_user.username, password='Password123')
+        response = self.client.post(self.url, self.form_input, follow=True)
+        response_url = reverse('student_dashboard') 
+        self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
+        self.assertTemplateUsed(response, 'student_dashboard.html')  
+        self.student_user.refresh_from_db()
+        is_password_correct = check_password('NewPassword123', self.student_user.password)
+        self.assertTrue(is_password_correct)
+        
+    def test_get_success_url_for_admin(self):
+        view = PasswordView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.admin_user
+
+        self.assertEqual(view.get_success_url(), reverse('admin_dashboard'))
+
+    def test_get_success_url_for_tutor(self):
+        view = PasswordView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.tutor_user
+
+        self.assertEqual(view.get_success_url(), reverse('tutor_page'))
+
+    def test_get_success_url_for_student(self):
+        view = PasswordView()
+        view.request = self.client.request().wsgi_request
+        view.request.user = self.student_user
+
+        self.assertEqual(view.get_success_url(), reverse('student_dashboard'))

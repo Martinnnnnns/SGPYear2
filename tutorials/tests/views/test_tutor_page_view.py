@@ -51,4 +51,14 @@ class TutorPageTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith('/log_in/'))
 
+    def tearDown(self):
+        # Remove test users to clean up after the test
+        """
+        self.admin_user.delete()
+        self.tutor_user.delete()
+        self.student_user.delete()
+        self.user.delete()"""
+        User.objects.all().delete()
+
+
     
