@@ -1,8 +1,10 @@
 """Forms for the tutorials app."""
 from django import forms
+from bootstrap_datepicker_plus.widgets import DateTimePickerInput, DatePickerInput
 from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
-from .models import User
+from .models import User, ProgrammingLanguage, Subject, LessonRequest
+from datetime import datetime, timedelta
 
 class LogInForm(forms.Form):
     """Form enabling registered users to log in."""
@@ -106,3 +108,40 @@ class SignUpForm(NewPasswordMixin, forms.ModelForm):
             role=self.cleaned_data.get('role'),
         )
         return user
+    
+
+class LessonRequestForm(forms.Form):
+    """Form for student lesson requests."""
+    # Date field for lesson date
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+
+    # Time fields for start and end times with manual 30-minute intervals
+    TIME_CHOICES = [
+        (f"{hour:02}:{minute:02}", f"{hour:02}:{minute:02}")
+        for hour in range(24)
+        for minute in (0, 30)
+    ]
+    
+    start_time = forms.ChoiceField(choices=TIME_CHOICES)
+    end_time = forms.ChoiceField(choices=TIME_CHOICES)
+    language = forms.ModelChoiceField(queryset=ProgrammingLanguage.objects.all(), required=True)
+    subject = forms.ModelChoiceField(queryset=Subject.objects.all(), required=False)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        lesson_date = cleaned_data.get('date')
+        start_time_str = cleaned_data.get('start_time')
+        end_time_str = cleaned_data.get('end_time')
+
+        if not (lesson_date and start_time_str and end_time_str):
+            return cleaned_data
+
+        start_time = datetime.strptime(start_time_str, '%H:%M')
+        end_time = datetime.strptime(end_time_str, '%H:%M')
+        start_datetime = datetime.combine(lesson_date, start_time.time())
+        end_datetime = datetime.combine(lesson_date, end_time.time())
+
+        # Add start and end datetime to cleaned_data
+        cleaned_data['start_datetime'] = start_datetime
+        cleaned_data['end_datetime'] = end_datetime
+        return cleaned_data

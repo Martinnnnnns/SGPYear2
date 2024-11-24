@@ -1,16 +1,18 @@
+from datetime import datetime
 from django.conf import settings
 from django.contrib import messages
+from django.http import HttpRequest, HttpResponse
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.shortcuts import redirect, render,get_object_or_404
 from django.views import View
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
-from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
+from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm
 from tutorials.helpers import login_prohibited
-from tutorials.models import User
+from tutorials.models import User, LessonRequest
 from .models import User,Lesson,Invoice
 from django.core.paginator import Paginator
 
@@ -112,12 +114,54 @@ def admin_bookings_list(request):
 """ <---- Student Views ----> """
 @login_required
 def student_dashboard(request):
+    user = User.objects.get(pk=request.user.id)
+    print(f"Current user is: {user}")
     lessons = Lesson.objects.filter(student=request.user)
     invoices = Invoice.objects.filter(student=request.user)  
-    return render(request, 'student_dashboard.html',{'lessons': lessons , 'invoices':invoices})
+    
+    lesson_requests = user.lesson_request.all()
+    print(lesson_requests)
+    return render(request, 'student_dashboard.html',{'lessons': lessons , 'invoices':invoices, "lesson_requests":lesson_requests})
 
-def request_lesson(request):
-    return render(request,'request_lesson.html')
+@login_required
+def make_lesson_request(request: HttpRequest):
+    """View for students to request lessons."""
+    student = User.objects.get(pk=request.user.id)  #Assume logged-in user
+
+    if request.method == 'POST':
+        form = LessonRequestForm(request.POST)
+        if form.is_valid():
+            lesson_request = LessonRequest(
+                user=student,
+                start_datetime=form.cleaned_data["start_datetime"],
+                end_datetime=form.cleaned_data["end_datetime"],
+                language=form.cleaned_data["language"],
+                subject=form.cleaned_data["subject"]
+            )
+            try:
+                lesson_request.clean()  #Model-level validation
+                lesson_request.save()  #Save to the database if no validation errors
+                return redirect('request_made')  
+            except ValidationError as e:
+                form.add_error(None, e)  # You can customize this to add specific errors
+                return render(request, 'make_lesson_request.html', {'form': form})
+
+    else:
+        form = LessonRequestForm()
+    return render(request, 'make_lesson_request.html', {'form': form})
+
+def combine_date_and_time(date_str, time_str):
+    """Helper function to combine date and time into a datetime object"""
+    if date_str and time_str:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date() 
+        hour, minute = map(int, time_str.split(':'))  # Assumes time is in 'HH:MM' format
+        
+        return datetime.combine(date_obj, datetime.min.time()).replace(hour=hour, minute=minute)
+    return None
+
+@login_required
+def lesson_made(request: HttpRequest):
+    return render(request, 'make_another_request.html')
 
 def student_profile(request):
     return render(request,'student_profile.html')

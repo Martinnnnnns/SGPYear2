@@ -25,10 +25,10 @@
     </div>
   </div>
 
-  <!-- Main Content: Lessons on the Left and Invoices on the Right -->
+  <!-- Main Content: Lessons, Invoices, Lesson Requests -->
   <div class="row">
     <!-- Lessons Section -->
-    <div class="col-md-6">
+    <div class="col-md-3">
       <h2>Your Lessons</h2>
       {% if lessons %}
       <div class="table-responsive">
@@ -69,7 +69,7 @@
     </div>
 
     <!-- Invoices Section -->
-    <div class="col-md-6">
+    <div class="col-md-3">
       <h2>Your Invoices</h2>
       {% if invoices %}
       <div class="table-responsive">
@@ -108,7 +108,48 @@
       <p class="text-warning">No invoices available.</p>
       {% endif %}
     </div>
+
+    <!-- Lesson Requests Section -->
+    <div class="col-md-6">
+      <h2>Lesson Requests</h2>
+      {% if lesson_requests %}
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead class="table-dark">
+            <tr>
+              <th>Date</th>
+              <th>Times</th>
+              <th>Language</th>
+              <th>Subject</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lr in lesson_requests %}
+            <tr>
+              <td>{{ lr.start_datetime|date:"N j, Y" }}</td>
+              <td>
+                {{ lr.start_datetime|date:"h:i" }} - {{ lr.end_datetime|date:"h:i A" }}
+              </td>
+              <td>{{ lr.language }}</td>
+              <td>
+                {% if lr.subject.name %}
+                  {{ lr.subject.name }}
+                {% else %}
+                  General
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-warning">No pending lesson requests.</p>
+      {% endif %}
+    </div>
   </div>
+</div>
+
 
   <!-- Quick Actions at the Bottom -->
   <div class="row fixed-bottom bg-light py-3">
