@@ -1,8 +1,9 @@
-from datetime import datetime
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from tutorials.models import Lesson, Invoice, Subject, ProgrammingLanguage
+from django.utils import timezone
+from tutorials.models import Lesson, Invoice, Subject, ProgrammingLanguage, LessonRequest
 
 User = get_user_model()
 
@@ -17,13 +18,9 @@ class StudentDashboardViewTest(TestCase):
             last_name='Doe'
         )
 
-        # Log the user in
         self.client.login(username='testuser', password='password123')
-
-        # Create a programming language
         self.language = ProgrammingLanguage.objects.create(name="Python")
 
-        # Create a subject with the same language as the lesson
         self.subject = Subject.objects.create(
             name='Mathematics',
             language=self.language
@@ -35,13 +32,13 @@ class StudentDashboardViewTest(TestCase):
             tutor=self.user,  # Assuming the same user can be a tutor for test purposes
             language=self.language,
             subject=self.subject,
-            lesson_datetime=datetime.now()  # Providing a default datetime
+            lesson_datetime=timezone.now()  # Providing a default datetime
         )
         self.lesson2 = Lesson.objects.create(
             student=self.user,
             tutor=self.user,
             language=self.language,
-            lesson_datetime=datetime.now()  # Providing a default datetime
+            lesson_datetime=timezone.now()  # Providing a default datetime
         )  # No subject (general lesson)
 
         # Create some invoices
@@ -56,6 +53,14 @@ class StudentDashboardViewTest(TestCase):
             date='2024-11-16',
             student=self.user,
             status='unpaid'
+        )
+
+        self.lesson_request = LessonRequest(
+            user=self.user,
+            start_datetime=timezone.now() ,
+            end_datetime=timezone.now() + timezone.timedelta(minutes=45),
+            language=self.language,
+            subject=self.subject
         )
 
     def test_dashboard_renders_correct_template(self):
@@ -77,3 +82,18 @@ class StudentDashboardViewTest(TestCase):
         self.assertContains(response, f'${self.invoice2.amount}')
         self.assertContains(response, 'Paid')
         self.assertContains(response, 'Unpaid')
+
+    def test_lesson_requests_displayed_on_dashboard(self):
+        """Ensure lesson requests assigned to the user are displayed on the dashboard."""
+        response = self.client.get(reverse('student_dashboard'))
+        
+        # Check that lesson requests are displayed correctly
+        self.assertEqual(response.context["lesson_requests"].count(), 0)
+        self.assertContains(response, self.lesson_request.subject.name)
+        self.assertContains(response, self.language.name)
+
+    def test_no_lesson_requests_displayed_on_dashboard(self):
+        """Ensure the dashboard doesn't display lesson requests when there are none."""
+        LessonRequest.objects.all().delete()
+        response = self.client.get(reverse('student_dashboard'))
+        self.assertContains(response, 'pending')

@@ -19,7 +19,7 @@
 {% block content %}
 <div class="container mt-5">
   <!-- Welcome Message -->
-  <div class="row mb-4">
+  <div class="row mb-3">
     <div class="col-12 text-center">
       <h1 class="mb-4">Welcome, {{ user.first_name }}!</h1>
     </div>
@@ -28,14 +28,13 @@
   <!-- Main Content: Lessons, Invoices, Lesson Requests -->
   <div class="row">
     <!-- Lessons Section -->
-    <div class="col-md-3">
+    <div class="col-md">
       <h2>Your Lessons</h2>
       {% if lessons %}
       <div class="table-responsive">
         <table class="table table-striped table-hover">
           <thead class="table-dark">
             <tr>
-              <th>Title</th>
               <th>Subject</th>
               <th>Language</th>
               <th>Date</th>
@@ -45,7 +44,6 @@
           <tbody>
             {% for lesson in lessons %}
             <tr>
-              <td>{{ lesson.title }}</td>
               <td>
                 {% if lesson.subject %}
                   {{ lesson.subject.name }}
@@ -54,7 +52,7 @@
                 {% endif %}
               </td>
               <td>{{ lesson.language.name }}</td>
-              <td>{{ lesson.date|date:"F j, Y" }}</td>
+              <td>{{ lesson.lesson_datetime|date:"F j, Y" }}</td>
               <td>
                 <a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-sm btn-primary">View</a>
               </td>
@@ -69,7 +67,7 @@
     </div>
 
     <!-- Invoices Section -->
-    <div class="col-md-3">
+    <div class="col-md">
       <h2>Your Invoices</h2>
       {% if invoices %}
       <div class="table-responsive">
@@ -87,7 +85,7 @@
             {% for invoice in invoices %}
             <tr>
               <td>{{ invoice.id }}</td>
-              <td>{{ invoice.date|date:"F j, Y" }}</td>
+              <td>{{ invoice.date|date:"N j, Y" }}</td>
               <td>${{ invoice.amount }}</td>
               <td>
                 {% if invoice.status == 'paid' %}
@@ -110,7 +108,7 @@
     </div>
 
     <!-- Lesson Requests Section -->
-    <div class="col-md-6">
+    <div class="col-md">
       <h2>Lesson Requests</h2>
       {% if lesson_requests %}
       <div class="table-responsive">

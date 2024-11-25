@@ -1,6 +1,5 @@
 """Forms for the tutorials app."""
 from django import forms
-from bootstrap_datepicker_plus.widgets import DateTimePickerInput, DatePickerInput
 from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
 from .models import User, ProgrammingLanguage, Subject, LessonRequest
@@ -112,10 +111,9 @@ class SignUpForm(NewPasswordMixin, forms.ModelForm):
 
 class LessonRequestForm(forms.Form):
     """Form for student lesson requests."""
-    # Date field for lesson date
     date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
 
-    # Time fields for start and end times with manual 30-minute intervals
+    #Time fields for start and end times with manual 30-minute intervals
     TIME_CHOICES = [
         (f"{hour:02}:{minute:02}", f"{hour:02}:{minute:02}")
         for hour in range(24)
@@ -141,7 +139,7 @@ class LessonRequestForm(forms.Form):
         start_datetime = datetime.combine(lesson_date, start_time.time())
         end_datetime = datetime.combine(lesson_date, end_time.time())
 
-        # Add start and end datetime to cleaned_data
+        #Add start and end datetime to cleaned_data
         cleaned_data['start_datetime'] = start_datetime
         cleaned_data['end_datetime'] = end_datetime
         return cleaned_data
