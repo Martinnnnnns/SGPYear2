@@ -8,6 +8,25 @@ class LessonRequestTests(TestCase):
         self.user = User.objects.create(username="test_user")
         self.language = ProgrammingLanguage.objects.create(name="Python")
         self.subject = Subject.objects.create(name="Django", language=self.language)
+        self.start_datetime = now() + timedelta(days=1)  
+        self.end_datetime = self.start_datetime + timedelta(hours=1) 
+        self.lesson_request = LessonRequest.objects.create(
+            user=self.user,
+            start_datetime=self.start_datetime,
+            end_datetime=self.end_datetime,
+            language=self.language,
+            subject=self.subject,
+        )
+
+    def test_lesson_request_str_method(self):
+        expected_str = (
+            f"Lesson Request by {self.user.username} "
+            f"({self.subject.name} - {self.language.name}) from "
+            f"{self.start_datetime.strftime('%Y-%m-%d %H:%M')} to "
+            f"{self.end_datetime.strftime('%Y-%m-%d %H:%M')}"
+        )
+        self.assertEqual(str(self.lesson_request), expected_str)
+
 
     def test_valid_lesson_request(self):
         start_time = now() + timedelta(hours=1)
