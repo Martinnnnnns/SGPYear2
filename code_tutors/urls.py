@@ -21,6 +21,8 @@ from django.urls import path,include
 from tutorials import views
 
 
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.home, name='home'),
@@ -44,5 +46,6 @@ urlpatterns = [
     path('tutor_page/', views.tutor_page, name='tutor_page'),
     path('tutor_page/schedule_sessions', views.schedule_sessions, name='schedule_sessions'),
     path('tutor_page/reports', views.reports, name='reports'),
+    path('trigger_matching/', views.trigger_matching, name='trigger_matching'),
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
