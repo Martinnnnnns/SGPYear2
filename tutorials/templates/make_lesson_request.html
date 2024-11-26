@@ -1,0 +1,21 @@
+{% extends 'base_content.html' %}
+
+{% block extra_imports %}
+{% load crispy_forms_tags %}
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center vh-80 py-4">
+    <div class="col-sm-4 col-md-4 p-4 border rounded shadow mt-4">
+        <h1 class="text-start mb-4">Request a Lesson</h1>
+
+        <!-- Form Container -->
+        <form method="post" action="{% url 'request_lesson' %}">
+            {% csrf_token %}
+            {{ form | crispy }}
+            <button type="submit" class="btn btn-primary btn-block mt-3">Create Event</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

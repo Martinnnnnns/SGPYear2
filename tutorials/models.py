@@ -2,6 +2,7 @@ from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 from libgravatar import Gravatar
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
@@ -9,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from libgravatar import Gravatar
+from datetime import datetime, timedelta
 
 class User(AbstractUser):
     """Model used for user authentication, and team member related information."""
@@ -111,7 +113,6 @@ class Lesson(models.Model):
         ordering = ["tutor", "student", "language", 'subject']
 
                 
-        
 class Invoice(models.Model):
     """
     Represents an invoice for a student.
@@ -130,3 +131,55 @@ class Invoice(models.Model):
     def __str__(self):
         return f"Invoice {self.id} for {self.student.username} - {self.status}"
 
+class LessonRequest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lesson_request')
+    start_datetime = models.DateTimeField(blank=False)
+    end_datetime = models.DateTimeField(blank=False)
+    language = models.ForeignKey(ProgrammingLanguage, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True)
+    
+    def clean(self):
+        # Convert naive datetime to aware datetime if needed
+        if timezone.is_naive(self.start_datetime):
+            self.start_datetime = timezone.make_aware(self.start_datetime)
+        if timezone.is_naive(self.end_datetime):
+            self.end_datetime = timezone.make_aware(self.end_datetime)
+
+        if not self.is_future_datetime(self.start_datetime):
+            raise ValidationError("Lesson must be on a future date and time.")
+        if not self.is_future_datetime(self.end_datetime):
+            raise ValidationError("Lesson must be on a future date and time.")
+        
+        if not self.is_end_after_start(self.start_datetime, self.end_datetime):
+            raise ValidationError("End time must be after start time.")
+
+        if not self.is_minimum_duration(self.start_datetime, self.end_datetime):
+            raise ValidationError("The duration must be at least 30 minutes.")
+        
+        if self.subject and self.language and not self.is_subject_language_matching(self.subject, self.language):
+            raise ValidationError(
+                f"{self.subject.name}' isn't a subject of '{self.language}'."
+            )
+        
+        if LessonRequest.objects.filter(user=self.user, start_datetime=self.start_datetime).exists():
+            raise ValidationError("A lesson request for this time already exists.")
+        
+    def is_future_datetime(self, datetime_value):
+        """Check if the datetime is in the future."""
+        return datetime_value > timezone.now()
+
+    def is_end_after_start(self, start_datetime, end_datetime):
+        """Check that the end time is after the start time."""
+        return end_datetime > start_datetime
+
+    def is_minimum_duration(self, start_datetime, end_datetime):
+        """Check that the duration is at least 30 minutes."""
+        return end_datetime - start_datetime >= timedelta(minutes=30)
+
+    def is_subject_language_matching(self, subject, language):
+        """Check that the subject belongs to the correct language."""
+        return subject.language == language
+        
+    def __str__(self):
+        subject_name = self.subject.name if self.subject else "No subject"
+        return f"Lesson Request by {self.user.username} ({subject_name} - {self.language.name}) from {self.start_datetime.strftime('%Y-%m-%d %H:%M')} to {self.end_datetime.strftime('%Y-%m-%d %H:%M')}"

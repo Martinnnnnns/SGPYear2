@@ -1,16 +1,18 @@
+from datetime import datetime
 from django.conf import settings
 from django.contrib import messages
+from django.http import HttpRequest, HttpResponse
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.shortcuts import redirect, render,get_object_or_404
 from django.views import View
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
-from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
+from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm
 from tutorials.helpers import login_prohibited
-from tutorials.models import User
+from tutorials.models import User, LessonRequest
 from .models import User,Lesson,Invoice
 from django.core.paginator import Paginator
 
@@ -112,40 +114,87 @@ def admin_bookings_list(request):
 """ <---- Student Views ----> """
 @login_required
 def student_dashboard(request):
+    """Student dashboard."""
+    user = User.objects.get(pk=request.user.id)
     lessons = Lesson.objects.filter(student=request.user)
     invoices = Invoice.objects.filter(student=request.user)  
-    return render(request, 'student_dashboard.html',{'lessons': lessons , 'invoices':invoices})
+    lesson_requests = user.lesson_request.all()
+    return render(request, 'student_dashboard.html',{'lessons': lessons , 'invoices':invoices, "lesson_requests":lesson_requests})
 
-def request_lesson(request):
-    return render(request,'request_lesson.html')
+@login_required
+def make_lesson_request(request: HttpRequest):
+    """View for students to request lessons."""
+    student = User.objects.get(pk=request.user.id)  #Assume logged-in user
+    if request.method == 'POST':
+        form = LessonRequestForm(request.POST)
+        if form.is_valid():
+            lesson_request = LessonRequest(
+                user=student,
+                start_datetime=form.cleaned_data["start_datetime"],
+                end_datetime=form.cleaned_data["end_datetime"],
+                language=form.cleaned_data["language"],
+                subject=form.cleaned_data["subject"]
+            )
+            try:
+                lesson_request.clean()  #Model-level validation
+                lesson_request.save()  #Save to the database if no validation errors
+                return redirect('request_made')  
+            except ValidationError as e:
+                form.add_error(None, e)  
+                return render(request, 'make_lesson_request.html', {'form': form})
 
+    else:
+        form = LessonRequestForm()
+    return render(request, 'make_lesson_request.html', {'form': form})
+
+def combine_date_and_time(date_str, time_str):
+    """Helper function to combine date and time into a datetime object"""
+    try:
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+        time_obj = datetime.strptime(time_str, "%H:%M").time()
+        return datetime.combine(date_obj, time_obj)
+    except ValueError:
+        return None
+
+@login_required
+def lesson_made(request: HttpRequest):
+    """Landing page upon successful lesson request made."""
+    return render(request, 'make_another_request.html')
+
+@login_required  
 def student_profile(request):
+    """View student profile."""
     return render(request,'student_profile.html')
 
+@login_required  
 def student_support(request):
+    """View student support page."""
     return render(request,'student_support.html')
 
+@login_required  
 def download_invoice(request,invoice_id):
+    """Download invoices - NOT FUNCTIONAL YET."""
     invoice = get_object_or_404(Invoice, id=invoice_id, student=request.user)
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.id}.pdf"'
     response.write("the amount paid is this number")  
     return response
 
+@login_required  
 def student_support(request):
+    """View FAQ page."""
     faqs = [
         {"question": "How do I reset my password?", "answer": "Go to the login page and click 'Forgot Password'."},
         {"question": "How do I contact my instructor?", "answer": "Navigate to the Lessons section and click on the instructor's name."},
         {"question": "What are the system requirements?", "answer": "The platform works best on modern web browsers like Chrome or Firefox."}
     ]
     return render(request, 'student_support.html', {'faqs': faqs})
-
-def profile(request):
-    return render(request, 'student_profile.html')
     
+@login_required    
 def lesson_detail(request, lesson_id):
+    """Display individual lesson details after clicking icon on student dashboard."""
     lesson = get_object_or_404(Lesson, id=lesson_id)
-    return render(request, 'lesson_detail.html', {'lesson': lesson})
+    return render(request, 'lesson_detail.html', context={"lesson": lesson})
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""

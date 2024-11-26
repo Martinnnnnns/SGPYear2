@@ -42,7 +42,7 @@ class LessonTestCase(TestCase):
         self.assertEqual(lesson.language.name, "Python")
         self.assertIsNone(lesson.subject)
         self.assertEqual(lesson.lesson_datetime, lesson_datetime)
-        self.assertEqual(str(lesson), f"Lesson in Python (General) at {lesson_datetime}")
+        self.assertEqual(str(lesson), f"Python Lesson (General) at {lesson_datetime} between tutor {self.tutor.full_name()} and student {self.student.full_name()}")
 
     def test_subject_language_match(self):
         """Test that a lesson raises a ValidationError if the subject's language does not match the lesson's language."""

@@ -33,8 +33,6 @@ class TutorPageTestCase(TestCase):
         """Test that a user with the 'Tutor' role can access the tutor page."""
         self.client.login(username='@tutor_user', password='testpassword123')
         response = self.client.get(reverse('tutor_page'))
-        print(f'User role: {self.tutor_user.role}')
-        print(response.content)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'tutor_page.html') 
 
