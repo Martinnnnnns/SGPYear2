@@ -2,8 +2,11 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
-from .models import User, ProgrammingLanguage, Subject, LessonRequest
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from .models import User, ProgrammingLanguage, Subject, LessonRequest, TutorAvailability
 from datetime import datetime, timedelta
+from django.db import models
 
 class LogInForm(forms.Form):
     """Form enabling registered users to log in."""
@@ -142,4 +145,61 @@ class LessonRequestForm(forms.Form):
         #Add start and end datetime to cleaned_data
         cleaned_data['start_datetime'] = start_datetime
         cleaned_data['end_datetime'] = end_datetime
+        return cleaned_data
+
+class TutorAvailabilityForm(forms.ModelForm):
+    """Form for tutors to set their availability."""
+    date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'min': timezone.now().date().isoformat()
+        })
+    )
+    start_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={
+            'type': 'time',
+            'class': 'form-control'
+        })
+    )
+    end_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={
+            'type': 'time',
+            'class': 'form-control'
+        })
+    )
+
+    class Meta:
+        model = TutorAvailability
+        fields = ['date', 'start_time', 'end_time']
+
+    def __init__(self, *args, **kwargs):
+        self.tutor = kwargs.pop('tutor', None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        date = cleaned_data.get('date')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+
+        if date and start_time and end_time:
+            if date < timezone.now().date():
+                self.add_error('date', "Cannot set availability for past dates")
+
+            if end_time <= start_time:
+                self.add_error('end_time', "End time must be after start time")
+
+            if self.tutor:
+                overlapping = TutorAvailability.objects.filter(
+                    tutor=self.tutor,
+                    date=date
+                ).filter(
+                    models.Q(start_time__lt=end_time, end_time__gt=start_time)
+                )
+                
+                if overlapping.exists():
+                    self.add_error('start_time', "This time slot overlaps with existing availability")
+                    self.add_error('end_time', "This time slot overlaps with existing availability")
+
         return cleaned_data

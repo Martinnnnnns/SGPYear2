@@ -6,18 +6,15 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.shortcuts import redirect, render,get_object_or_404
+from django.shortcuts import redirect, render, get_object_or_404
 from django.views import View
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
-from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm
+from django.utils import timezone
+import calendar
+from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
 from tutorials.helpers import login_prohibited
-from tutorials.models import User, LessonRequest
-from .models import User,Lesson,Invoice
-from django.core.paginator import Paginator
-
-from .models import User
-
+from tutorials.models import User, LessonRequest, TutorAvailability, Lesson, Invoice
 from django.core.paginator import Paginator
 
 
@@ -386,3 +383,75 @@ class SignUpView(LoginProhibitedMixin, FormView):
         else:
             return super().get_redirect_when_logged_in_url() 
             """come back"""
+
+@login_required
+def schedule_sessions(request):
+    if request.user.role != 'tutor':
+        return redirect('home')
+        
+    if request.method == 'POST':
+        form = TutorAvailabilityForm(request.POST, tutor=request.user)
+        if form.is_valid():
+            availability = form.save(commit=False)
+            availability.tutor = request.user
+            availability.save()
+            request.session['success_message'] = "Availability slot added successfully"
+            return redirect('schedule_sessions')
+    else:
+        form = TutorAvailabilityForm(tutor=request.user)
+
+    success_message = request.session.pop('success_message', None)
+    
+    try:
+        month = int(request.GET.get('month', timezone.now().month))
+        year = int(request.GET.get('year', timezone.now().year))
+    except ValueError:
+        month = timezone.now().month
+        year = timezone.now().year
+    
+    cal = calendar.monthcalendar(year, month)
+    
+    if month == 1:
+        prev_month = 12
+        prev_year = year - 1
+    else:
+        prev_month = month - 1
+        prev_year = year
+        
+    if month == 12:
+        next_month = 1
+        next_year = year + 1
+    else:
+        next_month = month + 1
+        next_year = year
+    
+    month_slots = TutorAvailability.objects.filter(
+        tutor=request.user,
+        date__year=year,
+        date__month=month
+    ).order_by('date', 'start_time')
+
+    calendar_with_slots = []
+    for week in cal:
+        week_slots = []
+        for day in week:
+            if day != 0:
+                day_slots = [slot for slot in month_slots if slot.date.day == day]
+            else:
+                day_slots = []
+            week_slots.append({'day': day, 'slots': day_slots})
+        calendar_with_slots.append(week_slots)
+
+    context = {
+        'form': form,
+        'calendar': calendar_with_slots,
+        'month_name': calendar.month_name[month],
+        'year': year,
+        'success_message': success_message,
+        'prev_month': prev_month,
+        'prev_year': prev_year,
+        'next_month': next_month,
+        'next_year': next_year,
+    }
+    
+    return render(request, 'schedule_sessions.html', context)

@@ -183,3 +183,14 @@ class LessonRequest(models.Model):
     def __str__(self):
         subject_name = self.subject.name if self.subject else "No subject"
         return f"Lesson Request by {self.user.username} ({subject_name} - {self.language.name}) from {self.start_datetime.strftime('%Y-%m-%d %H:%M')} to {self.end_datetime.strftime('%Y-%m-%d %H:%M')}"
+
+class TutorAvailability(models.Model):
+    """Model to store tutor availability slots."""
+    tutor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='availability_slots')
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    
+    class Meta:
+        ordering = ['date', 'start_time']
+        verbose_name_plural = "Tutor availabilities"
