@@ -8,11 +8,34 @@ from faker import Faker
 from random import randint, choices, choice
 from datetime import datetime, timedelta
 
-user_fixtures = [
-    {'username': '@johndoe', 'email': 'john.doe@example.org', 'first_name': 'John', 'last_name': 'Doe'},
-    {'username': '@janedoe', 'email': 'jane.doe@example.org', 'first_name': 'Jane', 'last_name': 'Doe'},
-    {'username': '@charlie', 'email': 'charlie.johnson@example.org', 'first_name': 'Charlie', 'last_name': 'Johnson'},
-]
+# Define constant default users
+DEFAULT_ADMIN = {
+    'username': '@johndoe',
+    'email': 'john.doe@example.org',
+    'first_name': 'John',
+    'last_name': 'Doe',
+    'role': 'admin',
+    'is_staff': True,
+    'is_superuser': True
+}
+
+DEFAULT_TUTOR = {
+    'username': '@janedoe',
+    'email': 'jane.doe@example.org',
+    'first_name': 'Jane',
+    'last_name': 'Doe',
+    'role': 'tutor'
+}
+
+DEFAULT_STUDENT = {
+    'username': '@charlie',
+    'email': 'charlie.johnson@example.org',
+    'first_name': 'Charlie',
+    'last_name': 'Johnson',
+    'role': 'student'
+}
+FIXED_USER_FIXTURES = (DEFAULT_ADMIN, DEFAULT_TUTOR, DEFAULT_STUDENT)
+
 
 programming_languages = [
     "Python", "JavaScript", "Java", "C++", "Ruby", "Go", "Swift", "Rust", 
@@ -104,8 +127,9 @@ class Command(BaseCommand):
         self.generate_random_users()
 
     def generate_user_fixtures(self):
-        for data in user_fixtures:
+        for data in FIXED_USER_FIXTURES:
             self.try_create_user(data)
+
 
     def generate_random_users(self):
         user_count = User.objects.count()
