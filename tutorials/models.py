@@ -137,7 +137,14 @@ class LessonRequest(models.Model):
     end_datetime = models.DateTimeField(blank=False)
     language = models.ForeignKey(ProgrammingLanguage, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True)
-    
+    PENDING = 'pending'
+    ALLOCATED = 'allocated'
+
+    STATUS_CHOICES = [
+        (PENDING, 'Pending'),
+        (ALLOCATED, 'Allocated'),
+    ]
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING)
     def clean(self):
         # Convert naive datetime to aware datetime if needed
         if timezone.is_naive(self.start_datetime):

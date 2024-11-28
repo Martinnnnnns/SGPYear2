@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.utils.timezone import now
 from django.conf import settings
 from django.contrib import messages
 from django.http import HttpRequest, HttpResponse
@@ -107,6 +108,52 @@ def admin_bookings_list(request):
         return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
     else:
         return render(request, 'home.html')
+    
+@login_required
+def trigger_matching(request):
+    if request.user.role != 'admin':
+        return render(request, '403.html', status=403)  # Restrict access to non-admin users
+
+    if request.method == "GET":
+        # Preview unmatched lesson requests
+        lesson_requests = LessonRequest.objects.filter(start_datetime__gte=now(), status='pending')
+        return render(request, 'trigger_matching.html', {
+            'lesson_requests': lesson_requests,
+        })
+
+    if request.method == "POST":
+        # Perform the matching logic
+        lesson_requests = LessonRequest.objects.filter(start_datetime__gte=now(), status='pending')
+        matched_lessons = []
+        unmatched_requests = []
+
+        for lesson_request in lesson_requests:
+            busy_tutors = Lesson.objects.filter(
+                lesson_datetime=lesson_request.start_datetime
+            ).values_list('tutor', flat=True)
+            free_tutors = User.objects.filter(role='tutor').exclude(id__in=busy_tutors)
+
+            if free_tutors.exists():
+                tutor = free_tutors.first()
+                lesson = Lesson.objects.create(
+                    student=lesson_request.user,
+                    tutor=tutor,
+                    lesson_datetime=lesson_request.start_datetime,
+                    language=lesson_request.language,
+                    subject=lesson_request.subject,
+                )
+                lesson_request.status = 'allocated'
+                lesson_request.save()
+                matched_lessons.append(lesson)
+            else:
+                unmatched_requests.append(lesson_request)
+
+        return render(request, 'trigger_matching.html', {
+            'matched_lessons': matched_lessons,
+            'unmatched_requests': unmatched_requests,
+        })
+
+    return JsonResponse({"error": "Invalid request method."}, status=405)    
 
 """ <---- Student Views ----> """
 @login_required
@@ -115,7 +162,7 @@ def student_dashboard(request):
     user = User.objects.get(pk=request.user.id)
     lessons = Lesson.objects.filter(student=request.user)
     invoices = Invoice.objects.filter(student=request.user)  
-    lesson_requests = user.lesson_request.all()
+    lesson_requests = user.lesson_request.filter(status='pending')
     return render(request, 'student_dashboard.html',{'lessons': lessons , 'invoices':invoices, "lesson_requests":lesson_requests})
 
 @login_required
@@ -143,6 +190,7 @@ def make_lesson_request(request: HttpRequest):
     else:
         form = LessonRequestForm()
     return render(request, 'make_lesson_request.html', {'form': form})
+print(f"LessonRequest created: {LessonRequest}")
 
 def combine_date_and_time(date_str, time_str):
     """Helper function to combine date and time into a datetime object"""

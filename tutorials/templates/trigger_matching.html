@@ -1,0 +1,23 @@
+{% extends 'base_content.html' %}
+
+{% block content %}
+<div class="container">
+    <h1 class="my-4">Lesson Requests Pending Matching</h1>
+
+    {% if lesson_requests %}
+        <ul class="list-group">
+            {% for request in lesson_requests %}
+                <li class="list-group-item">
+                    {{ request.user.full_name }} ({{ request.language.name }}) at {{ request.start_datetime }}
+                </li>
+            {% endfor %}
+        </ul>
+        <form method="POST" action="{% url 'trigger_matching' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary mt-3">Match Tutors</button>
+        </form>
+    {% else %}
+        <p>No pending lesson requests.</p>
+    {% endif %}
+</div>
+{% endblock %}
