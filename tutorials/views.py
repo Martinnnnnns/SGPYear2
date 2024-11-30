@@ -18,17 +18,23 @@ from tutorials.helpers import login_prohibited
 from tutorials.models import User, LessonRequest, TutorAvailability, Lesson, Invoice
 from django.core.paginator import Paginator
 
-
 @login_required
-def dashboard(request):
+def dashboard(request: HttpRequest):
     """Display the current user's dashboard."""
+    match request.user.role:
+        case 'admin':
+            return redirect(reverse('admin_dashboard'))
+        case 'tutor':
+            return redirect(reverse('tutor_page'))
+        case 'student':
+            return redirect(reverse('student_dashboard'))
+        case _:
+            return render(request, 'dashboard.html', {'user': request.user})
 
-    current_user = request.user
-    return render(request, 'dashboard.html', {'user': current_user})
+
 @login_prohibited
 def home(request):
     """Display the application's start/home screen."""
-
     return render(request, 'home.html')
 
 """ <---- Tutor Views ----> """
@@ -280,12 +286,10 @@ class LogInView(LoginProhibitedMixin, View):
 
     def get(self, request):
         """Display log in template."""
-
         self.next = request.GET.get('next') or ''
         return self.render()
 
     def post(self, request):
-        
         """Handle log in attempt."""
         form = LogInForm(request.POST)
         user = form.get_user()
@@ -312,14 +316,12 @@ class LogInView(LoginProhibitedMixin, View):
 
     def render(self):
         """Render log in template with blank log in form."""
-
         form = LogInForm()
         return render(self.request, 'log_in.html', {'form': form, 'next': self.next})
 
 
 def log_out(request):
     """Log out the current user"""
-
     logout(request)
     return redirect('home')
 
