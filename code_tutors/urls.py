@@ -47,5 +47,6 @@ urlpatterns = [
     path('tutor_page/schedule_sessions', views.schedule_sessions, name='schedule_sessions'),
     path('tutor_page/reports', views.reports, name='reports'),
     path('trigger_matching/', views.trigger_matching, name='trigger_matching'),
+    path('admin_stats/', views.admin_stats, name='admin_stats'),
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

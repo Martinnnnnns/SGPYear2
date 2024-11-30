@@ -15,8 +15,9 @@ from django.utils import timezone
 import calendar
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
 from tutorials.helpers import login_prohibited
-from tutorials.models import User, LessonRequest, TutorAvailability, Lesson, Invoice
+from tutorials.models import User, LessonRequest, TutorAvailability, Lesson, Invoice, Subject
 from django.core.paginator import Paginator
+from django.db.models import Count, Avg
 
 
 @login_required
@@ -106,6 +107,47 @@ def admin_bookings_list(request):
         page_obj = paginator.get_page(page_number)
         
         return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
+    else:
+        return render(request, 'home.html')
+    
+@login_required
+def admin_stats(request):
+    if request.user.role == 'admin':
+        
+        user_counts_by_role = User.objects.values('role').annotate(count=Count('id')).order_by('-count')
+        
+        subjects = Subject.objects.select_related('language').all()
+        language_subject_statistics = []
+
+        # Creates a dictionary for each subject
+        for subject in subjects:
+            language_subject_statistics.append({
+                'language': subject.language.name,
+                'subject': subject.name,
+                'description': subject.description or 'No description available',
+            })
+            
+            total_lessons = Lesson.objects.count()
+
+        # SQL queries for table data
+        lessons_per_tutor = Lesson.objects.values('tutor__first_name').annotate(lesson_count=Count('id')).order_by('-lesson_count')[:10]
+        lessons_per_student = Lesson.objects.values('student__first_name').annotate(lesson_count=Count('id')).order_by('-lesson_count')[:10]
+
+        most_popular_languages = Lesson.objects.values('language__name').annotate(language_count=Count('id')).order_by('-language_count')
+        most_popular_subjects = Lesson.objects.values('subject__name').annotate(subject_count=Count('id')).order_by('-subject_count')
+
+
+        context = {
+            'total_lessons': total_lessons,
+            'lessons_per_tutor': lessons_per_tutor,
+            'lessons_per_student': lessons_per_student,
+            'most_popular_languages': most_popular_languages,
+            'most_popular_subjects': most_popular_subjects,
+            'user_counts_by_role': user_counts_by_role,
+            'language_subject_statistics': language_subject_statistics,
+        }
+        
+        return render(request, 'admin_stats.html', context)
     else:
         return render(request, 'home.html')
     

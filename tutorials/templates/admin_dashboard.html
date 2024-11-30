@@ -29,7 +29,12 @@
       <a href="{% url 'admin_student_list' %}" class="btn btn-primary btn-lg m-2">Students</a>
       <a href="{% url 'admin_tutor_list' %}" class="btn btn-primary btn-lg m-2">Tutors</a>
       <a href="{% url 'admin_bookings_list' %}" class="btn btn-primary btn-lg m-2">Bookings</a>  
+      
+    </div>
+    <div class="col-12 text-center">
       <a href="{% url 'trigger_matching' %}" class="btn btn-primary btn-lg m-2">Match Tutors</a>
+      <a href="{% url 'admin_stats' %}" class="btn btn-primary btn-lg m-2">Statistics</a>  
+      
     </div>
   </div>
 {% endblock %}
