@@ -5,12 +5,12 @@ from tutorials.models import User
 class AdminDashboardTestCase(TestCase):
     
     def setUp(self):
-        self.url = reverse('admin_dashboard')
+        self.url = reverse('dashboard')
         self.admin_user = User.objects.create_user(email="bobby@gmail.com", first_name="bob", last_name="bobby", username='@admin', password='Password123', role='admin')
 
     def test_dashboard_url(self):
         """Test that the dashboard URL resolves correctly."""
-        self.assertEqual(self.url, '/admin_dashboard/')  
+        self.assertEqual(self.url, '/dashboard/')  
 
     def test_dashboard_view_renders(self):
         """Test the dashboard renders the correct template successfully."""

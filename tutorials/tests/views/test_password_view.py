@@ -78,7 +78,7 @@ class PasswordViewTest(TestCase):
     def test_successful_password_change_admin(self):
         self.client.login(username=self.admin_user.username, password='Password123')
         response = self.client.post(self.url, self.form_input, follow=True)
-        response_url = reverse('admin_dashboard')  
+        response_url = reverse('dashboard')  
         self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'admin_dashboard.html')  
         self.admin_user.refresh_from_db()
@@ -88,7 +88,7 @@ class PasswordViewTest(TestCase):
     def test_successful_password_change_tutor(self):
         self.client.login(username=self.tutor_user.username, password='Password123')
         response = self.client.post(self.url, self.form_input, follow=True)
-        response_url = reverse('tutor_page')  
+        response_url = reverse('dashboard')  
         self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'tutor_page.html')  
         self.tutor_user.refresh_from_db()
@@ -98,7 +98,7 @@ class PasswordViewTest(TestCase):
     def test_successful_password_change_student(self):
         self.client.login(username=self.student_user.username, password='Password123')
         response = self.client.post(self.url, self.form_input, follow=True)
-        response_url = reverse('student_dashboard') 
+        response_url = reverse('dashboard') 
         self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'student_dashboard.html')  
         self.student_user.refresh_from_db()
@@ -110,18 +110,18 @@ class PasswordViewTest(TestCase):
         view.request = self.client.request().wsgi_request
         view.request.user = self.admin_user
 
-        self.assertEqual(view.get_success_url(), reverse('admin_dashboard'))
+        self.assertEqual(view.get_success_url(), reverse('dashboard'))
 
     def test_get_success_url_for_tutor(self):
         view = PasswordView()
         view.request = self.client.request().wsgi_request
         view.request.user = self.tutor_user
 
-        self.assertEqual(view.get_success_url(), reverse('tutor_page'))
+        self.assertEqual(view.get_success_url(), reverse('dashboard'))
 
     def test_get_success_url_for_student(self):
         view = PasswordView()
         view.request = self.client.request().wsgi_request
         view.request.user = self.student_user
 
-        self.assertEqual(view.get_success_url(), reverse('student_dashboard'))
+        self.assertEqual(view.get_success_url(), reverse('dashboard'))

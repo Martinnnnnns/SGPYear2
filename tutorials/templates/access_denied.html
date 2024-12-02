@@ -1,0 +1,15 @@
+{% extends 'base_content.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center vh-80 py-4">
+    <div class="col-sm-4 col-md-4 p-4 border rounded shadow mt-4">
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Access Denied</h4>
+            <p>You can't access that page! Please check your permissions or contact support if you believe this is an error.</p>
+        </div>
+        <div class="mt-4 d-flex justify-content-center gap-3">
+          <a href="{% url 'dashboard' %}" class="btn btn-secondary">Return Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

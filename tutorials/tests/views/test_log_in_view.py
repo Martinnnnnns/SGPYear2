@@ -104,15 +104,15 @@ class LogInViewTestCase(TestCase, LogInTester, MenuTesterMixin):
 
     def test_admin_login_redirect(self):
         response = self.client.post(reverse('log_in'), {'username': '@admin', 'password': 'Password123'})
-        self.assertRedirects(response, reverse('admin_dashboard'))
+        self.assertRedirects(response, reverse('dashboard'))
 
     def test_tutor_login_redirect(self):
         response = self.client.post(reverse('log_in'), {'username': '@tutor', 'password': 'Password123'})
-        self.assertRedirects(response, reverse('tutor_page'))
+        self.assertRedirects(response, reverse('dashboard'))
 
     def test_student_login_redirect(self):
         response = self.client.post(reverse('log_in'), {'username': '@student', 'password': 'Password123'})
-        self.assertRedirects(response, reverse('student_dashboard'))
+        self.assertRedirects(response, reverse('dashboard'))
         
   
     

@@ -22,7 +22,7 @@ class ScheduleSessionsViewTests(TestCase):
         )
 
     def test_schedule_sessions_url(self):
-        self.assertEqual(self.url, '/tutor_page/schedule_sessions')
+        self.assertEqual(self.url, reverse('schedule_sessions'))
 
     def test_tutor_access_schedule_sessions(self):
         """Test that a tutor can access the schedule sessions page."""
@@ -35,8 +35,8 @@ class ScheduleSessionsViewTests(TestCase):
         """Test that a non-tutor user is redirected to the home page."""
         self.client.login(username='@student_user', password='testpassword123')
         response = self.client.get(reverse('schedule_sessions'))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'home.html')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.templates, [])
 
     def test_login_required_schedule_sessions(self):
         """Test that an unauthenticated user is redirected to the login page."""

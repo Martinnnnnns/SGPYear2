@@ -32,7 +32,7 @@ class LessonRequestViewTest(TestCase):
         self.assertTemplateUsed(response, 'make_lesson_request.html')
 
     def test_go_to_homepage(self):
-        return_home_url = reverse('student_dashboard')
+        return_home_url = reverse('dashboard')
         response = self.client.get(return_home_url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'student_dashboard.html')
