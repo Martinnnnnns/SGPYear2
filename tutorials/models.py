@@ -186,10 +186,18 @@ class LessonRequest(models.Model):
 
 class TutorAvailability(models.Model):
     """Model to store tutor availability slots."""
+    RECURRENCE_CHOICES = [
+        ('none', 'One-time'),
+        ('weekly', 'Weekly'),
+        ('biweekly', 'Bi-weekly'),
+    ]
+    
     tutor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='availability_slots')
     date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
+    recurrence = models.CharField(max_length=10, choices=RECURRENCE_CHOICES, default='none')
+    end_recurrence_date = models.DateField(null=True, blank=True)
     
     class Meta:
         ordering = ['date', 'start_time']

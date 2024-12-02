@@ -168,10 +168,24 @@ class TutorAvailabilityForm(forms.ModelForm):
             'class': 'form-control'
         })
     )
+    recurrence = forms.ChoiceField(
+        choices=TutorAvailability.RECURRENCE_CHOICES,
+        widget=forms.RadioSelect(),
+        initial='none'
+    )
+    end_recurrence_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'min': timezone.now().date().isoformat()
+        }),
+        help_text="Required if repeating availability"
+    )
 
     class Meta:
         model = TutorAvailability
-        fields = ['date', 'start_time', 'end_time']
+        fields = ['date', 'start_time', 'end_time', 'recurrence', 'end_recurrence_date']
 
     def __init__(self, *args, **kwargs):
         self.tutor = kwargs.pop('tutor', None)
@@ -182,6 +196,8 @@ class TutorAvailabilityForm(forms.ModelForm):
         date = cleaned_data.get('date')
         start_time = cleaned_data.get('start_time')
         end_time = cleaned_data.get('end_time')
+        recurrence = cleaned_data.get('recurrence')
+        end_recurrence_date = cleaned_data.get('end_recurrence_date')
 
         if date and start_time and end_time:
             if date < timezone.now().date():
@@ -190,16 +206,33 @@ class TutorAvailabilityForm(forms.ModelForm):
             if end_time <= start_time:
                 self.add_error('end_time', "End time must be after start time")
 
+            if recurrence != 'none':
+                if not end_recurrence_date:
+                    self.add_error('end_recurrence_date', "End date is required for recurring availability")
+                elif end_recurrence_date < date:
+                    self.add_error('end_recurrence_date', "End date must be after start date")
+
             if self.tutor:
-                overlapping = TutorAvailability.objects.filter(
-                    tutor=self.tutor,
-                    date=date
-                ).filter(
-                    models.Q(start_time__lt=end_time, end_time__gt=start_time)
-                )
-                
-                if overlapping.exists():
-                    self.add_error('start_time', "This time slot overlaps with existing availability")
-                    self.add_error('end_time', "This time slot overlaps with existing availability")
+                # Check for overlapping slots
+                current_date = date
+                while current_date <= (end_recurrence_date or date):
+                    overlapping = TutorAvailability.objects.filter(
+                        tutor=self.tutor,
+                        date=current_date
+                    ).filter(
+                        models.Q(start_time__lt=end_time, end_time__gt=start_time)
+                    )
+                    
+                    if overlapping.exists():
+                        self.add_error('start_time', f"Time slot overlaps with existing availability on {current_date}")
+                        self.add_error('end_time', f"Time slot overlaps with existing availability on {current_date}")
+                        break
+
+                    if recurrence == 'weekly':
+                        current_date += timedelta(days=7)
+                    elif recurrence == 'biweekly':
+                        current_date += timedelta(days=14)
+                    else:
+                        break
 
         return cleaned_data

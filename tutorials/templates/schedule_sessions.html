@@ -45,6 +45,37 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label>Repeat</label>
+                            <div class="d-flex gap-4">
+                                {% for radio in form.recurrence %}
+                                <div class="form-check">
+                                    {{ radio.tag }}
+                                    <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                        {{ radio.choice_label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.recurrence.errors %}
+                            <div class="text-danger">{{ form.recurrence.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="{{ form.end_recurrence_date.id_for_label }}">End Repeat Date (required for recurring slots)</label>
+                            {{ form.end_recurrence_date }}
+                            {% if form.end_recurrence_date.errors %}
+                            <div class="text-danger">{{ form.end_recurrence_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
                 {% if form.non_field_errors %}
                 <div class="alert alert-danger">
                     {{ form.non_field_errors }}
@@ -145,6 +176,9 @@
     .btn-sm {
         padding: 0.15rem 0.4rem;
         font-size: 0.75rem;
+    }
+    .form-check {
+        margin-right: 1rem;
     }
 </style>
 

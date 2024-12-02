@@ -392,10 +392,44 @@ def schedule_sessions(request):
     if request.method == 'POST':
         form = TutorAvailabilityForm(request.POST, tutor=request.user)
         if form.is_valid():
-            availability = form.save(commit=False)
-            availability.tutor = request.user
-            availability.save()
-            request.session['success_message'] = "Availability slot added successfully"
+            start_date = form.cleaned_data['date']
+            end_recurrence_date = form.cleaned_data['end_recurrence_date']
+            recurrence = form.cleaned_data['recurrence']
+            start_time = form.cleaned_data['start_time']
+            end_time = form.cleaned_data['end_time']
+            
+            # For one-time slots or if no end date is specified
+            if recurrence == 'none' or not end_recurrence_date:
+                availability = TutorAvailability(
+                    tutor=request.user,
+                    date=start_date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    recurrence=recurrence,
+                    end_recurrence_date=end_recurrence_date
+                )
+                availability.save()
+            else:
+                # For recurring slots
+                current_date = start_date
+                while current_date <= end_recurrence_date:
+                    availability = TutorAvailability(
+                        tutor=request.user,
+                        date=current_date,
+                        start_time=start_time,
+                        end_time=end_time,
+                        recurrence=recurrence,
+                        end_recurrence_date=end_recurrence_date
+                    )
+                    availability.save()
+                    
+                    # Calculate next date based on recurrence type
+                    if recurrence == 'weekly':
+                        current_date += timezone.timedelta(days=7)
+                    elif recurrence == 'biweekly':
+                        current_date += timezone.timedelta(days=14)
+
+            request.session['success_message'] = "Availability slot(s) added successfully"
             return redirect('schedule_sessions')
     else:
         form = TutorAvailabilityForm(tutor=request.user)
