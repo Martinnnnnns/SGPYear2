@@ -5,7 +5,7 @@ from tutorials.models import User
 class TutorPageTestCase(TestCase):
 
     def setUp(self):
-        self.url = reverse('tutor_page')
+        self.url = reverse('dashboard')
         # Create a user with the 'Tutor' role
         self.tutor_user = User.objects.create_user(
             username='@tutor_user',
@@ -27,25 +27,25 @@ class TutorPageTestCase(TestCase):
         )
 
     def test_tutor_page_url(self):
-        self.assertEqual(self.url, '/tutor_page/')
+        self.assertEqual(self.url, reverse('dashboard'))
 
     def test_tutor_access(self):
         """Test that a user with the 'Tutor' role can access the tutor page."""
         self.client.login(username='@tutor_user', password='testpassword123')
-        response = self.client.get(reverse('tutor_page'))
+        response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'tutor_page.html') 
 
     def test_non_tutor_redirect(self):
         """Test that a user without the 'Tutor' role is redirected to the home page."""
         self.client.login(username='@student_user', password='testpassword123')
-        response = self.client.get(reverse('tutor_page')) 
+        response = self.client.get(reverse('dashboard')) 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'home.html')
+        self.assertTemplateUsed(response, 'student_dashboard.html')
 
     def test_login_required(self):
         """Test that an unauthenticated user is redirected to the login page."""
-        response = self.client.get(reverse('tutor_page'))
+        response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith('/log_in/'))
 

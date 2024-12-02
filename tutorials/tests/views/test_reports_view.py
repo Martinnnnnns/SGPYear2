@@ -29,7 +29,7 @@ class ReportsViewTests(TestCase):
         )
 
     def test_reports_url(self):
-        self.assertEqual(self.url, '/tutor_page/reports')
+        self.assertEqual(self.url, reverse('reports'))
 
     def test_tutor_access_reports(self):
         """Test that a tutor can access the reports page."""
@@ -46,11 +46,10 @@ class ReportsViewTests(TestCase):
         self.assertTemplateUsed(response, 'reports.html')
 
     def test_non_authorised_user_redirect(self):
-        """Test that a non-authorised user is redirected to the home page."""
+        """Test that a non-authorised user is redirected to their home page."""
         self.client.login(username='@student_user', password='testpassword123')
         response = self.client.get(reverse('reports'))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'home.html')
+        self.assertEqual(response.status_code, 302)
 
     def test_login_required_reports(self):
         """Test that an unauthenticated user is redirected to the login page."""

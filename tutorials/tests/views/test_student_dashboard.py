@@ -65,19 +65,19 @@ class StudentDashboardViewTest(TestCase):
 
     def test_dashboard_renders_correct_template(self):
         """Ensure the dashboard view uses the correct template."""
-        response = self.client.get(reverse('student_dashboard'))
+        response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'student_dashboard.html')
 
     def test_lessons_displayed_on_dashboard(self):
         """Ensure lessons assigned to the user are displayed on the dashboard."""
-        response = self.client.get(reverse('student_dashboard'))
+        response = self.client.get(reverse('dashboard'))
         self.assertContains(response, self.subject.name)
         self.assertContains(response, self.language.name)
 
     def test_invoices_displayed_on_dashboard(self):
         """Ensure invoices assigned to the user are displayed on the dashboard."""
-        response = self.client.get(reverse('student_dashboard'))
+        response = self.client.get(reverse('dashboard'))
         self.assertContains(response, f'${self.invoice1.amount}')
         self.assertContains(response, f'${self.invoice2.amount}')
         self.assertContains(response, 'Paid')
@@ -85,7 +85,7 @@ class StudentDashboardViewTest(TestCase):
 
     def test_lesson_requests_displayed_on_dashboard(self):
         """Ensure lesson requests assigned to the user are displayed on the dashboard."""
-        response = self.client.get(reverse('student_dashboard'))
+        response = self.client.get(reverse('dashboard'))
         
         # Check that lesson requests are displayed correctly
         self.assertEqual(response.context["lesson_requests"].count(), 0)
@@ -95,5 +95,5 @@ class StudentDashboardViewTest(TestCase):
     def test_no_lesson_requests_displayed_on_dashboard(self):
         """Ensure the dashboard doesn't display lesson requests when there are none."""
         LessonRequest.objects.all().delete()
-        response = self.client.get(reverse('student_dashboard'))
+        response = self.client.get(reverse('dashboard'))
         self.assertContains(response, 'pending')
