@@ -21,14 +21,14 @@
 <div class="container">
   <div class="row">
     <div class="col-12">
-      <h1>{% block page_heading %}{% endblock %}</h1>
+      <h1>{{ page_heading }}</h1>
     </div>
   </div>
 
   <div class="row mt-3 d-flex">
     <div class="col-auto ms-auto">
       <a class="btn btn-primary btn-lg">
-        {% block add_button_text %}{% endblock %}
+        {{ add_button_text }}
       </a>
     </div>
   </div>
@@ -36,21 +36,25 @@
   <table class="table table-striped mt-3">
     <thead>
       <tr>
-        {% block table_headers %}
-          <th>Column 1</th>
-          <th>Column 2</th>
-          <th>Column 3</th>
-        {% endblock %}
+        {% for column in table_headers %}
+        <th>{{ column }}</th>
+        {% endfor %}
       </tr>
     </thead>
     <tbody>
-      {% block table_rows %}
+        {% for row in page_obj %}
         <tr>
-          <td>Data 1</td>
-          <td>Data 2</td>
-          <td>Data 3</td>
+          {% for cell in row %}
+            <td>{{ cell }}</td>
+          {% endfor %}
+          <td class="text-end">
+            <a href="#" class="text-primary me-3"><i class="bi bi-calendar-fill" style="font-size: 1.5rem;"></i></a>
+            <a href="#" class="text-primary me-3"><i class="bi bi-file-earmark-text-fill" style="font-size: 1.5rem;"></i></a>
+            <a href="#" class="text-primary me-3"><i class="bi bi-pencil-fill" style="font-size: 1.5rem;"></i></a>
+            <a href="#" class="text-primary me-3"><i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i></a>
+          </td>
         </tr>
-      {% endblock %}
+        {% endfor %}
     </tbody>
   </table>
 </div>
@@ -90,3 +94,7 @@
   </ul>
 </div>
 {% endblock %}
+
+
+
+

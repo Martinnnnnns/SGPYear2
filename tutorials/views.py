@@ -61,6 +61,65 @@ def reports(request):
 """ <---- Admin Views ----> """
 
 @login_required
+def admin_list(request, list_type):
+    if request.user.role != 'admin':
+        return render(request, 'home.html')
+
+    if list_type == 'students':
+        objects = User.objects.filter(role=User.STUDENT).annotate(
+            username=F('username'),
+            name=F('first_name'),
+            email=F('email')
+        )
+        page_heading = "Students"
+        add_button_text = "Add Student"
+        table_headers = ["Username", "Name", "Email"]
+        table_fields = ['username', 'name', 'email']
+
+    elif list_type == 'tutors':
+        objects = User.objects.filter(role=User.TUTOR).annotate(
+            username=F('username'),
+            name=F('first_name'),
+            email=F('email'),
+            language=F('tutorprofile__language__name'),  # Adjust based on your model relationships
+            subject=F('tutorprofile__subject__name')    # Adjust as needed
+        )
+        page_heading = "Tutors"
+        add_button_text = "Add Tutor"
+        table_headers = ["Username", "Name", "Email", "Programming Language", "Subject"]
+        table_fields = ['username', 'name', 'email', 'language', 'subject']
+
+    elif list_type == 'bookings':
+        objects = Lesson.objects.select_related('student', 'tutor').annotate(
+            student=F('student__first_name'),
+            tutor=F('tutor__first_name'),
+            language=F('language__name'),
+            subject=F('subject__name'),
+            lesson_datetime=F('lesson_datetime')
+        )
+        page_heading = "Bookings"
+        add_button_text = "Add Booking"
+        table_headers = ["Student", "Tutor", "Programming Language", "Subject", "Date"]
+        table_fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime']
+
+    else:
+        return render(request, '404.html')  # Handle invalid list_type
+
+    paginator = Paginator(objects, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'page_heading': page_heading,
+        'add_button_text': add_button_text,
+        'table_headers': table_headers,
+        'table_fields': table_fields,
+    }
+
+    return render(request, 'admin_list.html', context)
+
+@login_required
 def admin_dashboard(request):
     if request.user.role == 'admin':
         return render(request, 'admin_dashboard.html')
@@ -68,18 +127,69 @@ def admin_dashboard(request):
         return render(request, 'home.html')
 
 @login_required
-def admin_student_list(request):
-    if request.user.role == 'admin':
-        students = User.objects.filter(role=User.STUDENT)
-
-        # Creates a Paginator object and renders the specified page
-        paginator = Paginator(students, 20)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        
-        return render(request, 'admin_student_list.html', {'page_obj': page_obj})
-    else:
+def admin_list(request, list_type):
+    if request.user.role != 'admin':
         return render(request, 'home.html')
+
+    if list_type == 'students':
+        objects = User.objects.filter(role=User.STUDENT)
+        page_heading = "Students"
+        add_button_text = "Add Student"
+        table_headers = ["Username", "Name", "Email"]
+        table_rows = [
+            [student.username, f"{student.first_name} {student.last_name}", student.email]
+            for student in objects
+        ]
+
+    elif list_type == 'tutors':
+        objects = User.objects.filter(role=User.TUTOR)
+        page_heading = "Tutors"
+        add_button_text = "Add Tutor"
+        table_headers = ["Username", "Name", "Email", "Programming Language", "Subject"]
+        table_rows = [
+            [
+                tutor.username,
+                f"{tutor.first_name} {tutor.last_name}",
+                tutor.email,
+                "a",
+                "a",
+            ]
+            for tutor in objects
+        ]
+
+    elif list_type == 'bookings':
+        objects = Lesson.objects.select_related('student', 'tutor', 'language', 'subject')
+        page_heading = "Bookings"
+        add_button_text = "Add Booking"
+        table_headers = ["Student", "Tutor", "Programming Language", "Subject", "Date"]
+        table_rows = [
+            [
+                f"{booking.student.first_name} {booking.student.last_name}",
+                f"{booking.tutor.first_name} {booking.tutor.last_name}",
+                booking.language.name if booking.language else "N/A",
+                booking.subject.name if booking.subject else "N/A",
+                booking.lesson_datetime,
+            ]
+            for booking in objects
+        ]
+
+    else:
+        return render(request, '404.html')  
+
+    # Paginate the table_rows
+    paginator = Paginator(table_rows, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'page_heading': page_heading,
+        'add_button_text': add_button_text,
+        'table_headers': table_headers,
+    }
+
+    return render(request, 'admin_list.html', context)
+
 
 @login_required
 def admin_tutor_list(request):

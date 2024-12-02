@@ -19,9 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path,include
 from tutorials import views
-
-
-
+from tutorials.views import admin_list
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -33,9 +31,6 @@ urlpatterns = [
     path('profile/', views.ProfileUpdateView.as_view(), name='profile'),
     path('sign_up/', views.SignUpView.as_view(), name='sign_up'),
     path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('admin_student_list/', views.admin_student_list, name='admin_student_list'),
-    path('admin_tutor_list/', views.admin_tutor_list, name='admin_tutor_list'),
-    path('admin_bookings_list/', views.admin_bookings_list, name='admin_bookings_list'),
     path('student_dashboard/', views.student_dashboard, name='student_dashboard'),
     path('request_lesson/', views.make_lesson_request, name='request_lesson'), 
     path('request_made/', views.lesson_made, name='request_made'),  
@@ -48,5 +43,6 @@ urlpatterns = [
     path('tutor_page/reports', views.reports, name='reports'),
     path('trigger_matching/', views.trigger_matching, name='trigger_matching'),
     path('admin_stats/', views.admin_stats, name='admin_stats'),
+    path('admin_list/<str:list_type>/', admin_list, name='admin_list'),
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

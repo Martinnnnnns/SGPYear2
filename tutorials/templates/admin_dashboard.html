@@ -26,9 +26,9 @@
 
   <div class="row mt-5">
     <div class="col-12 text-center">
-      <a href="{% url 'admin_student_list' %}" class="btn btn-primary btn-lg m-2">Students</a>
-      <a href="{% url 'admin_tutor_list' %}" class="btn btn-primary btn-lg m-2">Tutors</a>
-      <a href="{% url 'admin_bookings_list' %}" class="btn btn-primary btn-lg m-2">Bookings</a>  
+      <a href="{% url 'admin_list' 'students' %}" class="btn btn-primary btn-lg m-2">Students</a>
+      <a href="{% url 'admin_list' 'tutors' %}" class="btn btn-primary btn-lg m-2">Tutors</a>
+      <a href="{% url 'admin_list' 'bookings' %}" class="btn btn-primary btn-lg m-2">Bookings</a>  
       
     </div>
     <div class="col-12 text-center">
