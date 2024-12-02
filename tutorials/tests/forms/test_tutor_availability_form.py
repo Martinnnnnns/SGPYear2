@@ -47,7 +47,6 @@ class TestTutorAvailabilityForm(TestCase):
         self.assertIn('end_time', form.errors)
 
     def test_overlapping_slots_invalid(self):
-        # Create an existing slot
         form1_data = {
             'date': self.tomorrow,
             'start_time': '10:00',
@@ -58,7 +57,6 @@ class TestTutorAvailabilityForm(TestCase):
         form1.save(commit=False).tutor = self.tutor
         form1.save()
 
-        # Try to create overlapping slot
         form2_data = {
             'date': self.tomorrow,
             'start_time': '11:00',
@@ -68,3 +66,52 @@ class TestTutorAvailabilityForm(TestCase):
         self.assertFalse(form2.is_valid())
         self.assertIn('start_time', form2.errors)
         self.assertIn('end_time', form2.errors)
+
+    def test_weekly_recurrence_valid(self):
+        next_week = self.tomorrow + timedelta(days=7)
+        form_data = {
+            'date': self.tomorrow,
+            'start_time': '10:00',
+            'end_time': '11:00',
+            'recurrence': 'weekly',
+            'end_recurrence_date': next_week
+        }
+        form = TutorAvailabilityForm(data=form_data, tutor=self.tutor)
+        self.assertTrue(form.is_valid())
+
+    def test_biweekly_recurrence_valid(self):
+        two_weeks_later = self.tomorrow + timedelta(days=14)
+        form_data = {
+            'date': self.tomorrow,
+            'start_time': '10:00',
+            'end_time': '11:00',
+            'recurrence': 'biweekly',
+            'end_recurrence_date': two_weeks_later
+        }
+        form = TutorAvailabilityForm(data=form_data, tutor=self.tutor)
+        self.assertTrue(form.is_valid())
+
+    def test_recurring_without_end_date_invalid(self):
+        form_data = {
+            'date': self.tomorrow,
+            'start_time': '10:00',
+            'end_time': '11:00',
+            'recurrence': 'weekly',
+            'end_recurrence_date': ''
+        }
+        form = TutorAvailabilityForm(data=form_data, tutor=self.tutor)
+        self.assertFalse(form.is_valid())
+        self.assertIn('end_recurrence_date', form.errors)
+
+    def test_end_date_before_start_date_invalid(self):
+        yesterday = self.tomorrow - timedelta(days=2)
+        form_data = {
+            'date': self.tomorrow,
+            'start_time': '10:00',
+            'end_time': '11:00',
+            'recurrence': 'weekly',
+            'end_recurrence_date': yesterday
+        }
+        form = TutorAvailabilityForm(data=form_data, tutor=self.tutor)
+        self.assertFalse(form.is_valid())
+        self.assertIn('end_recurrence_date', form.errors)

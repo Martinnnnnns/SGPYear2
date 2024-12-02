@@ -26,7 +26,6 @@ class TestTutorAvailability(TestCase):
         self.assertEqual(availability.tutor, self.tutor)
 
     def test_ordering(self):
-        # Create slots in random order
         TutorAvailability.objects.create(
             tutor=self.tutor,
             date=self.tomorrow + timedelta(days=1),
@@ -47,8 +46,33 @@ class TestTutorAvailability(TestCase):
         )
 
         slots = TutorAvailability.objects.all()
-        # Verify ordering by date, then start_time
         self.assertEqual(slots[0].date, self.tomorrow)
         self.assertEqual(slots[0].start_time.strftime('%H:%M'), '10:00')
         self.assertEqual(slots[1].date, self.tomorrow)
         self.assertEqual(slots[1].start_time.strftime('%H:%M'), '11:00')
+
+    def test_recurring_weekly_creation(self):
+        next_week = self.tomorrow + timedelta(days=7)
+        availability = TutorAvailability.objects.create(
+            tutor=self.tutor,
+            date=self.tomorrow,
+            start_time='10:00',
+            end_time='11:00',
+            recurrence='weekly',
+            end_recurrence_date=next_week
+        )
+        self.assertEqual(availability.recurrence, 'weekly')
+        self.assertEqual(availability.end_recurrence_date, next_week)
+
+    def test_recurring_biweekly_creation(self):
+        two_weeks_later = self.tomorrow + timedelta(days=14)
+        availability = TutorAvailability.objects.create(
+            tutor=self.tutor,
+            date=self.tomorrow,
+            start_time='10:00',
+            end_time='11:00',
+            recurrence='biweekly',
+            end_recurrence_date=two_weeks_later
+        )
+        self.assertEqual(availability.recurrence, 'biweekly')
+        self.assertEqual(availability.end_recurrence_date, two_weeks_later)
