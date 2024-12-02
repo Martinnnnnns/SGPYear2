@@ -44,5 +44,6 @@ urlpatterns = [
     path('tutor_page/', views.tutor_page, name='tutor_page'),
     path('tutor_page/schedule_sessions', views.schedule_sessions, name='schedule_sessions'),
     path('tutor_page/reports', views.reports, name='reports'),
+    path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

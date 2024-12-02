@@ -455,3 +455,18 @@ def schedule_sessions(request):
     }
     
     return render(request, 'schedule_sessions.html', context)
+
+@login_required
+def delete_availability(request, slot_id):
+    if request.user.role != 'tutor':
+        return redirect('home')
+        
+    # Get the availability slot and check it belongs to the logged-in tutor
+    availability = get_object_or_404(TutorAvailability, id=slot_id, tutor=request.user)
+    
+    if request.method == 'POST':
+        availability.delete()
+        request.session['success_message'] = "Availability slot deleted successfully"
+        # Remove messages.success() and only use session message
+        
+    return redirect('schedule_sessions')

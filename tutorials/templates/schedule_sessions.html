@@ -11,14 +11,6 @@
     </div>
     {% endif %}
 
-    {% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
-        {{ message }}
-    </div>
-    {% endfor %}
-    {% endif %}
-
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title mb-3">Add New Availability Slot</h5>
@@ -95,8 +87,14 @@
                             <div class="date-number">{{ day_data.day }}</div>
                             <div class="slots-container">
                                 {% for slot in day_data.slots %}
-                                <div class="time-slot">
-                                    {{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}
+                                <div class="time-slot d-flex justify-content-between align-items-center">
+                                    <span>{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</span>
+                                    <form method="post" action="{% url 'delete_availability' slot.id %}" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm ms-2" onclick="return confirm('Are you sure you want to delete this availability slot?')">
+                                            Delete
+                                        </button>
+                                    </form>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -143,6 +141,10 @@
     }
     .form-control {
         width: 100%;
+    }
+    .btn-sm {
+        padding: 0.15rem 0.4rem;
+        font-size: 0.75rem;
     }
 </style>
 
