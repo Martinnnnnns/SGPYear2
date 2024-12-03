@@ -14,8 +14,8 @@ from django.views.generic import ListView, TemplateView, DetailView
 from django.urls import reverse
 from django.utils import timezone
 import calendar
-from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
-from tutorials.models import User, LessonRequest, TutorAvailability, Lesson, Invoice
+from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
+from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice
 
 class RoleRequiredMixin:
     required_role = []  #Set this in views that use the mixin
@@ -49,7 +49,11 @@ class DashboardView(LoginRequiredMixin, View):
     def render_student_dashboard(self, request):
         """Render student dashboard."""
         user = request.user
-        lessons = Lesson.objects.filter(student=user)
+        desired_statuses = [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        lessons = Lesson.objects.filter(
+            student=user,
+            status__in=desired_statuses
+        ).order_by('lesson_datetime')
         invoices = Invoice.objects.filter(student=user)
         lesson_requests = user.lesson_request.filter(status='pending')
         return render(request, 'student_dashboard.html',
@@ -106,30 +110,28 @@ class AdminBookingsListView(AdminListView):
     context_object_name = 'bookings'
 
     
-@login_required
-def trigger_matching(request):
-    if request.user.role != 'admin':
-        return render(request, '403.html', status=403)  # Restrict access to non-admin users
-
-    if request.method == "GET":
-        # Preview unmatched lesson requests
-        lesson_requests = LessonRequest.objects.filter(start_datetime__gte=now(), status='pending')
+class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['admin']
+    def get(self, request):
+        lesson_requests = LessonRequest.objects.filter(
+            start_datetime__gte=now(), status='pending'
+        )
         return render(request, 'trigger_matching.html', {
             'lesson_requests': lesson_requests,
         })
-
-    if request.method == "POST":
-        # Perform the matching logic
-        lesson_requests = LessonRequest.objects.filter(start_datetime__gte=now(), status='pending')
+    def post(self, request):
+        lesson_requests = LessonRequest.objects.filter(
+            start_datetime__gte=now(), status='pending'
+        )
         matched_lessons = []
         unmatched_requests = []
-
         for lesson_request in lesson_requests:
             busy_tutors = Lesson.objects.filter(
                 lesson_datetime=lesson_request.start_datetime
             ).values_list('tutor', flat=True)
-            free_tutors = User.objects.filter(role='tutor').exclude(id__in=busy_tutors)
-
+            free_tutors = User.objects.filter(
+                role='tutor'
+            ).exclude(id__in=busy_tutors)
             if free_tutors.exists():
                 tutor = free_tutors.first()
                 lesson = Lesson.objects.create(
@@ -138,19 +140,18 @@ def trigger_matching(request):
                     lesson_datetime=lesson_request.start_datetime,
                     language=lesson_request.language,
                     subject=lesson_request.subject,
+                    status=Lesson.STATUS_SCHEDULED, 
                 )
                 lesson_request.status = 'allocated'
                 lesson_request.save()
                 matched_lessons.append(lesson)
             else:
                 unmatched_requests.append(lesson_request)
-
         return render(request, 'trigger_matching.html', {
             'matched_lessons': matched_lessons,
             'unmatched_requests': unmatched_requests,
         })
 
-    return JsonResponse({"error": "Invalid request method."}, status=405)    
 
 """ <---- Student Views ----> """
 
@@ -233,6 +234,85 @@ class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
 
     def get_object(self):
         return get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
+    
+    
+    
+    
+    
+class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
+    template_name = 'request_cancel_bookings.html'
+    form_class = CancellationRequestForm
+    required_role = ['student', 'tutor']
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        cancellation_request = form.save(commit=False)
+        cancellation_request.user = self.request.user
+        cancellation_request.save()
+
+        # Allow cancellation for both scheduled and rescheduled lessons
+        valid_statuses = [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        if form.cleaned_data['request_type'] == CancellationRequest.REQUEST_SINGLE:
+            lessons = form.cleaned_data['lessons'].filter(status__in=valid_statuses)
+            cancellation_request.lessons.set(lessons)
+        else:
+            if self.request.user.role == User.TUTOR:
+                lessons = Lesson.objects.filter(
+                    tutor=self.request.user, status__in=valid_statuses
+                )
+            else:
+                lessons = Lesson.objects.filter(
+                    student=self.request.user, status__in=valid_statuses
+                )
+            cancellation_request.lessons.set(lessons)
+
+        cancellation_request.save()
+        process_cancellation_request(cancellation_request)
+        messages.success(self.request, "Your cancellation request has been submitted.")
+        return redirect('dashboard')
+    
+def process_cancellation_request(cancellation_request):
+    lessons = cancellation_request.lessons.all()
+    for lesson in lessons:
+        if lesson.status in [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]:
+            lesson.status = Lesson.STATUS_CANCELED
+            lesson.save()
+
+
+class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
+    template_name = 'request_change_bookings.html'
+    form_class = ChangeBookingForm
+    required_role = ['student', 'tutor']
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        change_request = form.save(commit=False)
+        change_request.user = self.request.user
+        change_request.save()
+        change_request.lessons.set(form.cleaned_data['lessons'])
+        change_request.save()
+        process_change_request(change_request)
+        messages.success(self.request, "Your change request has been submitted.")
+        return redirect('dashboard')
+    
+def process_change_request(change_request):
+    new_datetime = change_request.new_datetime
+    lessons = change_request.lessons.all()
+    for lesson in lessons:
+        lesson.lesson_datetime = new_datetime
+        lesson.status = Lesson.STATUS_RESCHEDULED
+        lesson.save()
+    change_request.is_processed = True
+    change_request.status = ChangeRequest.STATUS_APPROVED
+    change_request.save()    
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""

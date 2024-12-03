@@ -1,22 +1,18 @@
 {% extends 'base.html' %}
 {% block body %}
-  <div class="container vh-100">
-    <div class="row h-100">
-      <div class="col-12 my-auto">
-        <div class="card cover-card offset-sm-2 offset-md-4 offset-lg-7">
-          <h1 class="cover-heading">Task Manager</h1>
-          <p class="cover-text">A task manager application by Team <i>Insert team name here (or revise this home screen as you see fit)</i></p>
-          <p>
-            <a href="{% url 'sign_up' %}" class="btn btn-lg btn-secondary">
-              Sign up
-            </a>
-          </p>
-          <p>
-            <a href="{% url 'log_in' %}" class="btn btn-lg btn-secondary">
-              Log in
-            </a>
-          </p>
-        </div>
+  <div class="container vh-100 d-flex align-items-center justify-content-center">
+    <div class="card shadow-lg p-4 text-center" style="max-width: 500px; border-radius: 15px;">
+      <h1 class="display-4 mb-3" style="color: black;">Task Manager</h1>
+      <p class="lead mb-4" style="color: black;">
+        Welcome to <strong>Task Manager</strong>, a powerful application created by Team <span class="fw-bold" style="color: black;">Fox</span> to help you stay organized and productive!
+      </p>
+      <div class="d-grid gap-3">
+        <a href="{% url 'sign_up' %}" class="btn btn-lg btn-primary">
+          Sign Up
+        </a>
+        <a href="{% url 'log_in' %}" class="btn btn-lg btn-outline-primary">
+          Log In
+        </a>
       </div>
     </div>
   </div>

@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from .models import User, ProgrammingLanguage, Subject, LessonRequest, TutorAvailability
+from .models import CancellationRequest, ChangeRequest, Lesson, User, ProgrammingLanguage, Subject, LessonRequest, TutorAvailability
 from datetime import datetime, timedelta
 from django.db import models
 
@@ -236,3 +236,153 @@ class TutorAvailabilityForm(forms.ModelForm):
                         break
 
         return cleaned_data
+class CancellationRequestForm(forms.ModelForm):
+    request_type = forms.ChoiceField(
+        choices=CancellationRequest.REQUEST_TYPE_CHOICES,
+        widget=forms.RadioSelect,
+        required=True,
+        label="Cancellation Type"
+    )
+    lessons = forms.ModelMultipleChoiceField(
+        queryset=Lesson.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Select Lessons to Cancel"
+    )
+    reason = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3}),
+        required=False,
+        label="Reason for Cancellation"
+    )
+
+    class Meta:
+        model = CancellationRequest
+        fields = ['request_type', 'lessons', 'reason']
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user')  
+        super().__init__(*args, **kwargs)
+        self.fields['lessons'].queryset = Lesson.objects.filter(
+            models.Q(student=user) | models.Q(tutor=user),
+            status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        )
+        self.fields['lessons'].widget.attrs.update({'disabled': False})    
+        
+class ChangeRequestForm(forms.ModelForm):
+    lessons = forms.ModelMultipleChoiceField(
+        queryset=Lesson.objects.none(),
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        label="Select Lessons to Change"
+    )
+    new_datetime = forms.DateTimeField(
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        required=True,
+        label="New Date & Time"
+    )
+    reason = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3}),
+        required=False,
+        label="Reason for Change"
+    )
+
+    class Meta:
+        model = ChangeRequest
+        fields = ['lessons', 'new_datetime', 'reason']
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user')  
+        super().__init__(*args, **kwargs)
+        self.fields['lessons'].queryset = Lesson.objects.filter(
+            models.Q(student=user) | models.Q(tutor=user),
+            status=Lesson.STATUS_SCHEDULED
+        )
+        
+class ChangeBookingDetailsForm(forms.Form):
+    """Form for changing booking details."""
+    lesson_id = forms.IntegerField(widget=forms.HiddenInput())
+    new_datetime = forms.DateTimeField(
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        required=True,
+        help_text="Select a new date and time for the lesson."
+    )
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_new_datetime(self):
+        new_datetime = self.cleaned_data.get('new_datetime')
+        if new_datetime < timezone.now():
+            raise forms.ValidationError("The new date and time must be in the future.")
+        return new_datetime
+
+
+class ChangeBookingForm(forms.ModelForm):
+    """ModelForm for handling change requests."""
+    REQUEST_SINGLE = 'single'
+    REQUEST_ALL = 'all'
+    REQUEST_TYPE_CHOICES = [
+        (REQUEST_SINGLE, 'Single Booking'),
+        (REQUEST_ALL, 'All Bookings'),
+    ]
+
+    request_type = forms.ChoiceField(
+        choices=REQUEST_TYPE_CHOICES,
+        widget=forms.RadioSelect,
+        required=True
+    )
+    lessons = forms.ModelMultipleChoiceField(
+        queryset=Lesson.objects.none(),
+        required=False
+    )
+    new_datetime = forms.DateTimeField(
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        required=True,
+        help_text="Select a new date and time for the lesson."
+    )
+
+    class Meta:
+        model = ChangeRequest
+        fields = ('request_type', 'lessons', 'new_datetime', 'reason')
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if self.user.role == User.TUTOR:
+            self.fields['lessons'].queryset = Lesson.objects.filter(
+                tutor=self.user,
+                status=Lesson.STATUS_SCHEDULED
+            )
+        elif self.user.role == User.STUDENT:
+            self.fields['lessons'].queryset = Lesson.objects.filter(
+                student=self.user,
+                status=Lesson.STATUS_SCHEDULED
+            )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        request_type = cleaned_data.get('request_type')
+        lessons = cleaned_data.get('lessons')
+        new_datetime = cleaned_data.get('new_datetime')
+
+        if request_type == self.REQUEST_SINGLE and not lessons:
+            raise forms.ValidationError('Please select at least one lesson to change.')
+
+        if request_type == self.REQUEST_ALL:
+            if self.user.role == User.TUTOR:
+                cleaned_data['lessons'] = Lesson.objects.filter(
+                    tutor=self.user,
+                    status=Lesson.STATUS_SCHEDULED
+                )
+            elif self.user.role == User.STUDENT:
+                cleaned_data['lessons'] = Lesson.objects.filter(
+                    student=self.user,
+                    status=Lesson.STATUS_SCHEDULED
+                )
+
+        if new_datetime and new_datetime < timezone.now():
+            raise forms.ValidationError("The new date and time must be in the future.")
+
+        return cleaned_data    
+    
