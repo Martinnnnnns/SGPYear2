@@ -1,5 +1,6 @@
 {% extends 'base_content.html' %}
 
+
 {% block content %}
 <div class="d-flex flex-column justify-content-center align-items-center vh-80 py-4">
   <!-- Container Box -->
@@ -15,7 +16,7 @@
     <!-- Action Buttons -->
     <div class="mt-4 d-flex justify-content-center gap-3">
       <a href="{% url 'request_lesson' %}" class="btn btn-primary">Make Another Request</a>
-      <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">Return Home</a>
+      <a href="{% url 'dashboard' %}" class="btn btn-secondary">Return Home</a>
     </div>
   </div>
 </div>

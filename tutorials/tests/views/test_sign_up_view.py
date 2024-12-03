@@ -72,21 +72,21 @@ class SignUpViewTestCase(TestCase, LogInTester):
     def test_get_sign_up_redirects_when_admin_logged_in(self):
         self.client.login(username=self.admin_user.username, password="Password123")
         response = self.client.get(self.url, follow=True)
-        redirect_url = reverse('admin_dashboard')
+        redirect_url = reverse('dashboard')
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'admin_dashboard.html')
 
     def test_get_sign_up_redirects_when_tutor_logged_in(self):
         self.client.login(username=self.tutor_user.username, password="Password123")
         response = self.client.get(self.url, follow=True)
-        redirect_url = reverse('tutor_page')
+        redirect_url = reverse('dashboard')
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'tutor_page.html')
 
     def test_get_sign_up_redirects_when_student_logged_in(self):
         self.client.login(username=self.student_user.username, password="Password123")
         response = self.client.get(self.url, follow=True)
-        redirect_url = reverse('student_dashboard')
+        redirect_url = reverse('dashboard')
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'student_dashboard.html')
 
@@ -142,7 +142,7 @@ class SignUpViewTestCase(TestCase, LogInTester):
         response = self.client.post(self.url, self.student_form_input, follow=True)
         after_count = User.objects.count()
         self.assertEqual(after_count, before_count + 1)
-        response_url = reverse('student_page')
+        response_url = reverse('dashboard')
         self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'student_page.html')
         user = User.objects.get(username='@student')
@@ -160,7 +160,7 @@ class SignUpViewTestCase(TestCase, LogInTester):
         response = self.client.post(self.url, self.form_input, follow=True)
         after_count = User.objects.count()
         self.assertEqual(after_count, before_count)
-        redirect_url = reverse('admin_dashboard')
+        redirect_url = reverse('dashboard')
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'admin_dashboard.html')
         
@@ -170,7 +170,7 @@ class SignUpViewTestCase(TestCase, LogInTester):
         response = self.client.post(self.url, self.form_input, follow=True)
         after_count = User.objects.count()
         self.assertEqual(after_count, before_count)
-        redirect_url = reverse('tutor_page')
+        redirect_url = reverse('dashboard')
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'tutor_page.html')
 
@@ -180,7 +180,7 @@ class SignUpViewTestCase(TestCase, LogInTester):
         response = self.client.post(self.url, self.form_input, follow=True)
         after_count = User.objects.count()
         self.assertEqual(after_count, before_count)
-        redirect_url = reverse('student_dashboard')
+        redirect_url = reverse('dashboard')
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'student_dashboard.html')
 

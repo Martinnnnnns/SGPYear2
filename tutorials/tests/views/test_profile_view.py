@@ -121,7 +121,7 @@ class ProfileViewTest(TestCase):
         after_count = User.objects.count()
         
         self.assertEqual(after_count, before_count)
-        response_url = reverse('admin_dashboard')  # Redirect URL for admin
+        response_url = reverse('dashboard')  # Redirect URL for admin
         self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'admin_dashboard.html')  # Change this to actual template
         messages_list = list(response.context['messages'])
@@ -142,7 +142,7 @@ class ProfileViewTest(TestCase):
         after_count = User.objects.count()
         
         self.assertEqual(after_count, before_count)
-        response_url = reverse('tutor_page')  # Redirect URL for tutor
+        response_url = reverse('dashboard')  # Redirect URL for tutor
         self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'tutor_page.html')  # Change this to actual template
         messages_list = list(response.context['messages'])
@@ -163,7 +163,7 @@ class ProfileViewTest(TestCase):
         after_count = User.objects.count()
         
         self.assertEqual(after_count, before_count)
-        response_url = reverse('student_dashboard')  # Redirect URL for student
+        response_url = reverse('dashboard')  # Redirect URL for student
         self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
         self.assertTemplateUsed(response, 'student_dashboard.html')  # Change this to actual template
         messages_list = list(response.context['messages'])
@@ -182,18 +182,18 @@ class ProfileViewTest(TestCase):
         view.request = self.client.request().wsgi_request
         view.request.user = self.admin_user
 
-        self.assertEqual(view.get_success_url(), reverse('admin_dashboard'))
+        self.assertEqual(view.get_success_url(), reverse('dashboard'))
 
     def test_get_success_url_for_tutor(self):
         view = ProfileUpdateView()
         view.request = self.client.request().wsgi_request
         view.request.user = self.tutor_user
 
-        self.assertEqual(view.get_success_url(), reverse('tutor_page'))
+        self.assertEqual(view.get_success_url(), reverse('dashboard'))
 
     def test_get_success_url_for_student(self):
         view = ProfileUpdateView()
         view.request = self.client.request().wsgi_request
         view.request.user = self.student_user
 
-        self.assertEqual(view.get_success_url(), reverse('student_dashboard'))
+        self.assertEqual(view.get_success_url(), reverse('dashboard'))

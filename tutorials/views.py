@@ -1,7 +1,8 @@
 from datetime import datetime
+from django.utils.timezone import now
 from django.conf import settings
 from django.contrib import messages
-from django.http import HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -9,12 +10,54 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.shortcuts import redirect, render, get_object_or_404
 from django.views import View
 from django.views.generic.edit import FormView, UpdateView
+from django.views.generic import ListView, TemplateView, DetailView
 from django.urls import reverse
 from django.utils import timezone
 import calendar
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
-from tutorials.helpers import login_prohibited
 from tutorials.models import User, LessonRequest, TutorAvailability, Lesson, Invoice
+
+class RoleRequiredMixin:
+    required_role = []  #Set this in views that use the mixin
+
+    def dispatch(self, request, *args, **kwargs):
+        if self.required_role and request.user.role not in self.required_role:
+            return redirect('access_denied')  # Redirect to an access denied page
+        return super().dispatch(request, *args, **kwargs)
+
+class DashboardView(LoginRequiredMixin, View):
+    """Display the appropriate dashboard based on the user's role."""
+    
+    def get(self, request, *args, **kwargs):
+        role_dispatch = {
+            'admin': self.render_admin_dashboard,
+            'tutor': self.render_tutor_dashboard,
+            'student': self.render_student_dashboard,
+        }
+        
+        handler = role_dispatch.get(request.user.role, self.redirect_to_login)
+        return handler(request)
+
+    def render_admin_dashboard(self, request):
+        """Render admin dashboard."""
+        return render(request, 'admin_dashboard.html')
+
+    def render_tutor_dashboard(self, request):
+        """Render tutor dashboard."""
+        return render(request, 'tutor_page.html', {'user': request.user})
+
+    def render_student_dashboard(self, request):
+        """Render student dashboard."""
+        user = request.user
+        lessons = Lesson.objects.filter(student=user)
+        invoices = Invoice.objects.filter(student=user)
+        lesson_requests = user.lesson_request.filter(status='pending')
+        return render(request, 'student_dashboard.html',
+            {'lessons': lessons, 'invoices': invoices, 'lesson_requests': lesson_requests})
+
+    def redirect_to_login(self, request):
+        """Redirect to login if no valid role is found."""
+        return redirect(reverse('log_in'))
 from django.core.paginator import Paginator
 from datetime import timedelta
 
@@ -31,142 +74,146 @@ def home(request):
     return render(request, 'home.html')
 
 """ <---- Tutor Views ----> """
-@login_required
-def tutor_page(request):
-    """Display the tutors' dashboard."""
-    if request.user.role == 'tutor':
-        current_user = request.user
-        return render(request, 'tutor_page.html', {'user': current_user})
-    else:
-        return render(request, 'home.html')
-    
-@login_required
-def schedule_sessions(request):
-    if request.user.role == 'tutor':
-        return render(request, 'schedule_sessions.html')
-    else:
-        return render(request, 'home.html')
 
-@login_required
-def reports(request):
-    if request.user.role == 'tutor':
-        return render(request, 'reports.html')
-    elif request.user.role == 'admin':
-        return render(request, 'reports.html')
-    else:
-        return render(request, 'home.html')
+class ReportsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    template_name = 'reports.html'
+    required_role = ['tutor', 'admin']   
 
 """ <---- Admin Views ----> """
+    
+class AdminListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
+    paginate_by = 20
+    required_role = ['admin']  
+    model = None
+    template_name = None  
 
+    def get_queryset(self):
+        return super().get_queryset()
+
+class AdminStudentListView(AdminListView):
+    model = User
+    template_name = 'admin_student_list.html'
+    context_object_name = 'students'
+
+class AdminTutorListView(AdminListView):
+    model = User
+    template_name = 'admin_tutor_list.html'
+    context_object_name = 'tutors'
+
+class AdminBookingsListView(AdminListView):
+    model = Lesson
+    template_name = 'admin_bookings_list.html'
+    context_object_name = 'bookings'
+
+    
 @login_required
-def admin_dashboard(request):
-    if request.user.role == 'admin':
-        return render(request, 'admin_dashboard.html')
-    else:
-        return render(request, 'home.html')
+def trigger_matching(request):
+    if request.user.role != 'admin':
+        return render(request, '403.html', status=403)  # Restrict access to non-admin users
 
-@login_required
-def admin_student_list(request):
-    if request.user.role == 'admin':
-        students = User.objects.filter(role=User.STUDENT)
+    if request.method == "GET":
+        # Preview unmatched lesson requests
+        lesson_requests = LessonRequest.objects.filter(start_datetime__gte=now(), status='pending')
+        return render(request, 'trigger_matching.html', {
+            'lesson_requests': lesson_requests,
+        })
 
-        # Creates a Paginator object and renders the specified page
-        paginator = Paginator(students, 20)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        
-        return render(request, 'admin_student_list.html', {'page_obj': page_obj})
-    else:
-        return render(request, 'home.html')
+    if request.method == "POST":
+        # Perform the matching logic
+        lesson_requests = LessonRequest.objects.filter(start_datetime__gte=now(), status='pending')
+        matched_lessons = []
+        unmatched_requests = []
 
-@login_required
-def admin_tutor_list(request):
-    if request.user.role == 'admin':
-        tutors = User.objects.filter(role=User.TUTOR)
-        
-        # Creates a Paginator object and renders the specified page
-        paginator = Paginator(tutors, 20)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        
-        return render(request, 'admin_tutor_list.html', {'page_obj': page_obj})
-    else:
-        return render(request, 'home.html')
+        for lesson_request in lesson_requests:
+            busy_tutors = Lesson.objects.filter(
+                lesson_datetime=lesson_request.start_datetime
+            ).values_list('tutor', flat=True)
+            free_tutors = User.objects.filter(role='tutor').exclude(id__in=busy_tutors)
 
-@login_required
-def admin_bookings_list(request):
-    if request.user.role == 'admin':
-        #bookings = User.objects.all()
-        bookings = Lesson.objects.all()
+            if free_tutors.exists():
+                tutor = free_tutors.first()
+                lesson = Lesson.objects.create(
+                    student=lesson_request.user,
+                    tutor=tutor,
+                    lesson_datetime=lesson_request.start_datetime,
+                    language=lesson_request.language,
+                    subject=lesson_request.subject,
+                )
+                lesson_request.status = 'allocated'
+                lesson_request.save()
+                matched_lessons.append(lesson)
+            else:
+                unmatched_requests.append(lesson_request)
 
-        # Creates a Paginator object and renders the specified page
-        paginator = Paginator(bookings, 20)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        
-        return render(request, 'admin_bookings_list.html', {'page_obj': page_obj})
-    else:
-        return render(request, 'home.html')
+        return render(request, 'trigger_matching.html', {
+            'matched_lessons': matched_lessons,
+            'unmatched_requests': unmatched_requests,
+        })
+
+    return JsonResponse({"error": "Invalid request method."}, status=405)    
 
 """ <---- Student Views ----> """
-@login_required
-def student_dashboard(request):
-    """Student dashboard."""
-    user = User.objects.get(pk=request.user.id)
-    lessons = Lesson.objects.filter(student=request.user)
-    invoices = Invoice.objects.filter(student=request.user)  
-    lesson_requests = user.lesson_request.all()
-    return render(request, 'student_dashboard.html',{'lessons': lessons , 'invoices':invoices, "lesson_requests":lesson_requests})
 
-@login_required
-def make_lesson_request(request: HttpRequest):
+class MakeLessonRequestView(LoginRequiredMixin, RoleRequiredMixin, FormView):
     """View for students to request lessons."""
-    student = User.objects.get(pk=request.user.id)  #Assume logged-in user
-    if request.method == 'POST':
-        form = LessonRequestForm(request.POST)
-        if form.is_valid():
-            lesson_request = LessonRequest(
+    template_name = 'make_lesson_request.html'
+    form_class = LessonRequestForm
+    required_role = ["student"]
+
+    def form_valid(self, form: LessonRequestForm):
+        """Process the form data and save the lesson request."""
+        student = self.request.user
+        lesson_request = LessonRequest(
                 user=student,
                 start_datetime=form.cleaned_data["start_datetime"],
                 end_datetime=form.cleaned_data["end_datetime"],
                 language=form.cleaned_data["language"],
-                subject=form.cleaned_data["subject"]
-            )
-            try:
-                lesson_request.clean()  #Model-level validation
-                lesson_request.save()  #Save to the database if no validation errors
-                return redirect('request_made')  
-            except ValidationError as e:
-                form.add_error(None, e)  
-                return render(request, 'make_lesson_request.html', {'form': form})
+                subject=form.cleaned_data["subject"])
+        try:
+            lesson_request.clean()  
+            lesson_request.save()  
+        except ValidationError as e:
+            form.add_error(None, e)
+            return self.form_invalid(form)
+        else:
+            return super().form_valid(form)
+    
+    def get_form_kwargs(self):
+        """Pass additional arguments to the form if needed."""
+        kwargs = super().get_form_kwargs()
+        return kwargs
+    
+    def get_success_url(self):
+        return reverse('request_made')
 
-    else:
-        form = LessonRequestForm()
-    return render(request, 'make_lesson_request.html', {'form': form})
 
-def combine_date_and_time(date_str, time_str):
-    """Helper function to combine date and time into a datetime object"""
-    try:
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
-        time_obj = datetime.strptime(time_str, "%H:%M").time()
-        return datetime.combine(date_obj, time_obj)
-    except ValueError:
-        return None
+class LessonMadeView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    """View to handle page post successful lesso request."""
+    required_role = ["student"]
+    template_name = "make_another_request.html"
 
-@login_required
-def lesson_made(request: HttpRequest):
-    """Landing page upon successful lesson request made."""
-    return render(request, 'make_another_request.html')
+class AccessDeniedView(TemplateView):
+    """Access denied page for access to a page of an incorrect role."""
+    template_name="access_denied.html"
 
-@login_required  
-def student_profile(request):
-    """View student profile."""
-    return render(request,'student_profile.html')
+class StudentProfileView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    """Redner the student's profile."""
+    required_role = ["student"]
+    template_name = "student_profile.html"    
 
-@login_required  
-def student_support(request):
-    """View student support page."""
-    return render(request,'student_support.html')
+class StudentSupportView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    """Render the student support page."""
+    required_role = ["student"]
+    template_name = "student_support.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['faqs'] = [
+            {"question": "How do I reset my password?", "answer": "Go to the login page and click 'Forgot Password'."},
+            {"question": "How do I contact my instructor?", "answer": "Navigate to the Lessons section and click on the instructor's name."},
+            {"question": "What are the system requirements?", "answer": "The platform works best on modern web browsers like Chrome or Firefox."}
+        ]
+        return context
 
 @login_required  
 def download_invoice(request,invoice_id):
@@ -176,22 +223,16 @@ def download_invoice(request,invoice_id):
     response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.id}.pdf"'
     response.write("the amount paid is this number")  
     return response
-
-@login_required  
-def student_support(request):
-    """View FAQ page."""
-    faqs = [
-        {"question": "How do I reset my password?", "answer": "Go to the login page and click 'Forgot Password'."},
-        {"question": "How do I contact my instructor?", "answer": "Navigate to the Lessons section and click on the instructor's name."},
-        {"question": "What are the system requirements?", "answer": "The platform works best on modern web browsers like Chrome or Firefox."}
-    ]
-    return render(request, 'student_support.html', {'faqs': faqs})
     
-@login_required    
-def lesson_detail(request, lesson_id):
-    """Display individual lesson details after clicking icon on student dashboard."""
-    lesson = get_object_or_404(Lesson, id=lesson_id)
-    return render(request, 'lesson_detail.html', context={"lesson": lesson})
+
+class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
+    model = Lesson
+    template_name = 'lesson_detail.html'
+    context_object_name = 'lesson'
+    required_role = 'student'
+
+    def get_object(self):
+        return get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
@@ -232,49 +273,39 @@ class LogInView(LoginProhibitedMixin, View):
 
     def get(self, request):
         """Display log in template."""
-
         self.next = request.GET.get('next') or ''
         return self.render()
 
     def post(self, request):
-        
         """Handle log in attempt."""
         form = LogInForm(request.POST)
         user = form.get_user()
-
-        # Determine the redirect URL before checking login success
-        if user is not None:
-            if user.role == 'admin':
-                self.next = 'admin_dashboard' 
-            elif user.role == 'tutor':
-                self.next = 'tutor_page' 
-            elif user.role == 'student':
-                self.next = 'student_dashboard'  
-            else: 
-                """come back"""
-                self.next = request.POST.get('next') or settings.REDIRECT_URL_WHEN_LOGGED_IN
-
-            # Log the user in and redirect
+        if user is not None and user.is_active:
             login(request, user)
-            return redirect(self.next)
-
-        # If authentication fails, show an error and re-render the form
-        messages.add_message(request, messages.ERROR, "The credentials provided were invalid!")
-        return self.render()
+            return redirect(reverse("dashboard"))
+        else:
+            messages.add_message(request, messages.ERROR, "The credentials provided were invalid!")
+            return self.render()
+        
 
     def render(self):
         """Render log in template with blank log in form."""
-
         form = LogInForm()
         return render(self.request, 'log_in.html', {'form': form, 'next': self.next})
 
-
-def log_out(request):
+class LogoutView(View):
     """Log out the current user"""
+    def get(self, request, *args, **kwargs):
+        logout(request)
+        return redirect('home')
 
-    logout(request)
-    return redirect('home')
+class HomeView(LoginProhibitedMixin, View):
+    """Display the application's start/home screen."""
 
+    redirect_when_logged_in_url = settings.REDIRECT_URL_WHEN_LOGGED_IN
+
+    def get(self, request, *args, **kwargs):
+        return render(request, 'home.html')
 
 class PasswordView(LoginRequiredMixin, FormView):
     """Display password change screen and handle password change requests."""
@@ -299,19 +330,9 @@ class PasswordView(LoginRequiredMixin, FormView):
     def get_success_url(self):
         """Redirect the user after successful password change."""
 
-        messages.add_message(self.request, messages.SUCCESS, "Password updated!")
-
-        # Redirect based on user role
-        if self.request.user.role == 'admin':
-            return reverse('admin_dashboard')
-        elif self.request.user.role == 'tutor':
-            return reverse('tutor_page')
-        elif self.request.user.role == 'student':
-            return reverse('student_dashboard')
-        else:
-            # Default
-            return reverse('home') 
-            
+        messages.add_message(self.request, messages.SUCCESS, "Password updated!") 
+        return reverse("dashboard")
+    
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     """Display user profile editing screen, and handle profile modifications."""
 
@@ -325,20 +346,8 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         """Return redirect URL after successful update."""
-        user = self.request.user
-
-        # URL is determined by role
-        if user.role == 'admin':
-            redirect_url_name = 'admin_dashboard'
-        elif user.role == 'tutor':
-            redirect_url_name = 'tutor_page'
-        elif user.role == 'student':
-            redirect_url_name = 'student_dashboard'
-        else:
-            redirect_url_name = settings.REDIRECT_URL_WHEN_LOGGED_IN
-
         messages.add_message(self.request, messages.SUCCESS, "Profile updated!")
-        return reverse(redirect_url_name)  
+        return reverse("dashboard")  
 
 
 class SignUpView(LoginProhibitedMixin, FormView):
@@ -352,38 +361,17 @@ class SignUpView(LoginProhibitedMixin, FormView):
         """come back"""
         self.object = form.save()
         login(self.request, self.object)
-        
-        # Set the redirection URL based on user role
-        if self.object.role == 'admin':
-            self.success_url = reverse('admin_dashboard')
-        elif self.object.role == 'tutor':
-            self.success_url = reverse('tutor_page')
-        elif self.object.role == 'student':
-            self.success_url = reverse('student_dashboard')
-        else:
-            # Default URL
-            self.success_url = reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
             
+        self.success_url = reverse("dashboard")
         return super().form_valid(form)
 
     def get_success_url(self): 
-        """come back"""
-        #return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
         return self.success_url
     
     def get_redirect_when_logged_in_url(self):
         """Redirect logged-in users based on their role."""
-        user = self.request.user
-        if user.role == 'admin':
-            return reverse('admin_dashboard')
-        elif user.role == 'tutor':
-            return reverse('tutor_page')
-        elif user.role == 'student':
-            return reverse('student_dashboard')
-        else:
-            return super().get_redirect_when_logged_in_url() 
-            """come back"""
-
+        return reverse("dashboard")
+            
 @login_required
 def schedule_sessions(request):
     if request.user.role != 'tutor':
