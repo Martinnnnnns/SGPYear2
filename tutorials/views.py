@@ -516,3 +516,22 @@ def delete_all_availability(request):
     TutorAvailability.objects.filter(tutor=request.user).delete()
     request.session['success_message'] = "All availability slots deleted successfully"
     return redirect('schedule_sessions')
+
+@login_required
+def confirm_delete_availability(request, slot_id):
+    slot = TutorAvailability.objects.get(id=slot_id, tutor=request.user)
+    if request.method == 'POST':
+        # Perform the deletion if confirmed
+        slot.delete()
+        messages.success(request, "Availability slot deleted successfully.")
+        return redirect('schedule_sessions')  # Redirect back to schedule sessions
+    return render(request, 'confirm_delete_availability.html', {'slot': slot})
+
+@login_required
+def confirm_delete_all_availabilities(request):
+    if request.method == 'POST':
+        # Delete all availabilities for the tutor
+        TutorAvailability.objects.filter(tutor=request.user).delete()
+        messages.success(request, "All availability slots deleted successfully.")
+        return redirect('schedule_sessions')  # Redirect back to schedule sessions
+    return render(request, 'confirm_delete_all_availabilities.html')

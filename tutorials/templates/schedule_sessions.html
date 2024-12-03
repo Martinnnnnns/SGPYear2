@@ -94,8 +94,9 @@
         </div>
     </div>
 
+    <!-- Confirmation for Deleting All Slots -->
     <div class="d-flex justify-content-end mb-4">
-        <form method="post" action="{% url 'delete_all_availability' %}">
+        <form method="get" action="{% url 'confirm_delete_all_availabilities' %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">
                 Delete All Slots
@@ -137,7 +138,8 @@
                                 {% for slot in day_data.slots %}
                                 <div class="time-slot d-flex justify-content-between align-items-center">
                                     <span>{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</span>
-                                    <form method="post" action="{% url 'delete_availability' slot.id %}">
+                                    <!-- Confirmation for Deleting a Single Slot -->
+                                    <form method="get" action="{% url 'confirm_delete_availability' slot.id %}">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-danger btn-sm ms-2">
                                             Delete
