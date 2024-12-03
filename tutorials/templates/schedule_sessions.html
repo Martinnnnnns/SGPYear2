@@ -89,19 +89,17 @@
                     {{ form.non_field_errors }}
                 </div>
                 {% endif %}
-                <button type="submit" class="btn btn-primary">Add Availability</button>
+                <button type="submit" class="btn btn-primary me-2">Add Slot</button>
+            </form>
+
+            <!-- Add "Delete All Slots" button here -->
+            <form method="get" action="{% url 'confirm_delete_all_availabilities' %}" class="mt-3">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    Delete All Slots
+                </button>
             </form>
         </div>
-    </div>
-
-    <!-- Confirmation for Deleting All Slots -->
-    <div class="d-flex justify-content-end mb-4">
-        <form method="get" action="{% url 'confirm_delete_all_availabilities' %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-danger">
-                Delete All Slots
-            </button>
-        </form>
     </div>
 
     <div class="calendar-container">
