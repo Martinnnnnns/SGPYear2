@@ -503,3 +503,12 @@ def delete_availability(request, slot_id):
         request.session['success_message'] = "Availability slot deleted successfully"
         
     return redirect('schedule_sessions')
+
+@login_required
+def delete_all_availability(request):
+    if request.user.role != 'tutor':
+        return redirect('home')
+
+    TutorAvailability.objects.filter(tutor=request.user).delete()
+    request.session['success_message'] = "All availability slots deleted successfully"
+    return redirect('schedule_sessions')

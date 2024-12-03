@@ -20,17 +20,29 @@ class TestTutorAvailabilityForm(TestCase):
         form_data = {
             'date': self.tomorrow,
             'start_time': '10:00',
-            'end_time': '11:00'
+            'end_time': '10:30',
+            'recurrence': 'none'
         }
         form = TutorAvailabilityForm(data=form_data, tutor=self.tutor)
         self.assertTrue(form.is_valid())
+
+    def test_invalid_time_format(self):
+        form_data = {
+            'date': self.tomorrow,
+            'start_time': '10:15',
+            'end_time': '11:00',
+            'recurrence': 'none'
+        }
+        form = TutorAvailabilityForm(data=form_data, tutor=self.tutor)
+        self.assertFalse(form.is_valid())
 
     def test_past_date_invalid(self):
         yesterday = timezone.now().date() - timedelta(days=1)
         form_data = {
             'date': yesterday,
             'start_time': '10:00',
-            'end_time': '11:00'
+            'end_time': '10:30',
+            'recurrence': 'none'
         }
         form = TutorAvailabilityForm(data=form_data, tutor=self.tutor)
         self.assertFalse(form.is_valid())
@@ -40,7 +52,8 @@ class TestTutorAvailabilityForm(TestCase):
         form_data = {
             'date': self.tomorrow,
             'start_time': '11:00',
-            'end_time': '10:00'
+            'end_time': '10:30',
+            'recurrence': 'none'
         }
         form = TutorAvailabilityForm(data=form_data, tutor=self.tutor)
         self.assertFalse(form.is_valid())
@@ -50,7 +63,8 @@ class TestTutorAvailabilityForm(TestCase):
         form1_data = {
             'date': self.tomorrow,
             'start_time': '10:00',
-            'end_time': '12:00'
+            'end_time': '11:30',
+            'recurrence': 'none'
         }
         form1 = TutorAvailabilityForm(data=form1_data, tutor=self.tutor)
         self.assertTrue(form1.is_valid())
@@ -60,7 +74,8 @@ class TestTutorAvailabilityForm(TestCase):
         form2_data = {
             'date': self.tomorrow,
             'start_time': '11:00',
-            'end_time': '13:00'
+            'end_time': '12:30',
+            'recurrence': 'none'
         }
         form2 = TutorAvailabilityForm(data=form2_data, tutor=self.tutor)
         self.assertFalse(form2.is_valid())
@@ -72,7 +87,7 @@ class TestTutorAvailabilityForm(TestCase):
         form_data = {
             'date': self.tomorrow,
             'start_time': '10:00',
-            'end_time': '11:00',
+            'end_time': '10:30',
             'recurrence': 'weekly',
             'end_recurrence_date': next_week
         }
@@ -84,7 +99,7 @@ class TestTutorAvailabilityForm(TestCase):
         form_data = {
             'date': self.tomorrow,
             'start_time': '10:00',
-            'end_time': '11:00',
+            'end_time': '10:30',
             'recurrence': 'biweekly',
             'end_recurrence_date': two_weeks_later
         }
@@ -95,7 +110,7 @@ class TestTutorAvailabilityForm(TestCase):
         form_data = {
             'date': self.tomorrow,
             'start_time': '10:00',
-            'end_time': '11:00',
+            'end_time': '10:30',
             'recurrence': 'weekly',
             'end_recurrence_date': ''
         }
@@ -108,7 +123,7 @@ class TestTutorAvailabilityForm(TestCase):
         form_data = {
             'date': self.tomorrow,
             'start_time': '10:00',
-            'end_time': '11:00',
+            'end_time': '10:30',
             'recurrence': 'weekly',
             'end_recurrence_date': yesterday
         }
