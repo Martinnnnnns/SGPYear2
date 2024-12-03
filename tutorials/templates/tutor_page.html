@@ -1,0 +1,72 @@
+{% extends "base_content.html" %}
+
+{% block title %}
+Tutor Dashboard
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <!-- Welcome Message -->
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <h1 class="display-4 fw-bold">Welcome, {{ user.first_name }}!</h1>
+      <p class="lead text-muted">Manage your tutoring sessions, students, and reports.</p>
+    </div>
+  </div>
+
+  <!-- Action Cards -->
+  <div class="row justify-content-center mt-5">
+    <!-- View Students Card -->
+    <div class="col-md-4 col-sm-6 mb-4">
+      <a href="{% url 'student_list' %}" class="text-decoration-none">
+        <div class="card shadow text-center">
+          <div class="card-body">
+            <h5 class="card-title fw-bold text-primary">View Students</h5>
+            <p class="card-text text-muted">Manage and review student information.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Schedule Sessions Card -->
+    <div class="col-md-4 col-sm-6 mb-4">
+      <a href="{% url 'schedule_sessions' %}" class="text-decoration-none">
+        <div class="card shadow text-center">
+          <div class="card-body">
+            <h5 class="card-title fw-bold text-primary">Schedule Sessions</h5>
+            <p class="card-text text-muted">View and manage your tutoring sessions.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Reports Card -->
+    <div class="col-md-4 col-sm-6 mb-4">
+      <a href="{% url 'reports' %}" class="text-decoration-none">
+        <div class="card shadow text-center">
+          <div class="card-body">
+            <h5 class="card-title fw-bold text-primary">Reports</h5>
+            <p class="card-text text-muted">Generate reports for your activities.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+<!-- Action Cards -->
+<div class="row justify-content-center mt-5">
+  <!-- Lessons Management Button -->
+  <div class="col-md-4 col-sm-6 mb-4">
+    <a href="{% url 'tutor_lessons' %}" class="text-decoration-none">
+      <div class="card shadow text-center">
+        <div class="card-body">
+          <h5 class="card-title fw-bold text-primary">Manage Lessons</h5>
+          <p class="card-text text-muted">View, cancel, or reschedule your lessons.</p>
+          <button class="btn btn-primary mt-3">Go to Lessons</button>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+</div>
+{% endblock %}

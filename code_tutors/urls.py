@@ -48,8 +48,11 @@ urlpatterns = [
     path('reports/', views.ReportsView.as_view(), name='reports'),
     path('trigger_matching/', views.TriggerMatchingView.as_view(), name='trigger_matching'),
     path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
+    path('tutor_student_list/students/' , views.StudentListView.as_view(), name = 'student_list'),
     path('confirm_delete/<int:slot_id>/', views.confirm_delete_availability, name='confirm_delete_availability'),
     path('confirm_delete_all/', views.confirm_delete_all_availabilities, name='confirm_delete_all_availabilities'),
     path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
+    path('tutor/lessons/', views.TutorLessonsView.as_view(), name='tutor_lessons'),
+
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

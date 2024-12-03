@@ -16,6 +16,7 @@ from django.utils import timezone
 import calendar
 from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice
+from django.db.models import Q
 
 class RoleRequiredMixin:
     required_role = []  #Set this in views that use the mixin
@@ -82,6 +83,15 @@ def home(request):
 class ReportsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     template_name = 'reports.html'
     required_role = ['tutor', 'admin']   
+    
+
+class TutorLessonsView(LoginRequiredMixin, TemplateView):
+    template_name = "tutor_lessons.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["lessons"] = Lesson.objects.filter(tutor=self.request.user).order_by("lesson_datetime")
+        return context    
 
 """ <---- Admin Views ----> """
     
@@ -235,6 +245,25 @@ class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
     def get_object(self):
         return get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
     
+class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
+    template_name = 'student_list.html'
+    context_object_name = 'students'
+    paginate_by = 20
+    required_role = ['tutor']
+    def get_queryset(self):
+        search_query = self.request.GET.get('search', '')
+        students_queryset = User.objects.filter(
+            role='student',
+            lessons_as_student__tutor=self.request.user
+        ).distinct().order_by('last_name', 'first_name')
+        if search_query:
+            students_queryset = students_queryset.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(email__icontains=search_query) |
+                Q(username__icontains=search_query)
+            )
+        return students_queryset    
     
     
     
@@ -254,7 +283,6 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
         cancellation_request.user = self.request.user
         cancellation_request.save()
 
-        # Allow cancellation for both scheduled and rescheduled lessons
         valid_statuses = [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
         if form.cleaned_data['request_type'] == CancellationRequest.REQUEST_SINGLE:
             lessons = form.cleaned_data['lessons'].filter(status__in=valid_statuses)
