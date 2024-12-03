@@ -16,7 +16,7 @@ from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, Lesso
 from tutorials.helpers import login_prohibited
 from tutorials.models import User, LessonRequest, TutorAvailability, Lesson, Invoice
 from django.core.paginator import Paginator
-
+from datetime import timedelta
 
 @login_required
 def dashboard(request):
@@ -388,7 +388,7 @@ class SignUpView(LoginProhibitedMixin, FormView):
 def schedule_sessions(request):
     if request.user.role != 'tutor':
         return redirect('home')
-        
+
     if request.method == 'POST':
         form = TutorAvailabilityForm(request.POST, tutor=request.user)
         if form.is_valid():
@@ -397,7 +397,7 @@ def schedule_sessions(request):
             recurrence = form.cleaned_data['recurrence']
             start_time = form.cleaned_data['start_time']
             end_time = form.cleaned_data['end_time']
-            
+
             # For one-time slots or if no end date is specified
             if recurrence == 'none' or not end_recurrence_date:
                 availability = TutorAvailability(
@@ -422,12 +422,12 @@ def schedule_sessions(request):
                         end_recurrence_date=end_recurrence_date
                     )
                     availability.save()
-                    
+
                     # Calculate next date based on recurrence type
                     if recurrence == 'weekly':
-                        current_date += timezone.timedelta(days=7)
+                        current_date += timedelta(days=7)
                     elif recurrence == 'biweekly':
-                        current_date += timezone.timedelta(days=14)
+                        current_date += timedelta(days=14)
 
             request.session['success_message'] = "Availability slot(s) added successfully"
             return redirect('schedule_sessions')
@@ -435,30 +435,30 @@ def schedule_sessions(request):
         form = TutorAvailabilityForm(tutor=request.user)
 
     success_message = request.session.pop('success_message', None)
-    
+
     try:
         month = int(request.GET.get('month', timezone.now().month))
         year = int(request.GET.get('year', timezone.now().year))
     except ValueError:
         month = timezone.now().month
         year = timezone.now().year
-    
+
     cal = calendar.monthcalendar(year, month)
-    
+
     if month == 1:
         prev_month = 12
         prev_year = year - 1
     else:
         prev_month = month - 1
         prev_year = year
-        
+
     if month == 12:
         next_month = 1
         next_year = year + 1
     else:
         next_month = month + 1
         next_year = year
-    
+
     month_slots = TutorAvailability.objects.filter(
         tutor=request.user,
         date__year=year,
@@ -476,6 +476,9 @@ def schedule_sessions(request):
             week_slots.append({'day': day, 'slots': day_slots})
         calendar_with_slots.append(week_slots)
 
+    # Generate a list of hour options (00:00 to 23:30)
+    hours_range = [f"{hour:02d}:{minute:02d}" for hour in range(24) for minute in [0, 30]]
+
     context = {
         'form': form,
         'calendar': calendar_with_slots,
@@ -486,8 +489,9 @@ def schedule_sessions(request):
         'prev_year': prev_year,
         'next_month': next_month,
         'next_year': next_year,
+        'hours_range': hours_range,  # Pass the generated time options
     }
-    
+
     return render(request, 'schedule_sessions.html', context)
 
 @login_required
