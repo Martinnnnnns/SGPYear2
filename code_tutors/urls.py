@@ -47,5 +47,6 @@ urlpatterns = [
     path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
     path('confirm_delete/<int:slot_id>/', views.confirm_delete_availability, name='confirm_delete_availability'),
     path('confirm_delete_all/', views.confirm_delete_all_availabilities, name='confirm_delete_all_availabilities'),
+    path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
