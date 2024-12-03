@@ -1,19 +1,72 @@
 {% extends 'base_content.html' %}
 
+{% block title %}
+Admin Dashboard
+{% endblock %}
+
 {% block content %}
-<div class="container">
+<div class="container mt-5">
+  <!-- Page Header -->
   <div class="row">
-    <div class="col-12">
-      <h1>Admin Dashboard</h1>
+    <div class="col-12 text-center">
+      <h1 class="display-4 fw-bold">Admin Dashboard</h1>
+      <p class="lead text-muted">Manage students, tutors, bookings, and match tutors with students.</p>
     </div>
   </div>
 
-  <div class="row mt-5">
-    <div class="col-12 text-center">
-      <a href="{% url 'admin_student_list' %}" class="btn btn-primary btn-lg m-2">Students</a>
-      <a href="{% url 'admin_tutor_list' %}" class="btn btn-primary btn-lg m-2">Tutors</a>
-      <a href="{% url 'admin_bookings_list' %}" class="btn btn-primary btn-lg m-2">Bookings</a>  
-      <a href="{% url 'trigger_matching' %}" class="btn btn-primary btn-lg m-2">Match Tutors</a>
+  <!-- Action Cards -->
+  <div class="row mt-5 justify-content-center">
+    <!-- Students Card -->
+    <div class="col-md-3 col-sm-6 mb-4">
+      <a href="{% url 'admin_student_list' %}" class="text-decoration-none">
+        <div class="card shadow h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-user-graduate fa-3x text-primary mb-3"></i>
+            <h5 class="card-title fw-bold">Students</h5>
+            <p class="card-text text-muted">View and manage student accounts.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Tutors Card -->
+    <div class="col-md-3 col-sm-6 mb-4">
+      <a href="{% url 'admin_tutor_list' %}" class="text-decoration-none">
+        <div class="card shadow h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-chalkboard-teacher fa-3x text-primary mb-3"></i>
+            <h5 class="card-title fw-bold">Tutors</h5>
+            <p class="card-text text-muted">View and manage tutor profiles.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Bookings Card -->
+    <div class="col-md-3 col-sm-6 mb-4">
+      <a href="{% url 'admin_bookings_list' %}" class="text-decoration-none">
+        <div class="card shadow h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
+            <h5 class="card-title fw-bold">Bookings</h5>
+            <p class="card-text text-muted">Manage all lesson bookings.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Match Tutors Card -->
+    <div class="col-md-3 col-sm-6 mb-4">
+      <a href="{% url 'trigger_matching' %}" class="text-decoration-none">
+        <div class="card shadow h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
+            <h5 class="card-title fw-bold">Match Tutors</h5>
+            <p class="card-text text-muted">Automatically match tutors with students.</p>
+          </div>
+        </div>
+      </a>
     </div>
   </div>
+</div>
 {% endblock %}

@@ -85,12 +85,28 @@ class Subject(models.Model):
 
 class Lesson(models.Model):
     """Model for lessons that admins can book. Subjects are optional but must map correctly to a language."""
+    STATUS_SCHEDULED = 'scheduled'
+    STATUS_CANCELED = 'canceled'
+    STATUS_RESCHEDULED = 'rescheduled'
+    STATUS_COMPLETED = 'completed'
+    STATUS_CHOICES = [
+        (STATUS_SCHEDULED, 'Scheduled'),
+        (STATUS_CANCELED, 'Canceled'),
+        (STATUS_RESCHEDULED, 'Rescheduled'),
+        (STATUS_COMPLETED, 'Completed'),
+    ]
+    
     student = models.ForeignKey(User, related_name='lessons_as_student', on_delete=models.CASCADE)
     tutor = models.ForeignKey(User, related_name='lessons_as_tutor', on_delete=models.CASCADE)
     language = models.ForeignKey(ProgrammingLanguage, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, blank=True)
     lesson_datetime = models.DateTimeField(null=False)
-
+    status = models.CharField(
+        
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_SCHEDULED,
+    )
     def __str__(self):
         subject_str = self.subject.name if self.subject else "General"
         return f"{self.language.name} Lesson ({subject_str}) at {self.lesson_datetime} between tutor {self.tutor.full_name()} and student {self.student.full_name()}"
@@ -209,3 +225,45 @@ class TutorAvailability(models.Model):
     class Meta:
         ordering = ['date', 'start_time']
         verbose_name_plural = "Tutor availabilities"
+        
+class CancellationRequest(models.Model):
+    REQUEST_ALL = 'all'
+    REQUEST_SINGLE = 'single'
+    REQUEST_TYPE_CHOICES = [
+        (REQUEST_ALL, 'All Bookings'),
+        (REQUEST_SINGLE, 'Single Booking'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cancellation_requests')
+    request_type = models.CharField(max_length=10, choices=REQUEST_TYPE_CHOICES)
+    lessons = models.ManyToManyField(Lesson, blank=True)
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_processed = models.BooleanField(default=False)
+    def __str__(self):
+        return f"Cancellation Request by {self.user.username} - {self.get_request_type_display()}"
+    class Meta:
+        ordering = ['-created_at']
+
+class ChangeRequest(models.Model):
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_DENIED = 'denied'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_DENIED, 'Denied'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='change_requests')
+    lessons = models.ManyToManyField('Lesson')
+    new_datetime = models.DateTimeField()
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING
+    )
+    def __str__(self):
+        return f"Change Request by {self.user.username} - New Time: {self.new_datetime} - Status: {self.get_status_display()}"
+    class Meta:
+        ordering = ['-created_at']        

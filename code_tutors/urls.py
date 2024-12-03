@@ -36,6 +36,8 @@ urlpatterns = [
     path('admin_student_list/', views.AdminStudentListView.as_view(), name='admin_student_list'),
     path('admin_tutor_list/', views.AdminTutorListView.as_view(), name='admin_tutor_list'),
     path('admin_bookings_list/', views.AdminBookingsListView.as_view(), name='admin_bookings_list'),
+    path('request_change_bookings/<int:lesson_id>/', views.RequestChangeBookingsView.as_view(), name='request_change_bookings'),
+    path('request_cancel_bookings/<int:lesson_id>/', views.RequestCancelBookingsView.as_view(), name='request_cancel_bookings'),
     path('request_lesson/', views.MakeLessonRequestView.as_view(), name='request_lesson'), 
     path('request_made/', views.LessonMadeView.as_view(), name='request_made'),  
     path('student_profile/', views.StudentProfileView.as_view(), name='student_profile'),  
@@ -44,10 +46,13 @@ urlpatterns = [
     path('lesson/<int:lesson_id>/', views.LessonDetailView.as_view(), name='lesson_detail'),
     path('schedule_sessions/', views.schedule_sessions, name='schedule_sessions'),
     path('reports/', views.ReportsView.as_view(), name='reports'),
-    path('trigger_matching/', views.trigger_matching, name='trigger_matching'),
+    path('trigger_matching/', views.TriggerMatchingView.as_view(), name='trigger_matching'),
     path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
+    path('tutor_student_list/students/' , views.StudentListView.as_view(), name = 'student_list'),
     path('confirm_delete/<int:slot_id>/', views.confirm_delete_availability, name='confirm_delete_availability'),
     path('confirm_delete_all/', views.confirm_delete_all_availabilities, name='confirm_delete_all_availabilities'),
     path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
+    path('tutor/lessons/', views.TutorLessonsView.as_view(), name='tutor_lessons'),
+
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

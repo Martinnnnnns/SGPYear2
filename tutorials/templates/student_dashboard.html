@@ -39,6 +39,8 @@
               <td>{{ lesson.lesson_datetime|date:"F j, Y" }}</td>
               <td>
                 <a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-sm btn-primary">View</a>
+                <a href="{% url 'request_cancel_bookings' lesson.id %}" class="btn btn-sm btn-danger ms-1">Cancel</a>
+                <a href="{% url 'request_change_bookings' lesson.id %}" class="btn btn-sm btn-warning ms-1">Change</a>
               </td>
             </tr>
             {% endfor %}
