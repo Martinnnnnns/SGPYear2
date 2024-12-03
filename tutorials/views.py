@@ -524,14 +524,21 @@ def confirm_delete_availability(request, slot_id):
         # Perform the deletion if confirmed
         slot.delete()
         messages.success(request, "Availability slot deleted successfully.")
-        return redirect('schedule_sessions')  # Redirect back to schedule sessions
+        return redirect('schedule_sessions')
     return render(request, 'confirm_delete_availability.html', {'slot': slot})
 
 @login_required
 def confirm_delete_all_availabilities(request):
+    # Check if the user has any availability slots
+    availability_exists = TutorAvailability.objects.filter(tutor=request.user).exists()
+
+    if not availability_exists:
+        messages.info(request, "There are no slots to delete.")
+        return redirect('schedule_sessions')
+
     if request.method == 'POST':
-        # Delete all availabilities for the tutor
         TutorAvailability.objects.filter(tutor=request.user).delete()
         messages.success(request, "All availability slots deleted successfully.")
-        return redirect('schedule_sessions')  # Redirect back to schedule sessions
+        return redirect('schedule_sessions') 
+
     return render(request, 'confirm_delete_all_availabilities.html')
