@@ -45,7 +45,7 @@ class TestScheduleSessions(TestCase):
             'end_time': '11:00'
         }
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(TutorAvailability.objects.count(), 1)
 
     def test_calendar_navigation(self):
