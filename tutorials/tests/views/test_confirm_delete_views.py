@@ -4,6 +4,7 @@ from django.utils import timezone
 from datetime import timedelta
 from tutorials.models import User, TutorAvailability
 from django.contrib.messages import get_messages
+from tutorials.views import ConfirmDeleteAvailabilityView, ConfirmDeleteAllAvailabilitiesView
 
 class TestConfirmDeleteViews(TestCase):
     def setUp(self):
@@ -59,6 +60,7 @@ class TestConfirmDeleteViews(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'confirm_delete_availability.html')
         self.assertIn('slot', response.context)
+        self.assertEqual(response.context['slot'], self.test_slot)
 
     def test_confirm_delete_post_request(self):
         """Test that POST request deletes the slot"""

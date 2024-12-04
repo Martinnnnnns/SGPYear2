@@ -61,14 +61,15 @@ class TutorStudentViewsTest(TestCase):
             lesson_datetime=now() - timedelta(days=1)
         )
 
+        self.tutor_students_list_url = reverse('tutor_students_list')
+        self.student_profile_url = lambda student_id: reverse('student_profile_detail', kwargs={'student_id': student_id})
+
     def test_tutor_students_list_view_requires_login(self):
-        """Test that the tutor students list view requires login"""
         response = self.client.get(reverse('tutor_students_list'))
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith('/log_in/'))
+        self.assertEqual(response.url, '/login/')
 
     def test_tutor_students_list_view_as_tutor(self):
-        """Test that a logged-in tutor can see their students list"""
         self.client.login(username='@tutor_test', password='Password123')
         response = self.client.get(reverse('tutor_students_list'))
         self.assertEqual(response.status_code, 200)
@@ -77,15 +78,13 @@ class TutorStudentViewsTest(TestCase):
         self.assertNotContains(response, self.other_student.email)
 
     def test_student_profile_detail_requires_login(self):
-        """Test that the student profile detail view requires login"""
         response = self.client.get(
             reverse('student_profile_detail', kwargs={'student_id': self.student.id})
         )
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith('/log_in/'))
+        self.assertEqual(response.url, '/login/')
 
     def test_student_profile_detail_as_tutor(self):
-        """Test that a tutor can see their student's profile"""
         self.client.login(username='@tutor_test', password='Password123')
         response = self.client.get(
             reverse('student_profile_detail', kwargs={'student_id': self.student.id})
@@ -96,15 +95,14 @@ class TutorStudentViewsTest(TestCase):
         self.assertContains(response, 'Python')
 
     def test_tutor_cannot_view_non_student_profile(self):
-        """Test that a tutor cannot view profiles of students they don't teach"""
         self.client.login(username='@tutor_test', password='Password123')
         response = self.client.get(
             reverse('student_profile_detail', kwargs={'student_id': self.other_student.id})
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/')
 
     def test_upcoming_and_past_lessons_displayed(self):
-        """Test that upcoming and past lessons are correctly displayed"""
         self.client.login(username='@tutor_test', password='Password123')
         response = self.client.get(
             reverse('student_profile_detail', kwargs={'student_id': self.student.id})
@@ -119,3 +117,38 @@ class TutorStudentViewsTest(TestCase):
         
         self.assertIn(future_date, content)
         self.assertIn(past_date, content)
+
+    def test_tutor_students_list_view_as_student(self):
+        """Test that a student user is redirected to home page."""
+        self.client.login(username='@student_test', password='Password123')
+        response = self.client.get(self.tutor_students_list_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/') 
+
+    def test_student_profile_detail_as_student(self):
+        """Test that a student user is redirected to home page."""
+        self.client.login(username='@student_test', password='Password123')
+        response = self.client.get(self.student_profile_url(self.other_student.id))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/')
+
+    def test_student_profile_detail_invalid_student(self):
+        """Test accessing a non-existent student profile."""
+        self.client.login(username='@tutor_test', password='Password123')
+        response = self.client.get(self.student_profile_url(99999))
+        self.assertEqual(response.status_code, 404)
+
+    def test_student_profile_detail_different_tutor(self):
+        """Test tutor accessing a student they haven't taught."""
+        other_tutor = get_user_model().objects.create_user(
+            username='@other_tutor',
+            password='Password123',
+            email='other_tutor@test.com',
+            role='tutor'
+        )
+        
+        self.client.login(username='@other_tutor', password='Password123')
+        
+        response = self.client.get(self.student_profile_url(self.student.id))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/') 

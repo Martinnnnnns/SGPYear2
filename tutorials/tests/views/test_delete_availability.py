@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 from tutorials.models import User, TutorAvailability
+from tutorials.views import DeleteAvailabilityView, DeleteAllAvailabilityView  # Add the imports
 
 class TestDeleteAvailability(TestCase):
     def setUp(self):
