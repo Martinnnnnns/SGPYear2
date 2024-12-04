@@ -486,7 +486,7 @@ class SignUpView(LoginProhibitedMixin, FormView):
 class ScheduleSessionsView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     template_name = 'schedule_sessions.html'
     form_class = TutorAvailabilityForm
-    success_url = '/schedule-sessions/'  
+    success_url = '/schedule_sessions/'  
     login_url = '/login/' 
     
     def test_func(self):

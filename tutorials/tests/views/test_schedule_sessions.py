@@ -50,7 +50,7 @@ class TestScheduleSessions(TestCase):
             'end_recurrence_date': ''
         }
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
         self.assertEqual(TutorAvailability.objects.count(), 1)
         
         # Verify slot details

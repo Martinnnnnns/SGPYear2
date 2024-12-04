@@ -50,7 +50,6 @@ urlpatterns = [
     path('confirm_delete_all/', views.ConfirmDeleteAllAvailabilitiesView.as_view(), name='confirm_delete_all_availabilities'),
     path('tutor_page/delete_all_availability/', views.DeleteAllAvailabilityView.as_view(), name='delete_all_availability'),
     path('tutor/lessons/', views.TutorLessonsView.as_view(), name='tutor_lessons'),
-
     path('tutor/students/', views.TutorStudentsListView.as_view(), name='tutor_students_list'),
     path('tutor/student/<int:student_id>/', views.StudentProfileDetailView.as_view(), name='student_profile_detail'),
     path('reports/generate/<str:time_period>/', views.GenerateReportView.as_view(), name='generate_report'),
