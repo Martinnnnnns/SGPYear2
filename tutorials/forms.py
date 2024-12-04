@@ -236,6 +236,8 @@ class TutorAvailabilityForm(forms.ModelForm):
                         break
 
         return cleaned_data
+    
+    
 class CancellationRequestForm(forms.ModelForm):
     request_type = forms.ChoiceField(
         choices=CancellationRequest.REQUEST_TYPE_CHOICES,
@@ -260,18 +262,18 @@ class CancellationRequestForm(forms.ModelForm):
         fields = ['request_type', 'lessons', 'reason']
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user')  
+        user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
+        valid_statuses = [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
         self.fields['lessons'].queryset = Lesson.objects.filter(
             models.Q(student=user) | models.Q(tutor=user),
-            status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+            status__in=valid_statuses
         )
-        self.fields['lessons'].widget.attrs.update({'disabled': False})   
-         
+
     def clean_lessons(self):
         lessons = self.cleaned_data.get('lessons')
         request_type = self.cleaned_data.get('request_type')
-        if request_type == CancellationRequest.REQUEST_SINGLE and not lessons.exists():
+        if request_type == CancellationRequest.REQUEST_SINGLE and not lessons:
             raise forms.ValidationError("Please select at least one lesson to cancel.")
         return lessons
 
@@ -280,17 +282,14 @@ class CancellationRequestForm(forms.ModelForm):
         request_type = cleaned_data.get('request_type')
 
         if request_type == CancellationRequest.REQUEST_ALL:
-            valid_lessons = self.fields['lessons'].queryset
-            if not valid_lessons.exists():
+            if not self.fields['lessons'].queryset.exists():
                 raise forms.ValidationError("No valid lessons found to cancel.")
-        return cleaned_data    
+        return cleaned_data
         
         
         
         
 class ChangeRequestForm(forms.ModelForm):
-    """ModelForm for handling change requests."""
-    
     REQUEST_SINGLE = 'single'
     REQUEST_ALL = 'all'
     REQUEST_TYPE_CHOICES = [
@@ -301,12 +300,13 @@ class ChangeRequestForm(forms.ModelForm):
     request_type = forms.ChoiceField(
         choices=REQUEST_TYPE_CHOICES,
         widget=forms.RadioSelect,
-        required=True
+        required=True,
+        label="Change Type"
     )
     lessons = forms.ModelMultipleChoiceField(
         queryset=Lesson.objects.none(),
-        widget=forms.CheckboxSelectMultiple,
         required=False,
+        widget=forms.CheckboxSelectMultiple,
         label="Select Lessons to Change"
     )
     new_datetime = forms.DateTimeField(
@@ -322,48 +322,45 @@ class ChangeRequestForm(forms.ModelForm):
 
     class Meta:
         model = ChangeRequest
-        fields = ('request_type', 'lessons', 'new_datetime', 'reason')
+        fields = ['request_type', 'lessons', 'new_datetime', 'reason']
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
+        self.user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
+        valid_status = [Lesson.STATUS_SCHEDULED]
         if self.user.role == User.TUTOR:
             self.fields['lessons'].queryset = Lesson.objects.filter(
                 tutor=self.user,
-                status=Lesson.STATUS_SCHEDULED
+                status__in=valid_status
             )
         elif self.user.role == User.STUDENT:
             self.fields['lessons'].queryset = Lesson.objects.filter(
                 student=self.user,
-                status=Lesson.STATUS_SCHEDULED
+                status__in=valid_status
             )
+
+    def clean_new_datetime(self):
+        new_datetime = self.cleaned_data.get('new_datetime')
+        if new_datetime and new_datetime < timezone.now():
+            raise forms.ValidationError("The new date and time must be in the future.")
+        return new_datetime
 
     def clean(self):
         cleaned_data = super().clean()
         request_type = cleaned_data.get('request_type')
         lessons = cleaned_data.get('lessons')
-        new_datetime = cleaned_data.get('new_datetime')
 
         if request_type == self.REQUEST_SINGLE and not lessons:
-            self.add_error('lessons', "Please select at least one lesson to change.")
+            raise forms.ValidationError("Please select at least one lesson to change.")
 
         if request_type == self.REQUEST_ALL:
-            if self.user.role == User.TUTOR:
-                lessons = Lesson.objects.filter(
-                    tutor=self.user,
-                    status=Lesson.STATUS_SCHEDULED
-                )
-            elif self.user.role == User.STUDENT:
-                lessons = Lesson.objects.filter(
-                    student=self.user,
-                    status=Lesson.STATUS_SCHEDULED
-                )
-            cleaned_data['lessons'] = lessons
-
-        if new_datetime and new_datetime < timezone.now():
-            self.add_error('new_datetime', "The new date and time must be in the future.")
+            valid_lessons = self.fields['lessons'].queryset
+            if not valid_lessons.exists():
+                raise forms.ValidationError("No valid lessons found to change.")
+            cleaned_data['lessons'] = valid_lessons
 
         return cleaned_data
+    
         
 class ChangeBookingDetailsForm(forms.Form):
     """Form for changing booking details."""

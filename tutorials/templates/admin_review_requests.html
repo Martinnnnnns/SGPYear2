@@ -1,0 +1,109 @@
+{% extends 'base_content.html' %}
+
+{% block title %}
+Admin Review Requests
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Page Header -->
+    <div class="row">
+        <div class="col-12 text-center">
+            <h1 class="display-4 fw-bold">Admin Review Requests</h1>
+            <p class="lead text-muted">Review and manage cancellation and change requests from students and tutors.</p>
+        </div>
+    </div>
+
+    <!-- Pending Cancellation Requests -->
+    <h2 class="mt-5">Pending Cancellation Requests</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped mt-3">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">User</th>
+                    <th scope="col">Lessons</th>
+                    <th scope="col">Reason</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in pending_cancellations %}
+                <tr>
+                    <td>{{ request.user }}</td>
+                    <td>
+                        {% for lesson in request.lessons.all %}
+                            {{ lesson.language.name }} ({{ lesson.subject.name }}) - 
+                            {{ lesson.lesson_datetime|date:"D, M j Y, g:i A" }}<br>
+                        {% endfor %}
+                    </td>
+                    <td>{{ request.reason|default:"No reason provided" }}</td>
+                    <td>
+                        <form method="post" class="d-flex flex-column">
+                            {% csrf_token %}
+                            <input type="hidden" name="request_id" value="{{ request.id }}">
+                            <input type="hidden" name="request_type" value="cancellation">
+                            <textarea name="admin_comment" class="form-control mb-2" placeholder="Admin comment"></textarea>
+                            <div>
+                                <button name="action" value="approve" class="btn btn-success btn-sm me-2">Approve</button>
+                                <button name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted">No pending cancellation requests.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pending Change Requests -->
+    <h2 class="mt-5">Pending Change Requests</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped mt-3">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">User</th>
+                    <th scope="col">Lessons</th>
+                    <th scope="col">New Date & Time</th>
+                    <th scope="col">Reason</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in pending_changes %}
+                <tr>
+                    <td>{{ request.user }}</td>
+                    <td>
+                        {% for lesson in request.lessons.all %}
+                            {{ lesson.language.name }} ({{ lesson.subject.name }}) - 
+                            {{ lesson.lesson_datetime|date:"D, M j Y, g:i A" }}<br>
+                        {% endfor %}
+                    </td>
+                    <td>{{ request.new_datetime|date:"D, M j Y, g:i A" }}</td>
+                    <td>{{ request.reason|default:"No reason provided" }}</td>
+                    <td>
+                        <form method="post" class="d-flex flex-column">
+                            {% csrf_token %}
+                            <input type="hidden" name="request_id" value="{{ request.id }}">
+                            <input type="hidden" name="request_type" value="change">
+                            <textarea name="admin_comment" class="form-control mb-2" placeholder="Admin comment"></textarea>
+                            <div>
+                                <button name="action" value="approve" class="btn btn-success btn-sm me-2">Approve</button>
+                                <button name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No pending change requests.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
