@@ -19,7 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path,include
 from tutorials import views
-from tutorials.views import AdminListView
+from tutorials.views import AdminListView, DeleteRecordView, DeleteBookingView, AddUserView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -50,5 +50,9 @@ urlpatterns = [
     path('confirm_delete_all/', views.confirm_delete_all_availabilities, name='confirm_delete_all_availabilities'),
     path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
     path('tutor/lessons/', views.TutorLessonsView.as_view(), name='tutor_lessons'),
+    path('<str:context_type>/<str:email>/edit/', views.UpdateRecordView.as_view(), name='update_record'),
+    path('<int:booking_id>/delete/', DeleteBookingView.as_view(), name='delete_booking'),
+    path('<str:email>/delete/', DeleteRecordView.as_view(), name='delete_record'),
+    path('<str:role>/add_user/', AddUserView.as_view(), name='add_user'),
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

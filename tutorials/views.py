@@ -17,7 +17,7 @@ import calendar
 from tutorials.helpers import login_prohibited
 from django.core.paginator import Paginator
 from django.db.models import Count, Avg
-from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
+from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm, UpdateForm, AdminUserForm
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, Subject
 from django.db.models import Q, F
 
@@ -99,6 +99,122 @@ class TutorLessonsView(LoginRequiredMixin, TemplateView):
 
 """ <---- Admin Views ----> """
 
+class AddUserView(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['admin']
+
+    def get(self, request, role):
+        """Display the form to create a new user, with the role pre-set based on the URL."""
+        form = AdminUserForm()
+        return render(request, 'add_user.html', {'form': form, 'role': role})
+
+    def post(self, request, role):
+        """Handle form submission and create the new user with the assigned role."""
+        print(request.POST)
+        form = AdminUserForm(request.POST)
+        
+        if form.is_valid():
+            print(form.cleaned_data) 
+            new_user = form.save(commit=False)
+            new_user.set_password(form.cleaned_data['password'])
+            new_user.role = role  # Set the role to the one passed in the URL
+            new_user.save()
+
+            # Success message
+            messages.success(request, f"{role.capitalize()} created successfully.")
+            
+            # Redirect to the appropriate list page
+            if role == 'student':
+                return redirect('admin_list', list_type='students')
+            elif role == 'tutor':
+                return redirect('admin_list', list_type='tutors')
+            else:
+                return redirect('')
+
+        return render(request, 'add_user.html', {'form': form, 'role': role})
+    
+    
+
+class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['admin']
+    template_name = 'delete_booking.html'
+
+    def get(self, request, booking_id):
+        """This method renders the confirmation page for deleting a booking."""
+        booking_to_delete = get_object_or_404(Lesson, id=booking_id)
+        return render(request, 'delete_booking.html', {'booking': booking_to_delete})
+
+    def post(self, request, booking_id):
+        """This method deletes the booking after confirmation."""
+        booking_to_delete = get_object_or_404(Lesson, id=booking_id)
+        booking_to_delete.delete()
+
+        messages.success(request, f"Booking {booking_to_delete.id} was deleted successfully.")
+        return redirect(reverse('admin_list', kwargs={'list_type': 'bookings'})) 
+
+class DeleteRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['admin']
+    template_name = 'delete_record.html'
+    
+    def get(self, request, email):
+        """
+        This method renders the confirmation page.
+        It fetches the user to be deleted and renders the confirmation template.
+        """
+        user_to_delete = get_object_or_404(User, email=email)
+        
+        # Render the confirmation template
+        return render(request, 'delete_record.html', {
+            'user': user_to_delete,
+        })
+
+    def post(self, request, email):
+        """
+        This method performs the deletion after the admin has confirmed.
+        """
+        user_to_delete = get_object_or_404(User, email=email)
+        
+        # Perform the delete operation
+        user_to_delete.delete()
+        
+        # Success message
+        messages.success(request, f"The user {user_to_delete.email} was deleted successfully.")
+        
+        # Redirect back to the list of users (students, tutors, etc.)
+        return redirect(reverse('admin_list', kwargs={'list_type': 'students'}))  
+
+class UpdateRecordView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
+    required_role = ['admin']
+    template_name = 'update_record.html'
+    model = User
+    form_class = UpdateForm
+
+    def get_object(self, queryset=None):
+        """
+        Fetch the user record to be updated based on the email in the URL.
+        This ensures the form is bound to the correct instance.
+        """
+        email = self.kwargs.get('email')  # Extract the email from the URL parameters
+        print(f"Fetching user with email: {email}")  # Debugging: email fetched from URL
+        user = get_object_or_404(User, email=email)  # Fetch the user or return a 404 if not found
+        return user
+
+    def form_valid(self, form):
+        """
+        This method is called when the form is valid.
+        The form is already tied to the correct instance (user).
+        """
+        print(f"Form is being submitted for user: {form.instance.email}")  # Debugging: form instance
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """
+        This method redirects to the dashboard after a successful update.
+        """
+        messages.success(self.request, "User updated successfully!")
+        print("Redirecting to success URL (dashboard)")  # Debugging: success URL
+        return reverse("dashboard")  # Redirect to the dashboard or another appropriate view
+        
+
 class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = ['admin']
 
@@ -149,6 +265,7 @@ class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
             'table_headers': table_headers,
             'table_fields': table_fields,
             'rows': rows,
+            'list_type' : list_type
         }
 
         return render(request, 'admin_list.html', context)

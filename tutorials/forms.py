@@ -24,6 +24,31 @@ class LogInForm(forms.Form):
             user = authenticate(username=username, password=password)
         return user
 
+class AdminUserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', 'password']
+        widgets = {
+            'password': forms.PasswordInput(),
+        }
+
+    # You can also add custom validation here if necessary
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("A user with this email already exists.")
+        return email
+
+    def save(self, commit=True):
+        # If the password is being set, make sure it's hashed
+        user = super().save(commit=False)  # Don't save to DB just yet
+        password = self.cleaned_data.get('password')
+        if password:
+            user.set_password(password)  # This will hash the password
+        if commit:
+            user.save()  # Now save the user to the DB
+        return user
+
 
 class UserForm(forms.ModelForm):
     """Form to update user profiles."""
@@ -32,6 +57,21 @@ class UserForm(forms.ModelForm):
         """Form options."""
         model = User
         fields = ['first_name', 'last_name', 'username', 'email', 'role']
+        
+class UpdateForm(forms.ModelForm):
+    class Meta:
+        """Form options."""
+        model = User
+        fields = ['first_name', 'last_name', 'username', 'email', 'role']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+
+        # Exclude the current instance when checking for unique emails
+        if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+            raise ValidationError('This email is already in use by another user.')
+
+        return email
 
 class NewPasswordMixin(forms.Form):
     """Form mixing for new_password and password_confirmation fields."""

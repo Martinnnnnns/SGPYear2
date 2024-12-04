@@ -1,0 +1,18 @@
+{% extends 'base_content.html' %}
+
+{% block content %}
+  <div class="container">
+    <h1>Create a New {{ role|capfirst }}</h1>
+    
+    <form method="POST">
+      {% csrf_token %}
+      {% include 'partials/bootstrap_form.html' with form=form %}
+      
+
+      <!-- Hidden role field (if you want to pass it via the form) -->
+      <input type="hidden" name="role" value="{{ role }}">
+
+      <button type="submit" class="btn btn-primary">Create {{ role|capfirst }}</button>
+    </form>
+  </div>
+{% endblock %}
