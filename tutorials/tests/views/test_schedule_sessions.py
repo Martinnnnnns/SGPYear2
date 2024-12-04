@@ -42,7 +42,9 @@ class TestScheduleSessions(TestCase):
         data = {
             'date': self.tomorrow,
             'start_time': '10:00',
-            'end_time': '11:00'
+            'end_time': '11:00',
+            'recurrence': 'none',
+            'end_recurrence_date': ''
         }
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)

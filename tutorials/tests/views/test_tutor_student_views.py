@@ -10,31 +10,40 @@ class TutorStudentViewsTest(TestCase):
         User = get_user_model()
         
         self.tutor = User.objects.create_user(
-            username='tutor_test',
+            username='@tutor_test',
             password='Password123',
             email='tutor@test.com',
             first_name='Test',
-            last_name='Tutor'
+            last_name='Tutor',
+            role='tutor'
         )
         self.tutor.is_staff = True
         self.tutor.save()
         
         self.student = User.objects.create_user(
-            username='student_test',
+            username='@student_test',
             password='Password123',
             email='student@test.com',
             first_name='Test',
-            last_name='Student'
+            last_name='Student',
+            role='student' 
         )
         
         self.other_student = User.objects.create_user(
-            username='other_student',
+            username='@other_student',
             password='Password123',
-            email='other@test.com'
+            email='other@test.com',
+            first_name='Other',
+            last_name='Student',
+            role='student' 
         )
         
-        self.subject = Subject.objects.create(name='Test Subject')
         self.language = ProgrammingLanguage.objects.create(name='Python')
+        
+        self.subject = Subject.objects.create(
+            name='Test Subject',
+            language=self.language
+        )
         
         self.future_lesson = Lesson.objects.create(
             tutor=self.tutor,
@@ -60,7 +69,7 @@ class TutorStudentViewsTest(TestCase):
 
     def test_tutor_students_list_view_as_tutor(self):
         """Test that a logged-in tutor can see their students list"""
-        self.client.login(username='tutor_test', password='Password123')
+        self.client.login(username='@tutor_test', password='Password123')
         response = self.client.get(reverse('tutor_students_list'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'tutor_students_list.html')
@@ -77,7 +86,7 @@ class TutorStudentViewsTest(TestCase):
 
     def test_student_profile_detail_as_tutor(self):
         """Test that a tutor can see their student's profile"""
-        self.client.login(username='tutor_test', password='Password123')
+        self.client.login(username='@tutor_test', password='Password123')
         response = self.client.get(
             reverse('student_profile_detail', kwargs={'student_id': self.student.id})
         )
@@ -88,7 +97,7 @@ class TutorStudentViewsTest(TestCase):
 
     def test_tutor_cannot_view_non_student_profile(self):
         """Test that a tutor cannot view profiles of students they don't teach"""
-        self.client.login(username='tutor_test', password='Password123')
+        self.client.login(username='@tutor_test', password='Password123')
         response = self.client.get(
             reverse('student_profile_detail', kwargs={'student_id': self.other_student.id})
         )
@@ -96,7 +105,7 @@ class TutorStudentViewsTest(TestCase):
 
     def test_upcoming_and_past_lessons_displayed(self):
         """Test that upcoming and past lessons are correctly displayed"""
-        self.client.login(username='tutor_test', password='Password123')
+        self.client.login(username='@tutor_test', password='Password123')
         response = self.client.get(
             reverse('student_profile_detail', kwargs={'student_id': self.student.id})
         )

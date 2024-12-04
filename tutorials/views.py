@@ -389,7 +389,6 @@ def schedule_sessions(request):
             start_time = form.cleaned_data['start_time']
             end_time = form.cleaned_data['end_time']
 
-            # For one-time slots or if no end date is specified
             if recurrence == 'none' or not end_recurrence_date:
                 availability = TutorAvailability(
                     tutor=request.user,
@@ -401,7 +400,6 @@ def schedule_sessions(request):
                 )
                 availability.save()
             else:
-                # For recurring slots
                 current_date = start_date
                 while current_date <= end_recurrence_date:
                     availability = TutorAvailability(
@@ -414,7 +412,6 @@ def schedule_sessions(request):
                     )
                     availability.save()
 
-                    # Calculate next date based on recurrence type
                     if recurrence == 'weekly':
                         current_date += timedelta(days=7)
                     elif recurrence == 'biweekly':
@@ -467,7 +464,6 @@ def schedule_sessions(request):
             week_slots.append({'day': day, 'slots': day_slots})
         calendar_with_slots.append(week_slots)
 
-    # Generate a list of hour options (00:00 to 23:30)
     hours_range = [f"{hour:02d}:{minute:02d}" for hour in range(24) for minute in [0, 30]]
 
     context = {
@@ -480,7 +476,7 @@ def schedule_sessions(request):
         'prev_year': prev_year,
         'next_month': next_month,
         'next_year': next_year,
-        'hours_range': hours_range,  # Pass the generated time options
+        'hours_range': hours_range, 
     }
 
     return render(request, 'schedule_sessions.html', context)
@@ -490,7 +486,6 @@ def delete_availability(request, slot_id):
     if request.user.role != 'tutor':
         return redirect('home')
         
-    # Get the availability slot and check it belongs to the logged-in tutor
     availability = get_object_or_404(TutorAvailability, id=slot_id, tutor=request.user)
     
     if request.method == 'POST':
@@ -510,9 +505,11 @@ def delete_all_availability(request):
 
 @login_required
 def confirm_delete_availability(request, slot_id):
-    slot = TutorAvailability.objects.get(id=slot_id, tutor=request.user)
+    if request.user.role != 'tutor':
+        raise Http404("Page not found")
+    slot = get_object_or_404(TutorAvailability, id=slot_id, tutor=request.user)
+    
     if request.method == 'POST':
-        # Perform the deletion if confirmed
         slot.delete()
         messages.success(request, "Availability slot deleted successfully.")
         return redirect('schedule_sessions')
@@ -520,7 +517,6 @@ def confirm_delete_availability(request, slot_id):
 
 @login_required
 def confirm_delete_all_availabilities(request):
-    # Check if the user has any availability slots
     availability_exists = TutorAvailability.objects.filter(tutor=request.user).exists()
 
     if not availability_exists:
@@ -591,7 +587,6 @@ def tutor_students_list(request):
 def student_profile_detail(request, student_id):
     student = get_object_or_404(User, id=student_id)
     
-    # Verify that this tutor has lessons with this student
     if not Lesson.objects.filter(tutor=request.user, student=student).exists():
         return HttpResponseForbidden("You don't have permission to view this profile")
     
@@ -607,7 +602,6 @@ def student_profile_detail(request, student_id):
         lesson_datetime__lte=now()
     ).order_by('-lesson_datetime')
     
-    # Get unique languages from all lessons
     all_lessons = Lesson.objects.filter(tutor=request.user, student=student)
     programming_languages = all_lessons.values_list('language__name', flat=True).distinct()
     
