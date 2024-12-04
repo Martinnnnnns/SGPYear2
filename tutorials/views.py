@@ -99,6 +99,15 @@ class TutorLessonsView(LoginRequiredMixin, TemplateView):
 
 """ <---- Admin Views ----> """
 
+class AdminViewProfile(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['admin']
+    template_name = 'student_profile.html'
+
+    def get(self, request, email):
+        """This method renders the confirmation page for deleting a booking."""
+        userToFetch = get_object_or_404(User, email=email)
+        return render(request, 'student_profile.html', {'user': userToFetch})
+
 class AddUserView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = ['admin']
 
