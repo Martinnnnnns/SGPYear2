@@ -19,30 +19,36 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path,include
 from tutorials import views
-from tutorials.views import admin_list
+from tutorials.views import AdminListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.home, name='home'),
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('', views.HomeView.as_view(), name='home'),
+    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('log_in/', views.LogInView.as_view(), name='log_in'),
-    path('log_out/', views.log_out, name='log_out'),
+    path('log_out/', views.LogoutView.as_view(), name='log_out'),
     path('password/', views.PasswordView.as_view(), name='password'),
     path('profile/', views.ProfileUpdateView.as_view(), name='profile'),
     path('sign_up/', views.SignUpView.as_view(), name='sign_up'),
-    path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('student_dashboard/', views.student_dashboard, name='student_dashboard'),
-    path('request_lesson/', views.make_lesson_request, name='request_lesson'), 
-    path('request_made/', views.lesson_made, name='request_made'),  
-    path('student_profile/', views.student_profile, name='student_profile'),  
-    path('student_support/', views.student_support, name='student_support'),  
+    path('admin_stats/', views.AdminStatsView.as_view(), name='admin_stats'),
+    path('admin_list/<str:list_type>/', AdminListView.as_view(), name='admin_list'),
+    path("access_denied", views.AccessDeniedView.as_view(), name="access_denied"),
+    path('request_change_bookings/<int:lesson_id>/', views.RequestChangeBookingsView.as_view(), name='request_change_bookings'),
+    path('request_cancel_bookings/<int:lesson_id>/', views.RequestCancelBookingsView.as_view(), name='request_cancel_bookings'),
+    path('request_lesson/', views.MakeLessonRequestView.as_view(), name='request_lesson'), 
+    path('request_made/', views.LessonMadeView.as_view(), name='request_made'),  
+    path('student_profile/', views.StudentProfileView.as_view(), name='student_profile'),  
+    path('student_support/', views.StudentSupportView.as_view(), name='student_support'),  
     path('download_invoice/<int:invoice_id>/', views.download_invoice, name='download_invoice'),
-    path('lesson/<int:lesson_id>/', views.lesson_detail, name='lesson_detail'),
-    path('tutor_page/', views.tutor_page, name='tutor_page'),
-    path('tutor_page/schedule_sessions', views.schedule_sessions, name='schedule_sessions'),
-    path('tutor_page/reports', views.reports, name='reports'),
-    path('trigger_matching/', views.trigger_matching, name='trigger_matching'),
-    path('admin_stats/', views.admin_stats, name='admin_stats'),
-    path('admin_list/<str:list_type>/', admin_list, name='admin_list'),
+    path('lesson/<int:lesson_id>/', views.LessonDetailView.as_view(), name='lesson_detail'),
+    path('schedule_sessions/', views.schedule_sessions, name='schedule_sessions'),
+    path('reports/', views.ReportsView.as_view(), name='reports'),
+    path('trigger_matching/', views.TriggerMatchingView.as_view(), name='trigger_matching'),
+    path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
+    path('tutor_student_list/students/' , views.StudentListView.as_view(), name = 'student_list'),
+    path('confirm_delete/<int:slot_id>/', views.confirm_delete_availability, name='confirm_delete_availability'),
+    path('confirm_delete_all/', views.confirm_delete_all_availabilities, name='confirm_delete_all_availabilities'),
+    path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
+    path('tutor/lessons/', views.TutorLessonsView.as_view(), name='tutor_lessons'),
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

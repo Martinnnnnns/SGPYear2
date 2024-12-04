@@ -1,40 +1,87 @@
 {% extends 'base_content.html' %}
-{% block navbar %}
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
-    <div class="container">
-      <a class="navbar-brand" href="{% url 'admin_dashboard' %}">
-        Admin Portal
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      {% if user.is_authenticated %}
-        {% include 'partials/menu.html' %}
-      {% endif %}
-    </div>
-  </nav>
-{% endblock %}
 
+{% block title %}
+Admin Dashboard
+{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container mt-5">
+  <!-- Page Header -->
   <div class="row">
-    <div class="col-12">
-      <h1>Admin Dashboard</h1>
+    <div class="col-12 text-center">
+      <h1 class="display-4 fw-bold">Admin Dashboard</h1>
+      <p class="lead text-muted">Manage students, tutors, bookings, and match tutors with students.</p>
     </div>
   </div>
+      
+  <!-- Action Cards -->
+  <div class="row mt-5 justify-content-center">
+    <!-- Students Card -->
+    <div class="col-md-3 col-sm-6 mb-4">
+      <a href="{% url 'admin_list' 'students' %}" class="text-decoration-none">
+        <div class="card shadow h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-user-graduate fa-3x text-primary mb-3"></i>
+            <h5 class="card-title fw-bold">Students</h5>
+            <p class="card-text text-muted">View and manage student accounts.</p>
+          </div>
+        </div>
+      </a>
+    </div>
 
-  <div class="row mt-5">
-    <div class="col-12 text-center">
-      <a href="{% url 'admin_list' 'students' %}" class="btn btn-primary btn-lg m-2">Students</a>
-      <a href="{% url 'admin_list' 'tutors' %}" class="btn btn-primary btn-lg m-2">Tutors</a>
-      <a href="{% url 'admin_list' 'bookings' %}" class="btn btn-primary btn-lg m-2">Bookings</a>  
-      
+    <!-- Tutors Card -->
+    <div class="col-md-3 col-sm-6 mb-4">
+      <a href="{% url 'admin_list' 'tutors' %}" class="text-decoration-none">
+        <div class="card shadow h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-chalkboard-teacher fa-3x text-primary mb-3"></i>
+            <h5 class="card-title fw-bold">Tutors</h5>
+            <p class="card-text text-muted">View and manage tutor profiles.</p>
+          </div>
+        </div>
+      </a>
     </div>
-    <div class="col-12 text-center">
-      <a href="{% url 'trigger_matching' %}" class="btn btn-primary btn-lg m-2">Match Tutors</a>
-      <a href="{% url 'admin_stats' %}" class="btn btn-primary btn-lg m-2">Statistics</a>  
-      
+
+    <!-- Bookings Card -->
+    <div class="col-md-3 col-sm-6 mb-4">
+      <a href="{% url 'admin_list' 'bookings' %}" class="text-decoration-none">
+        <div class="card shadow h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
+            <h5 class="card-title fw-bold">Bookings</h5>
+            <p class="card-text text-muted">Manage all lesson bookings.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Match Tutors Card -->
+    <div class="col-md-3 col-sm-6 mb-4">
+      <a href="{% url 'trigger_matching' %}" class="text-decoration-none">
+        <div class="card shadow h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
+            <h5 class="card-title fw-bold">Match Tutors</h5>
+            <p class="card-text text-muted">Automatically match tutors with students.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Admin Stats Card -->
+    <div class="col-md-3 col-sm-6 mb-4">
+      <a href="{% url 'admin_stats' %}"" class="text-decoration-none">
+        <div class="card shadow h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
+            <h5 class="card-title fw-bold">Admin Stats</h5>
+            <p class="card-text text-muted">View user statistics</p>
+          </div>
+        </div>
+      </a>
     </div>
   </div>
+</div>
 {% endblock %}
+
+

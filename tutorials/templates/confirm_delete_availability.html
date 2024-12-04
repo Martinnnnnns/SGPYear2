@@ -1,0 +1,16 @@
+{% extends 'base_content.html' %}
+{% block content %}
+
+<div class="container mt-4">
+    <h2>Confirm Deletion</h2>
+    <p>Are you sure you want to delete the availability slot on {{ slot.date }} from {{ slot.start_time }} to {{ slot.end_time }}?</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, delete this slot</button>
+        <a href="{% url 'schedule_sessions' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+
+{% endblock %}
+
