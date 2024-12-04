@@ -50,6 +50,9 @@ urlpatterns = [
     path('confirm_delete/<int:slot_id>/', views.confirm_delete_availability, name='confirm_delete_availability'),
     path('confirm_delete_all/', views.confirm_delete_all_availabilities, name='confirm_delete_all_availabilities'),
     path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
+    path('tutor/students/', views.tutor_students_list, name='tutor_students_list'),
+    path('tutor/student/<int:student_id>/', views.student_profile_detail, name='student_profile_detail'),
     path('reports/generate/<str:time_period>/', generate_report, name='generate_report'),
+
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -2,8 +2,8 @@ from datetime import datetime, timedelta
 from django.utils.timezone import now
 from django.conf import settings
 from django.contrib import messages
-from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
-from django.contrib.auth import login, logout
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse, HttpResponseForbidden
+from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
@@ -14,11 +14,12 @@ from django.views.generic import ListView, TemplateView, DetailView
 from django.urls import reverse
 from django.utils import timezone
 import calendar
-from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
-from tutorials.models import User, LessonRequest, TutorAvailability, Lesson, Invoice
-from django.http import HttpResponse
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
+from tutorials.models import User, LessonRequest, TutorAvailability, Lesson, Invoice, ProgrammingLanguage
+
+User = get_user_model()
 
 class RoleRequiredMixin:
     required_role = []  #Set this in views that use the mixin
@@ -575,3 +576,46 @@ def generate_report(request, time_period):
 
     pdf.save()
     return response
+
+@login_required
+def tutor_students_list(request):
+    students = User.objects.filter(
+        lessons_as_student__tutor=request.user
+    ).distinct()
+    
+    return render(request, 'tutor_students_list.html', {
+        'students': students
+    })
+
+@login_required
+def student_profile_detail(request, student_id):
+    student = get_object_or_404(User, id=student_id)
+    
+    # Verify that this tutor has lessons with this student
+    if not Lesson.objects.filter(tutor=request.user, student=student).exists():
+        return HttpResponseForbidden("You don't have permission to view this profile")
+    
+    upcoming_lessons = Lesson.objects.filter(
+        tutor=request.user,
+        student=student,
+        lesson_datetime__gt=now()
+    ).order_by('lesson_datetime')
+    
+    previous_lessons = Lesson.objects.filter(
+        tutor=request.user,
+        student=student,
+        lesson_datetime__lte=now()
+    ).order_by('-lesson_datetime')
+    
+    # Get unique languages from all lessons
+    all_lessons = Lesson.objects.filter(tutor=request.user, student=student)
+    programming_languages = all_lessons.values_list('language__name', flat=True).distinct()
+    
+    context = {
+        'student': student,
+        'programming_languages': programming_languages,
+        'upcoming_lessons': upcoming_lessons,
+        'previous_lessons': previous_lessons,
+    }
+    
+    return render(request, 'student_profile_detail.html', context)
