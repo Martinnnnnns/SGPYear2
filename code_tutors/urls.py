@@ -19,6 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path,include
 from tutorials import views
+from tutorials.views import generate_report
 
 
 
@@ -49,5 +50,6 @@ urlpatterns = [
     path('confirm_delete/<int:slot_id>/', views.confirm_delete_availability, name='confirm_delete_availability'),
     path('confirm_delete_all/', views.confirm_delete_all_availabilities, name='confirm_delete_all_availabilities'),
     path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
+    path('reports/generate/<str:time_period>/', generate_report, name='generate_report'),
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

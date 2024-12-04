@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils.timezone import now
 from django.conf import settings
 from django.contrib import messages
@@ -16,6 +16,9 @@ from django.utils import timezone
 import calendar
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
 from tutorials.models import User, LessonRequest, TutorAvailability, Lesson, Invoice
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 class RoleRequiredMixin:
     required_role = []  #Set this in views that use the mixin
@@ -529,3 +532,46 @@ def confirm_delete_all_availabilities(request):
         return redirect('schedule_sessions') 
 
     return render(request, 'confirm_delete_all_availabilities.html')
+
+@login_required
+def generate_report(request, time_period):
+    if request.user.role != 'tutor':
+        return HttpResponse("You are not authorized to access this resource.", status=403)
+
+    tutor = request.user
+    today = now().date()
+
+    if time_period == '7days':
+        start_date = today - timedelta(days=7)
+    elif time_period == 'month':
+        start_date = today.replace(day=1)
+    elif time_period == 'all':
+        start_date = None
+    else:
+        return HttpResponse("Invalid time period.", status=400)
+
+    lessons = Lesson.objects.filter(tutor=tutor)
+    if start_date:
+        lessons = lessons.filter(lesson_datetime__date__gte=start_date)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="tutor_report_{time_period}.pdf"'
+
+    pdf = canvas.Canvas(response, pagesize=letter)
+    pdf.setFont("Helvetica", 12)
+    pdf.drawString(50, 750, f"Tutor Report for {tutor.full_name()}")
+    pdf.drawString(50, 730, f"Time Period: {time_period}")
+
+    y_position = 700
+    for lesson in lessons:
+        if y_position < 50:
+            pdf.showPage()
+            y_position = 750
+
+        pdf.drawString(50, y_position, f"Student: {lesson.student.full_name()}")
+        pdf.drawString(250, y_position, f"Date: {lesson.lesson_datetime.strftime('%Y-%m-%d %H:%M')}")
+        pdf.drawString(450, y_position, f"Language: {lesson.language.name}")
+        y_position -= 20
+
+    pdf.save()
+    return response
