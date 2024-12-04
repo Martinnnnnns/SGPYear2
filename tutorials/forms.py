@@ -266,19 +266,53 @@ class CancellationRequestForm(forms.ModelForm):
             models.Q(student=user) | models.Q(tutor=user),
             status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
         )
-        self.fields['lessons'].widget.attrs.update({'disabled': False})    
+        self.fields['lessons'].widget.attrs.update({'disabled': False})   
+         
+    def clean_lessons(self):
+        lessons = self.cleaned_data.get('lessons')
+        request_type = self.cleaned_data.get('request_type')
+        if request_type == CancellationRequest.REQUEST_SINGLE and not lessons.exists():
+            raise forms.ValidationError("Please select at least one lesson to cancel.")
+        return lessons
+
+    def clean(self):
+        cleaned_data = super().clean()
+        request_type = cleaned_data.get('request_type')
+
+        if request_type == CancellationRequest.REQUEST_ALL:
+            valid_lessons = self.fields['lessons'].queryset
+            if not valid_lessons.exists():
+                raise forms.ValidationError("No valid lessons found to cancel.")
+        return cleaned_data    
+        
+        
+        
         
 class ChangeRequestForm(forms.ModelForm):
+    """ModelForm for handling change requests."""
+    
+    REQUEST_SINGLE = 'single'
+    REQUEST_ALL = 'all'
+    REQUEST_TYPE_CHOICES = [
+        (REQUEST_SINGLE, 'Single Booking'),
+        (REQUEST_ALL, 'All Bookings'),
+    ]
+
+    request_type = forms.ChoiceField(
+        choices=REQUEST_TYPE_CHOICES,
+        widget=forms.RadioSelect,
+        required=True
+    )
     lessons = forms.ModelMultipleChoiceField(
         queryset=Lesson.objects.none(),
         widget=forms.CheckboxSelectMultiple,
-        required=True,
+        required=False,
         label="Select Lessons to Change"
     )
     new_datetime = forms.DateTimeField(
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
         required=True,
-        label="New Date & Time"
+        help_text="Select a new date and time for the lesson."
     )
     reason = forms.CharField(
         widget=forms.Textarea(attrs={'rows': 3}),
@@ -288,15 +322,48 @@ class ChangeRequestForm(forms.ModelForm):
 
     class Meta:
         model = ChangeRequest
-        fields = ['lessons', 'new_datetime', 'reason']
+        fields = ('request_type', 'lessons', 'new_datetime', 'reason')
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user')  
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        self.fields['lessons'].queryset = Lesson.objects.filter(
-            models.Q(student=user) | models.Q(tutor=user),
-            status=Lesson.STATUS_SCHEDULED
-        )
+        if self.user.role == User.TUTOR:
+            self.fields['lessons'].queryset = Lesson.objects.filter(
+                tutor=self.user,
+                status=Lesson.STATUS_SCHEDULED
+            )
+        elif self.user.role == User.STUDENT:
+            self.fields['lessons'].queryset = Lesson.objects.filter(
+                student=self.user,
+                status=Lesson.STATUS_SCHEDULED
+            )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        request_type = cleaned_data.get('request_type')
+        lessons = cleaned_data.get('lessons')
+        new_datetime = cleaned_data.get('new_datetime')
+
+        if request_type == self.REQUEST_SINGLE and not lessons:
+            self.add_error('lessons', "Please select at least one lesson to change.")
+
+        if request_type == self.REQUEST_ALL:
+            if self.user.role == User.TUTOR:
+                lessons = Lesson.objects.filter(
+                    tutor=self.user,
+                    status=Lesson.STATUS_SCHEDULED
+                )
+            elif self.user.role == User.STUDENT:
+                lessons = Lesson.objects.filter(
+                    student=self.user,
+                    status=Lesson.STATUS_SCHEDULED
+                )
+            cleaned_data['lessons'] = lessons
+
+        if new_datetime and new_datetime < timezone.now():
+            self.add_error('new_datetime', "The new date and time must be in the future.")
+
+        return cleaned_data
         
 class ChangeBookingDetailsForm(forms.Form):
     """Form for changing booking details."""

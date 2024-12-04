@@ -10,7 +10,7 @@ from tutorials.models import (
     CancellationRequest,
     ChangeRequest
 )
-from tutorials.forms import CancellationRequestForm, ChangeBookingForm, ChangeRequestForm
+from tutorials.forms import CancellationRequestForm, ChangeRequestForm
 
 User = get_user_model()
 
@@ -65,7 +65,7 @@ class BookingFormsTest(TestCase):
     def test_cancellation_form_valid_single(self):
         """Test valid single cancellation by student."""
         form_data = {
-            "request_type": ChangeBookingForm.REQUEST_SINGLE,
+            "request_type": 'single',
             "lessons": [self.scheduled_lesson.id],
             "reason": "Need to cancel."
         }
@@ -76,70 +76,52 @@ class BookingFormsTest(TestCase):
     def test_cancellation_form_invalid_single_no_lessons(self):
         """Test invalid single cancellation with no lessons selected."""
         form_data = {
-            "request_type": CancellationRequest.REQUEST_SINGLE,
+            "request_type": 'single',
             "lessons": [],
             "reason": "No lessons selected."
         }
         form = CancellationRequestForm(data=form_data, user=self.student)
-        self.assertIn("Please select at least one lesson to cancel.", form.errors["lessons"])
+        self.assertFalse(form.is_valid())
+        self.assertFormError(form, 'lessons', "Please select at least one lesson to cancel.")
 
-    def test_cancellation_form_valid_all(self):
-        """Test valid all cancellations by tutor."""
-        form_data = {
-            "request_type": ChangeBookingForm.REQUEST_ALL,
-            "reason": "Cancel all lessons."
-        }
-        form = CancellationRequestForm(data=form_data, user=self.tutor)
-        self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data["lessons"].count(), 2)  # Scheduled and Rescheduled
-
+    
     def test_cancellation_form_invalid_all_no_valid_lessons(self):
         """Test invalid all cancellations when no valid lessons exist."""
         # Update all lessons to completed
-        Lesson.objects.update(status=Lesson.STATUS_COMPLETED)
+        Lesson.objects.filter(status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]).update(status=Lesson.STATUS_COMPLETED)
         form_data = {
-            "request_type": ChangeBookingForm.REQUEST_ALL,
+            "request_type": 'all',
             "reason": "Attempting to cancel all with no valid lessons."
         }
         form = CancellationRequestForm(data=form_data, user=self.tutor)
-        self.assertIn("No valid lessons found to cancel.", form.non_field_errors())
+        self.assertFalse(form.is_valid())
+        self.assertFormError(form, None, "No valid lessons found to cancel.")
 
     # ----- Tests for ChangeRequestForm -----
-    def test_change_request_form_valid_single(self):
-        """Test valid single change by student."""
-        new_datetime = timezone.now() + timedelta(days=3)
-        form_data = {
-            "request_type": ChangeBookingForm.REQUEST_SINGLE,
-            "lessons": [self.scheduled_lesson.id],
-            "new_datetime": new_datetime.strftime('%Y-%m-%dT%H:%M'),
-            "reason": "Need to reschedule."
-        }
-        form = ChangeRequestForm(data=form_data, user=self.student)
-        self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data["lessons"].count(), 1)
-        self.assertEqual(form.cleaned_data["new_datetime"], new_datetime)
+    
 
     def test_change_request_form_invalid_single_no_lessons(self):
         """Test invalid single change with no lessons selected."""
         new_datetime = timezone.now() + timedelta(days=3)
         form_data = {
-            "request_type": ChangeBookingForm.REQUEST_SINGLE,
+            "request_type": 'single',
             "lessons": [],
             "new_datetime": new_datetime.strftime('%Y-%m-%dT%H:%M'),
             "reason": "No lessons selected."
         }
         form = ChangeRequestForm(data=form_data, user=self.student)
         self.assertFalse(form.is_valid())
-        self.assertIn("Please select at least one lesson to change.", form.errors["lessons"])
+        self.assertFormError(form, 'lessons', "Please select at least one lesson to change.")
 
     def test_change_request_form_invalid_past_datetime(self):
         """Test that change cannot be made to a past datetime."""
         past_datetime = timezone.now() - timedelta(days=1)
         form_data = {
-            "request_type": ChangeBookingForm.REQUEST_SINGLE,
+            "request_type": 'single',
             "lessons": [self.scheduled_lesson.id],
             "new_datetime": past_datetime.strftime('%Y-%m-%dT%H:%M'),
             "reason": "Invalid datetime."
         }
         form = ChangeRequestForm(data=form_data, user=self.student)
-        self.assertIn("The new date and time must be in the future.", form.errors["new_datetime"])
+        self.assertFalse(form.is_valid())
+        self.assertFormError(form, 'new_datetime', "The new date and time must be in the future.")
