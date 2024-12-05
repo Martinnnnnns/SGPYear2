@@ -69,7 +69,6 @@ class UpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print("HUIIIIIIIIIIIIIIIIIIIIIIIIIIII")
         # Clear any pre-populated data for the password field
         self.initial['password'] = ''  # Set the initial value explicitly
         self.fields['password'].widget = forms.PasswordInput()  # Ensure it's rendered as a password input
@@ -77,13 +76,9 @@ class UpdateForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        print("hi")
 
-        print(email)
         # Exclude the current instance when checking for unique emails
         if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
-            print("hi2")
-            print(User.objects.filter(email=email))
             raise ValidationError('This email is already in use by another user.')
 
         return email

@@ -118,11 +118,9 @@ class AddUserView(LoginRequiredMixin, RoleRequiredMixin, View):
 
     def post(self, request, role):
         """Handle form submission and create the new user with the assigned role."""
-        print(request.POST)
         form = AdminAddUserForm(request.POST)
         
         if form.is_valid():
-            print(form.cleaned_data) 
             new_user = form.save(commit=False)
             new_user.set_password(form.cleaned_data['password'])
             new_user.role = role  # Set the role to the one passed in the URL
@@ -200,7 +198,6 @@ class UpdateRecordView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
     def get_object(self):
         # Get the user being updated
         user_id = self.kwargs.get('email') 
-        print("User ID:", user_id)
         return get_object_or_404(User, email=user_id)
     
     def get_context_data(self, **kwargs):
@@ -209,18 +206,17 @@ class UpdateRecordView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        print("Form validation succeeded")
         user = form.save(commit=False)
         if form.cleaned_data['password']:
             user.set_password(form.cleaned_data['password'])
         user.save()
         messages.success(self.request, "User updated successfully!")
-        return super().form_valid(form)
+        return super().form_valid(form)  # Ensure the redirect happens here
 
+    
     def form_invalid(self, form):
-        print("Form validation failed")
-        print("Errors:", form.errors)
-        return super().form_invalid(form)
+        context = self.get_context_data(form=form)  # Add the form to context
+        return self.render_to_response(context)
 
     def get_success_url(self):
         return reverse('dashboard')  # Adjust for your redirect

@@ -64,8 +64,8 @@ class AdminStatsViewTests(TestCase):
         # Log in as student
         self.client.login(username='student_user', password='studentpass')
         response = self.client.get(reverse('admin_stats'))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'home.html')
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('access_denied'))
 
     def test_total_lessons_calculation(self):
         # Log in as admin
