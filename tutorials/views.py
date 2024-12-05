@@ -1,8 +1,9 @@
 from datetime import datetime
+from itertools import count
 from django.utils.timezone import now
 from django.conf import settings
 from django.contrib import messages
-from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -16,7 +17,8 @@ from django.utils import timezone
 import calendar
 from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice
-from django.db.models import Q
+from django.db.models import Count, Case, When, IntegerField,Q
+
 
 class RoleRequiredMixin:
     required_role = []  #Set this in views that use the mixin
@@ -210,8 +212,27 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
             'matched_lessons': matched_lessons,
             'unmatched_requests': unmatched_requests,
         })
+        
+class TutorAvailabilityListView(LoginRequiredMixin, ListView):
+    template_name = "tutor_availability_list.html"
+    context_object_name = "tutors"
 
+    def get_queryset(self):
+        # Filter tutors and annotate with the count of scheduled lessons
+        queryset = User.objects.filter(role="tutor").annotate(
+            scheduled_lessons=Count("lessons_as_tutor", filter=Q(lessons_as_tutor__status=Lesson.STATUS_SCHEDULED))
+        )
 
+        # Assign colors based on the number of scheduled lessons
+        for tutor in queryset:
+            if tutor.scheduled_lessons < 5:
+                tutor.color = "green"
+            elif 5 <= tutor.scheduled_lessons < 10:
+                tutor.color = "yellow"
+            else:
+                tutor.color = "red"
+
+        return queryset
 """ <---- Student Views ----> """
 
 class MakeLessonRequestView(LoginRequiredMixin, RoleRequiredMixin, FormView):
@@ -301,7 +322,7 @@ class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     required_role = ['tutor']
     def get_queryset(self):
         search_query = self.request.GET.get('search', '')
-        students_queryset = User.objects.filter(
+        students_queryset = User.STUDENT.objects.filter(
             role='student',
             lessons_as_student__tutor=self.request.user
         ).distinct().order_by('last_name', 'first_name')
