@@ -54,6 +54,6 @@ urlpatterns = [
     path('<int:booking_id>/delete/', DeleteBookingView.as_view(), name='delete_booking'),
     path('<str:email>/delete/', DeleteRecordView.as_view(), name='delete_record'),
     path('<str:role>/add_user/', AddUserView.as_view(), name='add_user'),
-    path('admin_view_profile/<str:email>', UpdateRecordView.as_view(), name='admin_view_profile'),
+    path('admin_view_profile/<str:email>', AdminViewProfile.as_view(), name='admin_view_profile'),
     ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
