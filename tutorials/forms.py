@@ -24,7 +24,7 @@ class LogInForm(forms.Form):
             user = authenticate(username=username, password=password)
         return user
 
-class AdminUserForm(forms.ModelForm):
+class AdminAddUserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name', 'last_name', 'password']
@@ -35,8 +35,11 @@ class AdminUserForm(forms.ModelForm):
     # You can also add custom validation here if necessary
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("A user with this email already exists.")
+
+        # Exclude the current instance when checking for unique emails
+        if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+            raise ValidationError('This email is already in use by another user.')
+
         return email
 
     def save(self, commit=True):
@@ -62,13 +65,25 @@ class UpdateForm(forms.ModelForm):
     class Meta:
         """Form options."""
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'role']
+        fields = ['first_name', 'last_name', 'username', 'email', 'role', 'password']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print("HUIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+        # Clear any pre-populated data for the password field
+        self.initial['password'] = ''  # Set the initial value explicitly
+        self.fields['password'].widget = forms.PasswordInput()  # Ensure it's rendered as a password input
+
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
+        print("hi")
 
+        print(email)
         # Exclude the current instance when checking for unique emails
         if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+            print("hi2")
+            print(User.objects.filter(email=email))
             raise ValidationError('This email is already in use by another user.')
 
         return email

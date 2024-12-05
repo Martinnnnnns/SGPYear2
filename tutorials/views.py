@@ -17,7 +17,7 @@ import calendar
 from tutorials.helpers import login_prohibited
 from django.core.paginator import Paginator
 from django.db.models import Count, Avg
-from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm, UpdateForm, AdminUserForm
+from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm, UpdateForm, AdminAddUserForm
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, Subject
 from django.db.models import Q, F
 
@@ -113,13 +113,13 @@ class AddUserView(LoginRequiredMixin, RoleRequiredMixin, View):
 
     def get(self, request, role):
         """Display the form to create a new user, with the role pre-set based on the URL."""
-        form = AdminUserForm()
+        form = AdminAddUserForm()
         return render(request, 'add_user.html', {'form': form, 'role': role})
 
     def post(self, request, role):
         """Handle form submission and create the new user with the assigned role."""
         print(request.POST)
-        form = AdminUserForm(request.POST)
+        form = AdminAddUserForm(request.POST)
         
         if form.is_valid():
             print(form.cleaned_data) 
@@ -193,35 +193,37 @@ class DeleteRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
 
 class UpdateRecordView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
     required_role = ['admin']
-    template_name = 'update_record.html'
     model = User
+    template_name = 'update_record.html'
     form_class = UpdateForm
 
-    def get_object(self, queryset=None):
-        """
-        Fetch the user record to be updated based on the email in the URL.
-        This ensures the form is bound to the correct instance.
-        """
-        email = self.kwargs.get('email')  # Extract the email from the URL parameters
-        print(f"Fetching user with email: {email}")  # Debugging: email fetched from URL
-        user = get_object_or_404(User, email=email)  # Fetch the user or return a 404 if not found
-        return user
+    def get_object(self):
+        # Get the user being updated
+        user_id = self.kwargs.get('email') 
+        print("User ID:", user_id)
+        return get_object_or_404(User, email=user_id)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.get_object()
+        return context
 
     def form_valid(self, form):
-        """
-        This method is called when the form is valid.
-        The form is already tied to the correct instance (user).
-        """
-        print(f"Form is being submitted for user: {form.instance.email}")  # Debugging: form instance
+        print("Form validation succeeded")
+        user = form.save(commit=False)
+        if form.cleaned_data['password']:
+            user.set_password(form.cleaned_data['password'])
+        user.save()
+        messages.success(self.request, "User updated successfully!")
         return super().form_valid(form)
 
+    def form_invalid(self, form):
+        print("Form validation failed")
+        print("Errors:", form.errors)
+        return super().form_invalid(form)
+
     def get_success_url(self):
-        """
-        This method redirects to the dashboard after a successful update.
-        """
-        messages.success(self.request, "User updated successfully!")
-        print("Redirecting to success URL (dashboard)")  # Debugging: success URL
-        return reverse("dashboard")  # Redirect to the dashboard or another appropriate view
+        return reverse('dashboard')  # Adjust for your redirect
         
 
 class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
