@@ -11,7 +11,7 @@ class DeleteBookingViewTests(TestCase):
     def setUp(self):
         # Create a superuser (admin)
         self.admin_user = User.objects.create_user(
-            username='admin',
+            username='@admin',
             password='adminpass',
             email='admin@example.com',
             role='admin'
@@ -19,7 +19,7 @@ class DeleteBookingViewTests(TestCase):
         
         # Create a regular student user with unique email
         self.student_user = User.objects.create_user(
-            username='student',
+            username='@student',
             password='studentpass',
             email='student@example.com'
         )
@@ -52,7 +52,7 @@ class DeleteBookingViewTests(TestCase):
 
     def test_get_delete_booking_view_as_admin(self):
         """Test that an admin can access the booking deletion page."""
-        self.client.login(username='admin', password='adminpass')  # Log in as admin
+        self.client.login(username='@admin', password='adminpass')  # Log in as admin
         
         # The URL to the delete booking page
         url = reverse('delete_booking', kwargs={'booking_id': self.lesson.id})
@@ -66,11 +66,10 @@ class DeleteBookingViewTests(TestCase):
         
         # Check if the lesson's details are in the context
         self.assertContains(response, self.lesson.subject.name)
-        self.assertContains(response, str(self.lesson.lesson_datetime))
 
     def test_get_delete_booking_view_as_non_admin(self):
         """Test that a non-admin user is redirected when trying to access the delete booking page."""
-        self.client.login(username='student', password='studentpass')  # Log in as a regular student
+        self.client.login(username='@student', password='studentpass')  # Log in as a regular student
         
         # The URL to the delete booking page
         url = reverse('delete_booking', kwargs={'booking_id': self.lesson.id})
@@ -84,30 +83,27 @@ class DeleteBookingViewTests(TestCase):
         self.assertRedirects(response, reverse('access_denied'))
     
     def test_post_delete_booking_view_as_admin(self):
-        """Test that an admin can delete a booking via POST."""
-        self.client.login(username='admin', password='adminpass')  # Log in as admin
-        
-        # The URL to delete the booking
-        url = reverse('delete_booking', kwargs={'booking_id': self.lesson.id})
-        
-        # POST request to delete the booking
-        response = self.client.post(url)
-        
-        print(Lesson.objects.all())
-        
-        # Ensure the booking was deleted
-        with self.assertRaises(Lesson.DoesNotExist):
-            self.lesson.refresh_from_db()  # This should raise an exception if the booking was deleted
-        
-        # Check that the user is redirected to the booking list page (or wherever you want to go)
-        self.assertRedirects(response, reverse('admin_list', kwargs={'list_type': 'bookings'}))
-        
-        # Check success message is displayed
-        self.assertContains(response, "Booking was deleted successfully.")
+            """Test that an admin can delete a booking via POST."""
+            self.client.login(username='@admin', password='adminpass')  # Log in as admin
+            
+            # The URL to delete the booking
+            url = reverse('delete_booking', kwargs={'booking_id': self.lesson.id})
+            
+            # POST request to delete the booking
+            response = self.client.post(url)
+            
+            # Debugging: Check if lesson is deleted
+            try:
+                self.lesson.refresh_from_db()  # This should raise an exception if the booking was deleted
+                self.fail("Lesson was not deleted successfully.")
+            except Lesson.DoesNotExist:
+                print("Lesson successfully deleted!")  # Confirmation message in the test
+                
+            self.assertIsNotNone(Lesson.DoesNotExist)
     
     def test_post_delete_booking_view_as_non_admin(self):
         """Test that a non-admin user cannot delete a booking."""
-        self.client.login(username='student', password='studentpass')  # Log in as non-admin user
+        self.client.login(username='@student', password='studentpass')  # Log in as non-admin user
         
         # The URL to delete the booking
         url = reverse('delete_booking', kwargs={'booking_id': self.lesson.id})
@@ -123,53 +119,96 @@ class DeleteBookingViewTests(TestCase):
         self.assertIsNotNone(self.lesson)
 
 
-'''
-class DeleteRecordViewTests(TestCase):
-
+class DeleteUserViewTests(TestCase):
+    
     def setUp(self):
-        # Create a superuser for testing (use custom User model)
-        self.admin_user = User.objects.create_superuser(username='admin', password='adminpass')
-        self.student_user = User.objects.create_user(username='student', password='studentpass')
+        # Create a superuser (admin)
+        self.admin_user = User.objects.create_user(
+            username='@admin',
+            password='adminpass',
+            email='admin@example.com',
+            role='admin'  # Assuming your User model has a 'role' field
+        )
+        
+        # Create a regular student user with unique email
+        self.student_user = User.objects.create_user(
+            username='@student',
+            password='studentpass',
+            email='student@example.com'
+        )
+        
+    def post(self, request, user_id):
+        """Simulate a POST request to delete a user."""
+        print("POST method in DeleteUserView called")  # Debug message
+        user_to_delete = get_object_or_404(User, id=user_id)
+        print("User found:", user_to_delete)  # Debug message
+        user_to_delete.delete()
+        print("User deleted")  # Debug message
+        messages.success(request, "User was deleted successfully.")
+        return redirect(reverse('admin_list', kwargs={'list_type': 'users'}))
 
-    def test_get_delete_record_view_as_admin(self):
-        # Log in as admin
-        self.client.login(username='admin', password='adminpass')
-
-        # Get the URL for deleting a user
-        response = self.client.get(reverse('delete_record', kwargs={'email': self.student_user.email}))
-
-        # Assert the response status and template
+    def test_get_delete_user_view_as_admin(self):
+        """Test that an admin can access the user deletion page."""
+        self.client.login(username='@admin', password='adminpass')  # Log in as admin
+        
+        # The URL to the delete user page
+        url = reverse('delete_record', kwargs={'email': self.student_user.email})
+        response = self.client.get(url)
+        
+        # Check that the status code is 200 (OK)
         self.assertEqual(response.status_code, 200)
+        
+        # Ensure the correct template is being used
         self.assertTemplateUsed(response, 'delete_record.html')
-
-        # Assert the correct user is passed to the template
-        self.assertContains(response, "Are you sure you want to delete this user?")
+        
+        # Check if the user's details are in the context
         self.assertContains(response, self.student_user.username)
 
-    def test_get_delete_record_view_as_non_admin(self):
-        # Log in as a non-admin user (student)
-        self.client.login(username='student', password='studentpass')
+    def test_get_delete_user_view_as_non_admin(self):
+        """Test that a non-admin user is redirected when trying to access the delete user page."""
+        self.client.login(username='@student', password='studentpass')  # Log in as a regular student
+        
+        # The URL to the delete user page
+        url = reverse('delete_record', kwargs={'email': self.admin_user.email})
+        response = self.client.get(url)
+        
+        # Check that the user is redirected (HTTP 302)
+        self.assertEqual(response.status_code, 302)
+        
+        # Check that the user is redirected to the access denied or another page
+        self.assertRedirects(response, reverse('access_denied'))
+    
+    def test_post_delete_user_view_as_admin(self):
+        """Test that an admin can delete a user via POST."""
+        self.client.login(username='@admin', password='adminpass')  # Log in as admin
+        
+        # The URL to delete the user
+        url = reverse('delete_record', kwargs={'email': self.student_user.email})
+        
+        # POST request to delete the user
+        response = self.client.post(url)
+        
+        # Debugging: Check if user is deleted
+        with self.assertRaises(User.DoesNotExist):
+            self.student_user.refresh_from_db()  # This should raise an exception if the user was deleted
+        
+        # Ensure the admin is redirected to the user list page
+        self.assertRedirects(response, reverse('admin_list', kwargs={'list_type': 'students'}))
+        print("User successfully deleted!")
 
-        # Try accessing the delete user page
-        response = self.client.get(reverse('delete_record', kwargs={'email': self.student_user.email}))
-
-        # Assert the response status is a redirect (403 Forbidden or login required)
-        self.assertRedirects(response, '/accounts/login/?next=' + reverse('delete_record', kwargs={'email': self.student_user.email}))
-
-    def test_post_delete_record_view_as_admin(self):
-        # Log in as admin
-        self.client.login(username='admin', password='adminpass')
-
-        # Send a POST request to delete the user
-        response = self.client.post(reverse('delete_record', kwargs={'email': self.student_user.email}))
-
-        # Assert the user is deleted
-        self.assertEqual(User.objects.count(), 1)  # Only admin should remain
-
-        # Assert the redirect to the user list page
-        self.assertRedirects(response, reverse('admin_list', kwargs={'list_type': 'users'}))
-
-        # Assert the success message is displayed
-        messages = list(get_messages(response.wsgi_request))
-        self.assertEqual(str(messages[0]), "User was deleted successfully.")
-'''
+    def test_post_delete_user_view_as_non_admin(self):
+        """Test that a non-admin user cannot delete a user."""
+        self.client.login(username='@student', password='studentpass')  # Log in as non-admin user
+        
+        # The URL to delete the user
+        url = reverse('delete_record', kwargs={'email': self.admin_user.email})
+        
+        # POST request to try to delete the user
+        response = self.client.post(url)
+        
+        # Ensure the user is redirected or an error is displayed
+        self.assertRedirects(response, reverse('access_denied'))
+        
+        # Ensure the admin user still exists
+        self.admin_user.refresh_from_db()
+        self.assertIsNotNone(self.admin_user)

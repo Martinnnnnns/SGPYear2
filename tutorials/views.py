@@ -141,6 +141,12 @@ class AddUserView(LoginRequiredMixin, RoleRequiredMixin, View):
     
     
 
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from tutorials.models import Lesson
+from django.views.generic import View
+from django.http import Http404
+
 class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = ['admin']
     template_name = 'delete_booking.html'
@@ -148,15 +154,45 @@ class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
     def get(self, request, booking_id):
         """This method renders the confirmation page for deleting a booking."""
         booking_to_delete = get_object_or_404(Lesson, id=booking_id)
-        return render(request, 'delete_booking.html', {'booking': booking_to_delete})
+
+        # Get active lessons or any necessary filter
+        '''
+        objects = Lesson.objects.filter(status="active")
+
+        if not objects:
+            # No active lessons found
+            print("No active lessons found")
+            messages.warning(request, "No active lessons found.")
+            return render(request, self.template_name, {'booking': booking_to_delete})
+
+        # At this point, objects is guaranteed to be non-empty
+        print(f"Found {len(objects)} active lessons.")
+        for obj in objects:
+            print(f"Active lesson: {obj.status}")  # Debugging output'''
+
+        # Continue rendering the page after handling the lessons
+        return render(request, self.template_name, {'booking': booking_to_delete})
 
     def post(self, request, booking_id):
         """This method deletes the booking after confirmation."""
         booking_to_delete = get_object_or_404(Lesson, id=booking_id)
+        
+        # Debugging: Confirm the booking is found before deletion
+        print(f"Booking to delete (POST): {booking_to_delete}")
+        
+        # Perform deletion
         booking_to_delete.delete()
 
+        # Debugging: Check if the lesson is really deleted
+        try:
+            booking_to_delete.refresh_from_db()  # Trying to access the object after deletion
+            print(f"Booking after deletion (should not appear): {booking_to_delete}")
+        except Lesson.DoesNotExist:
+            print("Booking successfully deleted!")
+
         messages.success(request, f"Booking was deleted successfully.")
-        return redirect(reverse('admin_list', kwargs={'list_type': 'bookings'})) 
+        return redirect(reverse('admin_list', kwargs={'list_type': 'bookings'}))
+
 
 class DeleteRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = ['admin']
