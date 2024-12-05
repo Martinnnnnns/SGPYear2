@@ -45,7 +45,7 @@
                 <a class="text-primary me-2">
                     <i class="bi bi-calendar-fill" style="font-size: 1.5rem;"></i>
                 </a>
-                <a href="{% url 'update_record' list_type row.email %}" class="text-primary me-2">
+                <a href="{% url 'update_record' row.email %}" class="text-primary me-2">
                     <i class="bi bi-pencil-fill" style="font-size: 1.5rem;"></i>
                 </a>
                 <a href="{% url 'delete_record' email=row.email %}" class="text-primary me-2">

@@ -157,7 +157,7 @@ class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
         booking_to_delete = get_object_or_404(Lesson, id=booking_id)
         booking_to_delete.delete()
 
-        messages.success(request, f"Booking {booking_to_delete.id} was deleted successfully.")
+        messages.success(request, f"Booking was deleted successfully.")
         return redirect(reverse('admin_list', kwargs={'list_type': 'bookings'})) 
 
 class DeleteRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
