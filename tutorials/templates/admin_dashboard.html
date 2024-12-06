@@ -5,7 +5,7 @@ Admin Dashboard
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container-fluid mt-5">
   <!-- Page Header -->
   <div class="row">
     <div class="col-12 text-center">
@@ -17,9 +17,9 @@ Admin Dashboard
   <!-- Action Cards -->
   <div class="row mt-5 justify-content-center">
     <!-- Students Card -->
-    <div class="col-md-2 col-sm-4 mb-4">
+    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
       <a href="{% url 'admin_student_list' %}" class="text-decoration-none">
-        <div class="card shadow h-100">
+        <div class="card shadow">
           <div class="card-body text-center p-3">
             <i class="fas fa-user-graduate fa-2x text-primary mb-2"></i>
             <h6 class="card-title fw-bold">Students</h6>
@@ -30,9 +30,9 @@ Admin Dashboard
     </div>
 
     <!-- Tutors Card -->
-    <div class="col-md-2 col-sm-4 mb-4">
+    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
       <a href="{% url 'admin_tutor_list' %}" class="text-decoration-none">
-        <div class="card shadow h-100">
+        <div class="card shadow">
           <div class="card-body text-center p-3">
             <i class="fas fa-chalkboard-teacher fa-2x text-primary mb-2"></i>
             <h6 class="card-title fw-bold">Tutors</h6>
@@ -43,9 +43,9 @@ Admin Dashboard
     </div>
 
     <!-- Bookings Card -->
-    <div class="col-md-2 col-sm-4 mb-4">
+    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
       <a href="{% url 'admin_bookings_list' %}" class="text-decoration-none">
-        <div class="card shadow h-100">
+        <div class="card shadow">
           <div class="card-body text-center p-3">
             <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
             <h6 class="card-title fw-bold">Bookings</h6>
@@ -56,9 +56,9 @@ Admin Dashboard
     </div>
 
     <!-- Match Tutors Card -->
-    <div class="col-md-2 col-sm-4 mb-4">
+    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
       <a href="{% url 'trigger_matching' %}" class="text-decoration-none">
-        <div class="card shadow h-100">
+        <div class="card shadow">
           <div class="card-body text-center p-3">
             <i class="fas fa-user-friends fa-2x text-primary mb-2"></i>
             <h6 class="card-title fw-bold">Match Tutors</h6>
@@ -69,9 +69,9 @@ Admin Dashboard
     </div>
 
     <!-- Admin Review Requests Card -->
-    <div class="col-md-2 col-sm-4 mb-4">
+    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
       <a href="{% url 'admin_review_requests' %}" class="text-decoration-none">
-        <div class="card shadow h-100">
+        <div class="card shadow">
           <div class="card-body text-center p-3">
             <i class="fas fa-tasks fa-2x text-primary mb-2"></i>
             <h6 class="card-title fw-bold">Review Requests</h6>
@@ -82,9 +82,9 @@ Admin Dashboard
     </div>
 
     <!-- Tutor Availability Card -->
-    <div class="col-md-2 col-sm-4 mb-4">
+    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
       <a href="{% url 'tutor_availability_list' %}" class="text-decoration-none">
-        <div class="card shadow h-100">
+        <div class="card shadow">
           <div class="card-body text-center p-3">
             <i class="fas fa-user-clock fa-2x text-primary mb-2"></i>
             <h6 class="card-title fw-bold">Tutor Availability</h6>
@@ -95,4 +95,10 @@ Admin Dashboard
     </div>
   </div>
 </div>
+
+<style>
+  .card {
+    min-height: 200px; /* Ensures consistent height */
+  }
+</style>
 {% endblock %}

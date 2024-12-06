@@ -172,6 +172,7 @@ class AdminBookingsListView(AdminListView):
 
     
 class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """An automated button to match a Student with a Lesson Request with the first avalaible tutor"""
     required_role = ['admin']
     def get(self, request):
         lesson_requests = LessonRequest.objects.filter(
@@ -214,16 +215,15 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
         })
         
 class TutorAvailabilityListView(LoginRequiredMixin, ListView):
+    """View for Admins to see how much are the tutors booked with thier distinct colors."""
     template_name = "tutor_availability_list.html"
     context_object_name = "tutors"
 
     def get_queryset(self):
-        # Filter tutors and annotate with the count of scheduled lessons
         queryset = User.objects.filter(role="tutor").annotate(
             scheduled_lessons=Count("lessons_as_tutor", filter=Q(lessons_as_tutor__status=Lesson.STATUS_SCHEDULED))
         )
 
-        # Assign colors based on the number of scheduled lessons
         for tutor in queryset:
             if tutor.scheduled_lessons < 5:
                 tutor.color = "green"
@@ -307,6 +307,7 @@ def download_invoice(request,invoice_id):
     
 
 class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
+    """A view to get the Lesson Details"""
     model = Lesson
     template_name = 'lesson_detail.html'
     context_object_name = 'lesson'
@@ -316,6 +317,7 @@ class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
         return get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
     
 class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
+    """A view for the toutor to see his Students."""
     template_name = 'student_list.html'
     context_object_name = 'students'
     paginate_by = 20
@@ -339,6 +341,7 @@ class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     
     
 class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
+    """A view to Cancel a Booking"""
     template_name = 'request_cancel_bookings.html'
     form_class = CancellationRequestForm
     required_role = ['student', 'tutor']
@@ -376,6 +379,7 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
         return redirect('dashboard')
     
 def process_cancellation_request(cancellation_request):
+    """a function to check whether the lesson is in the apportipte field."""
     lessons = cancellation_request.lessons.all()
     for lesson in lessons:
         if lesson.status in [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]:
@@ -384,6 +388,7 @@ def process_cancellation_request(cancellation_request):
 
 
 class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
+    """A view to request the admin for the change bookings."""
     template_name = 'request_change_bookings.html'
     form_class = ChangeBookingForm
     required_role = ['student', 'tutor']

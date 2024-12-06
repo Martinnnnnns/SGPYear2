@@ -239,6 +239,7 @@ class TutorAvailabilityForm(forms.ModelForm):
     
     
 class CancellationRequestForm(forms.ModelForm):
+    """form for the cancellation request"""
     request_type = forms.ChoiceField(
         choices=CancellationRequest.REQUEST_TYPE_CHOICES,
         widget=forms.RadioSelect,
@@ -290,6 +291,7 @@ class CancellationRequestForm(forms.ModelForm):
         
         
 class ChangeRequestForm(forms.ModelForm):
+    """form for changing"""
     REQUEST_SINGLE = 'single'
     REQUEST_ALL = 'all'
     REQUEST_TYPE_CHOICES = [
@@ -430,11 +432,9 @@ class ChangeBookingForm(forms.ModelForm):
         lessons = cleaned_data.get('lessons')
         new_datetime = cleaned_data.get('new_datetime')
 
-        # Validate lessons selection for REQUEST_SINGLE
         if request_type == self.REQUEST_SINGLE and not lessons:
             self.add_error('lessons', 'Please select at least one lesson to change.')
 
-        # Populate lessons dynamically for REQUEST_ALL based on user role
         if request_type == self.REQUEST_ALL:
             if self.user.role == User.TUTOR:
                 cleaned_data['lessons'] = Lesson.objects.filter(
@@ -450,7 +450,6 @@ class ChangeBookingForm(forms.ModelForm):
             if not cleaned_data['lessons']:
                 raise forms.ValidationError('No lessons are available to change.')
 
-        # Validate new_datetime is in the future
         if new_datetime:
             if new_datetime < timezone.now():
                 self.add_error('new_datetime', "The new date and time must be in the future.")
