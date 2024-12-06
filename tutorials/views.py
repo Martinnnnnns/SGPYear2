@@ -14,8 +14,14 @@ from django.views.generic import ListView, TemplateView, DetailView
 from django.urls import reverse
 from django.utils import timezone
 import calendar
+
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.pdfgen import canvas
+
 from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, ProgrammingLanguage
 
@@ -643,18 +649,28 @@ class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, RoleRequiredMixin, 
         messages.success(request, "All availability slots deleted successfully.")
         return redirect('schedule_sessions')
 
-class GenerateReportView(LoginRequiredMixin, RoleRequiredMixin, View):
-    required_role = ['tutor']
+class GenerateReportView(LoginRequiredMixin, View):
+    """View for generating styled tutor reports."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if request.user.role != 'tutor':
+            return HttpResponse("You are not authorized to access this resource.", status=403)
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, time_period):
         today = now().date()
 
         if time_period == '7days':
             start_date = today - timedelta(days=7)
+            period_text = "Last 7 Days"
         elif time_period == 'month':
             start_date = today.replace(day=1)
+            period_text = f"Month of {today.strftime('%B %Y')}"
         elif time_period == 'all':
             start_date = None
+            period_text = "All Time"
         else:
             return HttpResponse("Invalid time period.", status=400)
 
@@ -665,23 +681,102 @@ class GenerateReportView(LoginRequiredMixin, RoleRequiredMixin, View):
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="tutor_report_{time_period}.pdf"'
 
-        pdf = canvas.Canvas(response, pagesize=letter)
-        pdf.setFont("Helvetica", 12)
-        pdf.drawString(50, 750, f"Tutor Report for {request.user.full_name()}")
-        pdf.drawString(50, 730, f"Time Period: {time_period}")
+        doc = SimpleDocTemplate(
+            response,
+            pagesize=letter,
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=72
+        )
 
-        y_position = 700
+        story = []
+        styles = getSampleStyleSheet()
+
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            textColor=colors.HexColor('#1a237e')
+        )
+        
+        header_style = ParagraphStyle(
+            'CustomHeader',
+            parent=styles['Heading2'],
+            fontSize=18,
+            spaceAfter=20,
+            textColor=colors.HexColor('#303f9f')
+        )
+
+        story.append(Paragraph(f"Tutor Report", title_style))
+        
+        story.append(Paragraph(f"Tutor: {request.user.full_name()}", header_style))
+        story.append(Paragraph(f"Period: {period_text}", header_style))
+        story.append(Spacer(1, 20))
+
+        table_data = [
+            ['Date', 'Time', 'Student', 'Language', 'Status']
+        ]
+        
         for lesson in lessons:
-            if y_position < 50:
-                pdf.showPage()
-                y_position = 750
+            table_data.append([
+                lesson.lesson_datetime.strftime('%Y-%m-%d'),
+                lesson.lesson_datetime.strftime('%H:%M'),
+                lesson.student.full_name(),
+                lesson.language.name,
+                lesson.get_status_display()
+            ])
 
-            pdf.drawString(50, y_position, f"Student: {lesson.student.full_name()}")
-            pdf.drawString(250, y_position, f"Date: {lesson.lesson_datetime.strftime('%Y-%m-%d %H:%M')}")
-            pdf.drawString(450, y_position, f"Language: {lesson.language.name}")
-            y_position -= 20
+        table = Table(table_data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8eaf6')), 
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1a237e')),   
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f5f5')]),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ]))
 
-        pdf.save()
+        story.append(table)
+
+        story.append(Spacer(1, 30))
+        story.append(Paragraph("Summary Statistics", header_style))
+        
+        total_lessons = lessons.count()
+        completed_lessons = lessons.filter(status='completed').count()
+        cancelled_lessons = lessons.filter(status='cancelled').count()
+        
+        stats_data = [
+            ['Total Lessons', 'Completed', 'Cancelled'],
+            [str(total_lessons), str(completed_lessons), str(cancelled_lessons)]
+        ]
+        
+        stats_table = Table(stats_data, colWidths=[2*inch, 2*inch, 2*inch])
+        stats_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8eaf6')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1a237e')),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        
+        story.append(stats_table)
+
+        doc.build(story)
         return response
 
 class TutorStudentsListView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
