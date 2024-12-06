@@ -665,7 +665,23 @@ class GenerateReportView(LoginRequiredMixin, RoleRequiredMixin, View):
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="tutor_report_{time_period}.pdf"'
 
-        # Rest of the PDF generation code...
+        pdf = canvas.Canvas(response, pagesize=letter)
+        pdf.setFont("Helvetica", 12)
+        pdf.drawString(50, 750, f"Tutor Report for {request.user.full_name()}")
+        pdf.drawString(50, 730, f"Time Period: {time_period}")
+
+        y_position = 700
+        for lesson in lessons:
+            if y_position < 50:
+                pdf.showPage()
+                y_position = 750
+
+            pdf.drawString(50, y_position, f"Student: {lesson.student.full_name()}")
+            pdf.drawString(250, y_position, f"Date: {lesson.lesson_datetime.strftime('%Y-%m-%d %H:%M')}")
+            pdf.drawString(450, y_position, f"Language: {lesson.language.name}")
+            y_position -= 20
+
+        pdf.save()
         return response
 
 class TutorStudentsListView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
