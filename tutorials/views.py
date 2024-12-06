@@ -483,12 +483,20 @@ class SignUpView(LoginProhibitedMixin, FormView):
         """Redirect logged-in users based on their role."""
         return reverse("dashboard")
             
-class ScheduleSessionsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
+class ScheduleSessionsView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     template_name = 'schedule_sessions.html'
     form_class = TutorAvailabilityForm
-    success_url = '/schedule_sessions/'
-    required_role = ['tutor']
-
+    success_url = '/schedule_sessions/'  
+    login_url = '/login/' 
+    
+    def test_func(self):
+        return self.request.user.role == 'tutor'
+        
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return redirect(self.login_url)
+        return redirect('home')  
+    
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['tutor'] = self.request.user
@@ -531,6 +539,54 @@ class ScheduleSessionsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
 
         self.request.session['success_message'] = "Availability slot(s) added successfully"
         return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        success_message = self.request.session.pop('success_message', None)
+
+        try:
+            month = int(self.request.GET.get('month', now().month))
+            year = int(self.request.GET.get('year', now().year))
+        except ValueError:
+            month = now().month
+            year = now().year
+
+        cal = calendar.monthcalendar(year, month)
+
+        prev_month = 12 if month == 1 else month - 1
+        prev_year = year - 1 if month == 1 else year
+        next_month = 1 if month == 12 else month + 1
+        next_year = year + 1 if month == 12 else year
+
+        month_slots = TutorAvailability.objects.filter(
+            tutor=self.request.user,
+            date__year=year,
+            date__month=month
+        ).order_by('date', 'start_time')
+
+        calendar_with_slots = []
+        for week in cal:
+            week_slots = []
+            for day in week:
+                if day != 0:
+                    day_slots = [slot for slot in month_slots if slot.date.day == day]
+                else:
+                    day_slots = []
+                week_slots.append({'day': day, 'slots': day_slots})
+            calendar_with_slots.append(week_slots)
+
+        context.update({
+            'calendar': calendar_with_slots,
+            'month_name': calendar.month_name[month],
+            'year': year,
+            'success_message': success_message,
+            'prev_month': prev_month,
+            'prev_year': prev_year,
+            'next_month': next_month,
+            'next_year': next_year,
+            'hours_range': [f"{hour:02d}:{minute:02d}" for hour in range(24) for minute in [0, 30]]
+        })
+        return context
 
 class DeleteAvailabilityView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = ['tutor']
