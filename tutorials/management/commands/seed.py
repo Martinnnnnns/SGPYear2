@@ -8,7 +8,6 @@ from faker import Faker
 from random import randint, choices, choice
 from datetime import datetime, timedelta
 
-# Define constant default users
 DEFAULT_ADMIN = {
     'username': '@johndoe',
     'email': 'john.doe@example.org',
@@ -36,6 +35,28 @@ DEFAULT_STUDENT = {
 }
 FIXED_USER_FIXTURES = (DEFAULT_ADMIN, DEFAULT_TUTOR, DEFAULT_STUDENT)
 
+DEFAULT_LESSONS = [
+    {
+        'language': 'Python',
+        'subject_name': 'Web Development',
+        'days_from_now': -5,  
+    },
+    {
+        'language': 'JavaScript',
+        'subject_name': 'React',
+        'days_from_now': -20,
+    },
+    {
+        'language': 'Java',
+        'subject_name': 'Spring Framework',
+        'days_from_now': -365,
+    },
+    {
+        'language': 'Ruby',
+        'subject_name': 'Rails',
+        'days_from_now': 60,
+    }
+]
 
 programming_languages = [
     "Python", "JavaScript", "Java", "C++", "Ruby", "Go", "Swift", "Rust", 
@@ -119,6 +140,7 @@ class Command(BaseCommand):
         self.create_users()
         self.create_programming_languages()
         self.create_subjects()
+        self.create_default_lessons()
         self.users = User.objects.all()
         self.create_lessons()
 
@@ -130,10 +152,9 @@ class Command(BaseCommand):
         for data in FIXED_USER_FIXTURES:
             self.try_create_user(data)
 
-
     def generate_random_users(self):
         user_count = User.objects.count()
-        while  user_count < self.USER_COUNT:
+        while user_count < self.USER_COUNT:
             print(f"Seeding user {user_count}/{self.USER_COUNT}", end='\r')
             self.generate_user()
             user_count = User.objects.count()
@@ -144,7 +165,6 @@ class Command(BaseCommand):
         last_name = self.faker.last_name()
         email = create_email(first_name, last_name)
         username = create_username(first_name, last_name)
-        # Randomly assign roles, with more students than tutors and few admins
         role = choices(
             [User.STUDENT, User.TUTOR, User.ADMIN],
             weights=[0.8, 0.15, 0.05],
@@ -172,7 +192,9 @@ class Command(BaseCommand):
             password=Command.DEFAULT_PASSWORD,
             first_name=data['first_name'],
             last_name=data['last_name'],
-            role=data.get('role', User.STUDENT),  # Default to student if not specified
+            role=data.get('role', User.STUDENT),
+            is_staff=data.get('is_staff', False),
+            is_superuser=data.get('is_superuser', False)
         )
     
     def create_programming_languages(self):
@@ -181,23 +203,44 @@ class Command(BaseCommand):
             if not ProgrammingLanguage.objects.filter(name=lang).exists():
                 ProgrammingLanguage.objects.create(name=lang)
 
-
     def create_subjects(self):
-        """Create subtjects for each programming language."""
+        """Create subjects for each programming language."""
         for language, subjects in programming_topics.items():
-
             language_instance = ProgrammingLanguage.objects.get(name=language)
-
             for subject in subjects:
-                Subject.objects.create(name=subject['name'],
-                                       language=language_instance,
-                                       description=subject["description"])
+                Subject.objects.get_or_create(
+                    name=subject['name'],
+                    language=language_instance,
+                    defaults={'description': subject["description"]}
+                )
+    
+    def create_default_lessons(self):
+        """Create default lessons between Jane Doe (tutor) and Charlie (student)."""
+        try:
+            jane = User.objects.get(username='@janedoe')
+            charlie = User.objects.get(username='@charlie')
+            
+            for lesson_data in DEFAULT_LESSONS:
+                language = ProgrammingLanguage.objects.get(name=lesson_data['language'])
+                subject = Subject.objects.get(name=lesson_data['subject_name'], language=language)
+                
+                lesson_date = timezone.now() + timedelta(days=lesson_data['days_from_now'])
+                
+                Lesson.objects.get_or_create(
+                    student=charlie,
+                    tutor=jane,
+                    language=language,
+                    subject=subject,
+                    lesson_datetime=lesson_date
+                )
+        except Exception as e:
+            print(f"Error creating default lessons: {e}")
                 
     def create_lessons(self):
-        """Create some lessons. Only to be called after users, languages and subjects have been seeded."""
+        """Create random lessons."""
         start_time = datetime(2024, 1, 1)
-        end_time = datetime(2024, 12, 31)
-        for i in range(50):
+        end_time = datetime(2025, 12, 31)
+        for i in range(500):
             tutor = choice(User.objects.filter(role="tutor"))
             student = choice(User.objects.filter(role="student"))
             language = choice(ProgrammingLanguage.objects.all())
@@ -205,11 +248,13 @@ class Command(BaseCommand):
             random_date = random_datetime(start_time, end_time)
             lesson_datetime = timezone.make_aware(random_date)
 
-            Lesson.objects.create(student=student, 
-                                  tutor=tutor, 
-                                  language=language, 
-                                  subject=subject, 
-                                  lesson_datetime=lesson_datetime)
+            Lesson.objects.create(
+                student=student, 
+                tutor=tutor, 
+                language=language, 
+                subject=subject, 
+                lesson_datetime=lesson_datetime
+            )
 
 def create_username(first_name, last_name):
     return '@' + first_name.lower() + last_name.lower()
