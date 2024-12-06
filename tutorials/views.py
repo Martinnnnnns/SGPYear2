@@ -714,9 +714,8 @@ class GenerateReportView(LoginRequiredMixin, View):
         pdf.save()
         return response
 
-class TutorStudentsListView(LoginRequiredMixin, ListView):
+class TutorStudentsListView(LoginRequiredMixin, TemplateView):
     template_name = 'tutor_students_list.html'
-    context_object_name = 'students'
 
     def handle_no_permission(self):
         if not self.request.user.is_authenticated:
@@ -730,10 +729,34 @@ class TutorStudentsListView(LoginRequiredMixin, ListView):
             return redirect('home')
         return super().get(request, *args, **kwargs)
 
+class CurrentStudentsListView(LoginRequiredMixin, ListView):
+    template_name = 'current_students_list.html'
+    context_object_name = 'students'
+
     def get_queryset(self):
         return User.objects.filter(
-            lessons_as_student__tutor=self.request.user
-        ).distinct()
+            lessons_as_student__tutor=self.request.user,
+            lessons_as_student__lesson_datetime__gte=now(),
+            lessons_as_student__status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        ).distinct().order_by('last_name', 'first_name')
+
+class PreviousStudentsListView(LoginRequiredMixin, ListView):
+    template_name = 'previous_students_list.html'
+    context_object_name = 'students'
+
+    def get_queryset(self):
+        current_students = User.objects.filter(
+            lessons_as_student__tutor=self.request.user,
+            lessons_as_student__lesson_datetime__gte=now(),
+            lessons_as_student__status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        )
+        
+        return User.objects.filter(
+            lessons_as_student__tutor=self.request.user,
+            lessons_as_student__lesson_datetime__lt=now()
+        ).exclude(
+            id__in=current_students
+        ).distinct().order_by('last_name', 'first_name')
 
 class StudentProfileDetailView(LoginRequiredMixin, DetailView):
     template_name = 'student_profile_detail.html'

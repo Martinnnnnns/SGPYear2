@@ -1,0 +1,39 @@
+{% extends 'base_content.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Current Students</h1>
+    
+    {% if students %}
+        {% regroup students by last_name|first|upper as student_groups %}
+        
+        <div class="mb-4">
+            {% for group in student_groups %}
+                <a href="#section-{{ group.grouper }}" class="btn btn-outline-primary me-2 mb-2">{{ group.grouper }}</a>
+            {% endfor %}
+        </div>
+
+        {% for group in student_groups %}
+            <div id="section-{{ group.grouper }}" class="mb-4">
+                <h3 class="border-bottom pb-2">{{ group.grouper }}</h3>
+                <div class="row">
+                    {% for student in group.list %}
+                        <div class="col-md-4 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ student.last_name }}, {{ student.first_name }}</h5>
+                                    <p class="card-text">{{ student.email }}</p>
+                                    <a href="{% url 'student_profile_detail' student.id %}" class="btn btn-primary">View Profile</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">You don't have any current students.</div>
+    {% endif %}
+    
+    <a href="{% url 'tutor_students_list' %}" class="btn btn-secondary mt-3">Back to Students Overview</a>
+</div>
+{% endblock %}
