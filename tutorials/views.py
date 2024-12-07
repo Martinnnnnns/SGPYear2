@@ -4,6 +4,13 @@ from django.conf import settings
 from django.contrib import messages
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse, HttpResponseForbidden
 from django.contrib.auth import login, logout, get_user_model
+from datetime import datetime
+from itertools import count
+from django.utils.timezone import now
+from django.conf import settings
+from django.contrib import messages
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
@@ -27,6 +34,11 @@ from tutorials.models import CancellationRequest, ChangeRequest, User, LessonReq
 
 User = get_user_model()
 from django.db.models import Q
+
+from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice
+from django.db.models import Count, Case, When, IntegerField,Q
+
+
 
 class RoleRequiredMixin:
     required_role = []  #Set this in views that use the mixin
@@ -103,6 +115,55 @@ class TutorLessonsView(LoginRequiredMixin, TemplateView):
         return context    
 
 """ <---- Admin Views ----> """
+class AdminReviewRequestsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    template_name = "admin_review_requests.html"
+    required_role = ['admin']
+
+    def get_context_data(self, **kwargs):
+        """Provide context for pending requests."""
+        context = super().get_context_data(**kwargs)
+        context["pending_cancellations"] = CancellationRequest.objects.filter(
+        status=CancellationRequest.STATUS_PENDING,
+        request_type__in=[CancellationRequest.REQUEST_SINGLE, CancellationRequest.REQUEST_ALL]
+    )
+        context["pending_changes"] = ChangeRequest.objects.filter(status=ChangeRequest.STATUS_PENDING)
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Handle approval or rejection of requests."""
+        request_id = request.POST.get("request_id")
+        request_type = request.POST.get("request_type")  # 'cancellation' or 'change'
+        action = request.POST.get("action")  # 'approve' or 'reject'
+        admin_comment = request.POST.get("admin_comment", "")
+
+        if request_type == "cancellation":
+            request_obj = get_object_or_404(CancellationRequest, id=request_id)
+            if action == "approve":
+                request_obj.process_approval()
+                messages.success(request, "Cancellation request approved successfully.")
+            elif action == "reject":
+                request_obj.process_rejection()
+                messages.success(request, "Cancellation request rejected successfully.")
+
+        elif request_type == "change":
+            request_obj = get_object_or_404(ChangeRequest, id=request_id)
+            if action == "approve":
+                if request_obj.is_within_tutor_availability():
+                    request_obj.process_approval()
+                    messages.success(request, "Change request approved successfully.")
+                else:
+                    messages.error(request, "New datetime does not align with tutor availability.")
+                    return redirect("admin_review_requests")
+            elif action == "reject":
+                request_obj.status = ChangeRequest.STATUS_DENIED
+                request_obj.save()
+                messages.success(request, "Change request rejected successfully.")
+
+        # Save admin comment
+        request_obj.admin_comment = admin_comment
+        request_obj.save()
+
+        return redirect("admin_review_requests")
     
 class AdminListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     paginate_by = 20
@@ -130,6 +191,7 @@ class AdminBookingsListView(AdminListView):
 
     
 class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """An automated button to match a Student with a Lesson Request with the first avalaible tutor"""
     required_role = ['admin']
     def get(self, request):
         lesson_requests = LessonRequest.objects.filter(
@@ -170,8 +232,26 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
             'matched_lessons': matched_lessons,
             'unmatched_requests': unmatched_requests,
         })
+        
+class TutorAvailabilityListView(LoginRequiredMixin, ListView):
+    """View for Admins to see how much are the tutors booked with thier distinct colors."""
+    template_name = "tutor_availability_list.html"
+    context_object_name = "tutors"
 
+    def get_queryset(self):
+        queryset = User.objects.filter(role="tutor").annotate(
+            scheduled_lessons=Count("lessons_as_tutor", filter=Q(lessons_as_tutor__status=Lesson.STATUS_SCHEDULED))
+        )
 
+        for tutor in queryset:
+            if tutor.scheduled_lessons < 5:
+                tutor.color = "green"
+            elif 5 <= tutor.scheduled_lessons < 10:
+                tutor.color = "yellow"
+            else:
+                tutor.color = "red"
+
+        return queryset
 """ <---- Student Views ----> """
 
 class MakeLessonRequestView(LoginRequiredMixin, RoleRequiredMixin, FormView):
@@ -258,6 +338,7 @@ def download_invoice(request,invoice_id):
     
 
 class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
+    """A view to get the Lesson Details"""
     model = Lesson
     template_name = 'lesson_detail.html'
     context_object_name = 'lesson'
@@ -267,13 +348,14 @@ class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
         return get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
     
 class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
+    """A view for the toutor to see his Students."""
     template_name = 'student_list.html'
     context_object_name = 'students'
     paginate_by = 20
     required_role = ['tutor']
     def get_queryset(self):
         search_query = self.request.GET.get('search', '')
-        students_queryset = User.objects.filter(
+        students_queryset = User.STUDENT.objects.filter(
             role='student',
             lessons_as_student__tutor=self.request.user
         ).distinct().order_by('last_name', 'first_name')
@@ -290,6 +372,7 @@ class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     
     
 class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
+    """A view to Cancel a Booking"""
     template_name = 'request_cancel_bookings.html'
     form_class = CancellationRequestForm
     required_role = ['student', 'tutor']
@@ -302,6 +385,8 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
     def form_valid(self, form):
         cancellation_request = form.save(commit=False)
         cancellation_request.user = self.request.user
+        cancellation_request.status = ChangeRequest.STATUS_PENDING  
+
         cancellation_request.save()
 
         valid_statuses = [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
@@ -325,6 +410,7 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
         return redirect('dashboard')
     
 def process_cancellation_request(cancellation_request):
+    """a function to check whether the lesson is in the apportipte field."""
     lessons = cancellation_request.lessons.all()
     for lesson in lessons:
         if lesson.status in [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]:
@@ -333,6 +419,7 @@ def process_cancellation_request(cancellation_request):
 
 
 class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
+    """A view to request the admin for the change bookings."""
     template_name = 'request_change_bookings.html'
     form_class = ChangeBookingForm
     required_role = ['student', 'tutor']
@@ -345,6 +432,7 @@ class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
     def form_valid(self, form):
         change_request = form.save(commit=False)
         change_request.user = self.request.user
+        change_request.status = ChangeRequest.STATUS_PENDING
         change_request.save()
         change_request.lessons.set(form.cleaned_data['lessons'])
         change_request.save()
@@ -355,13 +443,18 @@ class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
 def process_change_request(change_request):
     new_datetime = change_request.new_datetime
     lessons = change_request.lessons.all()
+
     for lesson in lessons:
-        lesson.lesson_datetime = new_datetime
-        lesson.status = Lesson.STATUS_RESCHEDULED
-        lesson.save()
-    change_request.is_processed = True
-    change_request.status = ChangeRequest.STATUS_APPROVED
-    change_request.save()    
+        tutor_availability = TutorAvailability.objects.filter(
+            tutor=lesson.tutor,
+            date=new_datetime.date(),
+            start_time__lte=new_datetime.time(),
+            end_time__gte=new_datetime.time()
+        )
+        if tutor_availability.exists():
+            lesson.lesson_datetime = new_datetime
+            lesson.status = Lesson.STATUS_RESCHEDULED
+            lesson.save()
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
