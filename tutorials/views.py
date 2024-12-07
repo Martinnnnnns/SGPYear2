@@ -217,9 +217,21 @@ class AccessDeniedView(TemplateView):
     template_name="access_denied.html"
 
 class StudentProfileView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
-    """Render the student's profile."""
     required_role = ["student"]
-    template_name = "student_profile.html"   
+    template_name = "student_profile.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context["programming_languages"] = user.lessons_as_student.values_list('language__name', flat=True).distinct()
+        context["upcoming_lessons"] = user.lessons_as_student.filter(
+            lesson_datetime__gt=timezone.now()
+        ).order_by("lesson_datetime")
+        context["previous_lessons"] = user.lessons_as_student.filter(
+            lesson_datetime__lte=timezone.now()
+        ).order_by("-lesson_datetime")
+        return context
+   
 
 class StudentSupportView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     """Render the student support page."""
