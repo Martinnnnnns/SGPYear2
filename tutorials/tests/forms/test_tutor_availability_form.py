@@ -29,8 +29,8 @@ class TestTutorAvailabilityForm(TestCase):
     def test_invalid_time_format(self):
         form_data = {
             'date': self.tomorrow,
-            'start_time': '10:15',
-            'end_time': '11:00',
+            'start_time': '11:00',
+            'end_time': '10:30',
             'recurrence': 'none'
         }
         form = TutorAvailabilityForm(data=form_data, tutor=self.tutor)

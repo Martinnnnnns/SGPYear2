@@ -1,3 +1,9 @@
+from datetime import datetime, timedelta
+from django.utils.timezone import now
+from django.conf import settings
+from django.contrib import messages
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse, HttpResponseForbidden
+from django.contrib.auth import login, logout, get_user_model
 from datetime import datetime
 from itertools import count
 from django.utils.timezone import now
@@ -6,7 +12,7 @@ from django.contrib import messages
 from django.http import Http404, HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.shortcuts import redirect, render, get_object_or_404
 from django.views import View
@@ -15,9 +21,17 @@ from django.views.generic import ListView, TemplateView, DetailView
 from django.urls import reverse
 from django.utils import timezone
 import calendar
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
+from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, ProgrammingLanguage
+
+User = get_user_model()
+from django.db.models import Q
+
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice
 from django.db.models import Count, Case, When, IntegerField,Q
+
 
 
 class RoleRequiredMixin:
@@ -74,7 +88,6 @@ def dashboard(request):
 
     current_user = request.user
     return render(request, 'dashboard.html', {'user': current_user})
-@login_required
 def home(request):
     """Display the application's start/home screen."""
 
@@ -563,161 +576,301 @@ class SignUpView(LoginProhibitedMixin, FormView):
         """Redirect logged-in users based on their role."""
         return reverse("dashboard")
             
-@login_required
-def schedule_sessions(request):
-    if request.user.role != 'tutor':
-        return redirect('home')
+class ScheduleSessionsView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    template_name = 'schedule_sessions.html'
+    form_class = TutorAvailabilityForm
+    success_url = '/schedule_sessions/'  
+    login_url = '/login/' 
+    
+    def test_func(self):
+        return self.request.user.role == 'tutor'
+        
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return redirect(self.login_url)
+        return redirect('home')  
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['tutor'] = self.request.user
+        return kwargs
 
-    if request.method == 'POST':
-        form = TutorAvailabilityForm(request.POST, tutor=request.user)
-        if form.is_valid():
-            start_date = form.cleaned_data['date']
-            end_recurrence_date = form.cleaned_data['end_recurrence_date']
-            recurrence = form.cleaned_data['recurrence']
-            start_time = form.cleaned_data['start_time']
-            end_time = form.cleaned_data['end_time']
+    def form_valid(self, form):
+        start_date = form.cleaned_data['date']
+        end_recurrence_date = form.cleaned_data['end_recurrence_date']
+        recurrence = form.cleaned_data['recurrence']
+        start_time = form.cleaned_data['start_time']
+        end_time = form.cleaned_data['end_time']
 
-            # For one-time slots or if no end date is specified
-            if recurrence == 'none' or not end_recurrence_date:
+        if recurrence == 'none' or not end_recurrence_date:
+            availability = TutorAvailability(
+                tutor=self.request.user,
+                date=start_date,
+                start_time=start_time,
+                end_time=end_time,
+                recurrence=recurrence,
+                end_recurrence_date=end_recurrence_date
+            )
+            availability.save()
+        else:
+            current_date = start_date
+            while current_date <= end_recurrence_date:
                 availability = TutorAvailability(
-                    tutor=request.user,
-                    date=start_date,
+                    tutor=self.request.user,
+                    date=current_date,
                     start_time=start_time,
                     end_time=end_time,
                     recurrence=recurrence,
                     end_recurrence_date=end_recurrence_date
                 )
                 availability.save()
-            else:
-                # For recurring slots
-                current_date = start_date
-                while current_date <= end_recurrence_date:
-                    availability = TutorAvailability(
-                        tutor=request.user,
-                        date=current_date,
-                        start_time=start_time,
-                        end_time=end_time,
-                        recurrence=recurrence,
-                        end_recurrence_date=end_recurrence_date
-                    )
-                    availability.save()
 
-                    # Calculate next date based on recurrence type
-                    if recurrence == 'weekly':
-                        current_date += timedelta(days=7)
-                    elif recurrence == 'biweekly':
-                        current_date += timedelta(days=14)
+                if recurrence == 'weekly':
+                    current_date += timedelta(days=7)
+                elif recurrence == 'biweekly':
+                    current_date += timedelta(days=14)
 
-            request.session['success_message'] = "Availability slot(s) added successfully"
-            return redirect('schedule_sessions')
-    else:
-        form = TutorAvailabilityForm(tutor=request.user)
+        self.request.session['success_message'] = "Availability slot(s) added successfully"
+        return super().form_valid(form)
 
-    success_message = request.session.pop('success_message', None)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        success_message = self.request.session.pop('success_message', None)
 
-    try:
-        month = int(request.GET.get('month', timezone.now().month))
-        year = int(request.GET.get('year', timezone.now().year))
-    except ValueError:
-        month = timezone.now().month
-        year = timezone.now().year
+        try:
+            month = int(self.request.GET.get('month', now().month))
+            year = int(self.request.GET.get('year', now().year))
+        except ValueError:
+            month = now().month
+            year = now().year
 
-    cal = calendar.monthcalendar(year, month)
+        cal = calendar.monthcalendar(year, month)
 
-    if month == 1:
-        prev_month = 12
-        prev_year = year - 1
-    else:
-        prev_month = month - 1
-        prev_year = year
+        prev_month = 12 if month == 1 else month - 1
+        prev_year = year - 1 if month == 1 else year
+        next_month = 1 if month == 12 else month + 1
+        next_year = year + 1 if month == 12 else year
 
-    if month == 12:
-        next_month = 1
-        next_year = year + 1
-    else:
-        next_month = month + 1
-        next_year = year
+        month_slots = TutorAvailability.objects.filter(
+            tutor=self.request.user,
+            date__year=year,
+            date__month=month
+        ).order_by('date', 'start_time')
 
-    month_slots = TutorAvailability.objects.filter(
-        tutor=request.user,
-        date__year=year,
-        date__month=month
-    ).order_by('date', 'start_time')
+        calendar_with_slots = []
+        for week in cal:
+            week_slots = []
+            for day in week:
+                if day != 0:
+                    day_slots = [slot for slot in month_slots if slot.date.day == day]
+                else:
+                    day_slots = []
+                week_slots.append({'day': day, 'slots': day_slots})
+            calendar_with_slots.append(week_slots)
 
-    calendar_with_slots = []
-    for week in cal:
-        week_slots = []
-        for day in week:
-            if day != 0:
-                day_slots = [slot for slot in month_slots if slot.date.day == day]
-            else:
-                day_slots = []
-            week_slots.append({'day': day, 'slots': day_slots})
-        calendar_with_slots.append(week_slots)
+        context.update({
+            'calendar': calendar_with_slots,
+            'month_name': calendar.month_name[month],
+            'year': year,
+            'success_message': success_message,
+            'prev_month': prev_month,
+            'prev_year': prev_year,
+            'next_month': next_month,
+            'next_year': next_year,
+            'hours_range': [f"{hour:02d}:{minute:02d}" for hour in range(24) for minute in [0, 30]]
+        })
+        return context
 
-    # Generate a list of hour options (00:00 to 23:30)
-    hours_range = [f"{hour:02d}:{minute:02d}" for hour in range(24) for minute in [0, 30]]
+class DeleteAvailabilityView(LoginRequiredMixin, View):
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if request.user.role != 'tutor':
+            return redirect('home')
+        return super().dispatch(request, *args, **kwargs)
 
-    context = {
-        'form': form,
-        'calendar': calendar_with_slots,
-        'month_name': calendar.month_name[month],
-        'year': year,
-        'success_message': success_message,
-        'prev_month': prev_month,
-        'prev_year': prev_year,
-        'next_month': next_month,
-        'next_year': next_year,
-        'hours_range': hours_range,  # Pass the generated time options
-    }
+    def get(self, request, *args, **kwargs):
+        return redirect('schedule_sessions')
 
-    return render(request, 'schedule_sessions.html', context)
-
-@login_required
-def delete_availability(request, slot_id):
-    if request.user.role != 'tutor':
-        return redirect('home')
-        
-    # Get the availability slot and check it belongs to the logged-in tutor
-    availability = get_object_or_404(TutorAvailability, id=slot_id, tutor=request.user)
-    
-    if request.method == 'POST':
+    def post(self, request, slot_id):
+        availability = get_object_or_404(TutorAvailability, id=slot_id, tutor=request.user)
         availability.delete()
         request.session['success_message'] = "Availability slot deleted successfully"
-        
-    return redirect('schedule_sessions')
+        return redirect('schedule_sessions')
 
-@login_required
-def delete_all_availability(request):
-    if request.user.role != 'tutor':
-        return redirect('home')
+class DeleteAllAvailabilityView(LoginRequiredMixin, View):
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if request.user.role != 'tutor':
+            return redirect('home')
+        return super().dispatch(request, *args, **kwargs)
 
-    TutorAvailability.objects.filter(tutor=request.user).delete()
-    request.session['success_message'] = "All availability slots deleted successfully"
-    return redirect('schedule_sessions')
+    def get(self, request, *args, **kwargs):
+        return redirect('schedule_sessions')
 
-@login_required
-def confirm_delete_availability(request, slot_id):
-    slot = TutorAvailability.objects.get(id=slot_id, tutor=request.user)
-    if request.method == 'POST':
-        # Perform the deletion if confirmed
+    def post(self, request):
+        TutorAvailability.objects.filter(tutor=request.user).delete()
+        request.session['success_message'] = "All availability slots deleted successfully"
+        return redirect('schedule_sessions')
+
+class ConfirmDeleteAvailabilityView(LoginRequiredMixin, TemplateView):
+    template_name = 'confirm_delete_availability.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        # Then check the role
+        if request.user.role != 'tutor':
+            raise Http404("Page not found")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['slot'] = get_object_or_404(TutorAvailability, 
+                                          id=self.kwargs['slot_id'], 
+                                          tutor=self.request.user)
+        return context
+
+    def post(self, request, slot_id):
+        slot = get_object_or_404(TutorAvailability, id=slot_id, tutor=request.user)
         slot.delete()
         messages.success(request, "Availability slot deleted successfully.")
         return redirect('schedule_sessions')
-    return render(request, 'confirm_delete_availability.html', {'slot': slot})
 
-@login_required
-def confirm_delete_all_availabilities(request):
-    # Check if the user has any availability slots
-    availability_exists = TutorAvailability.objects.filter(tutor=request.user).exists()
+class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, TemplateView):
+    template_name = 'confirm_delete_all_availabilities.html'
 
-    if not availability_exists:
-        messages.info(request, "There are no slots to delete.")
-        return redirect('schedule_sessions')
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if request.user.role != 'tutor':
+            raise Http404("Page not found")
+        return super().dispatch(request, *args, **kwargs)
 
-    if request.method == 'POST':
+    def get(self, request, *args, **kwargs):
+        if not TutorAvailability.objects.filter(tutor=request.user).exists():
+            messages.info(request, "There are no slots to delete.")
+            return redirect('schedule_sessions')
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request):
         TutorAvailability.objects.filter(tutor=request.user).delete()
         messages.success(request, "All availability slots deleted successfully.")
-        return redirect('schedule_sessions') 
+        return redirect('schedule_sessions')
 
-    return render(request, 'confirm_delete_all_availabilities.html')
+class GenerateReportView(LoginRequiredMixin, View):
+    """View for generating tutor reports."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if request.user.role != 'tutor':
+            return HttpResponse("You are not authorized to access this resource.", status=403)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, time_period):
+        today = now().date()
+
+        if time_period == '7days':
+            start_date = today - timedelta(days=7)
+        elif time_period == 'month':
+            start_date = today.replace(day=1)
+        elif time_period == 'all':
+            start_date = None
+        else:
+            return HttpResponse("Invalid time period.", status=400)
+
+        lessons = Lesson.objects.filter(tutor=request.user)
+        if start_date:
+            lessons = lessons.filter(lesson_datetime__date__gte=start_date)
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="tutor_report_{time_period}.pdf"'
+
+        pdf = canvas.Canvas(response, pagesize=letter)
+        pdf.setFont("Helvetica", 12)
+        pdf.drawString(50, 750, f"Tutor Report for {request.user.full_name()}")
+        pdf.drawString(50, 730, f"Time Period: {time_period}")
+
+        y_position = 700
+        for lesson in lessons:
+            if y_position < 50:
+                pdf.showPage()
+                y_position = 750
+
+            pdf.drawString(50, y_position, f"Student: {lesson.student.full_name()}")
+            pdf.drawString(250, y_position, f"Date: {lesson.lesson_datetime.strftime('%Y-%m-%d %H:%M')}")
+            pdf.drawString(450, y_position, f"Language: {lesson.language.name}")
+            y_position -= 20
+
+        pdf.save()
+        return response
+
+class TutorStudentsListView(LoginRequiredMixin, ListView):
+    template_name = 'tutor_students_list.html'
+    context_object_name = 'students'
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return redirect('/login/')
+        return redirect('home')
+    
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if request.user.role != 'tutor':
+            return redirect('home')
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return User.objects.filter(
+            lessons_as_student__tutor=self.request.user
+        ).distinct()
+
+class StudentProfileDetailView(LoginRequiredMixin, DetailView):
+    template_name = 'student_profile_detail.html'
+    model = User
+    context_object_name = 'student'
+    pk_url_kwarg = 'student_id'
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return redirect('/login/')
+        return redirect('home')
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if request.user.role != 'tutor':
+            return redirect('home')
+            
+        student = self.get_object()
+        if not Lesson.objects.filter(tutor=request.user, student=student).exists():
+            return redirect('home')
+            
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(User, id=self.kwargs['student_id'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        student = self.object
+        
+        context['upcoming_lessons'] = Lesson.objects.filter(
+            tutor=self.request.user,
+            student=student,
+            lesson_datetime__gt=now()
+        ).order_by('lesson_datetime')
+        
+        context['previous_lessons'] = Lesson.objects.filter(
+            tutor=self.request.user,
+            student=student,
+            lesson_datetime__lte=now()
+        ).order_by('-lesson_datetime')
+        
+        all_lessons = Lesson.objects.filter(tutor=self.request.user, student=student)
+        context['programming_languages'] = all_lessons.values_list('language__name', flat=True).distinct()
+        
+        return context
