@@ -139,7 +139,7 @@
   <div class="row fixed-bottom bg-light py-3">
     <div class="col-12 text-center">
       <a href="{% url 'request_lesson' %}" class="btn btn-primary btn-lg m-2">Request Lesson</a>
-      <a href="{% url 'student_profile' %}" class="btn btn-primary btn-lg m-2">View Profile</a>
+      <a href="{% url 'student_profile' pk=user.id %}" class="btn btn-primary btn-lg m-2">View Profile</a>
       <a href="{% url 'student_support' %}" class="btn btn-primary btn-lg m-2">Contact Support</a>
     </div>
   </div>

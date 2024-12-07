@@ -1,28 +1,123 @@
 {% extends 'base_content.html' %}
-
 {% block content %}
 <div class="container mt-5">
-  <h1 class="mb-4">Your Profile</h1>
+    <h1 class="mb-4">Your Profile</h1>
 
-  <!-- Profile Information Section -->
-  <div class="row">
-    <div class="col-md-6">
-      <h2>Personal Information</h2>
-      <ul class="list-group">
-        <li class="list-group-item">
-          <strong>First Name:</strong> {{ user.first_name }}
-        </li>
-        <li class="list-group-item">
-          <strong>Last Name:</strong> {{ user.last_name }}
-        </li>
-        <li class="list-group-item">
-          <strong>Email:</strong> {{ user.email }}
-        </li>
-        <li class="list-group-item">
-          <strong>Username:</strong> {{ user.username }}
-        </li>
-      </ul>
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Personal Information</h2>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>First Name:</strong> {{ user.first_name }}</li>
+                        <li><strong>Last Name:</strong> {{ user.last_name }}</li>
+                        <li><strong>Email:</strong> {{ user.email }}</li>
+                        <li><strong>Username:</strong> {{ user.username }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Programming Languages</h2>
+                </div>
+                <div class="card-body">
+                    {% if programming_languages %}
+                        <ul class="list-unstyled">
+                        {% for language in programming_languages %}
+                            <li>{{ language }}</li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No programming languages specified yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
+
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Upcoming Lessons</h2>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_lessons %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Language</th>
+                                        <th>Subject</th>
+                                        <th>Tutor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lesson in upcoming_lessons %}
+                                    <tr>
+                                        <td>{{ lesson.lesson_datetime|date:"F j, Y, g:i a" }}</td>
+                                        <td>{{ lesson.language }}</td>
+                                        <td>{{ lesson.subject|default:"Not specified" }}</td>
+                                        <td>{{ lesson.tutor.full_name }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No upcoming lessons scheduled.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Previous Lessons</h2>
+                </div>
+                <div class="card-body">
+                    {% if previous_lessons %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Language</th>
+                                        <th>Subject</th>
+                                        <th>Tutor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lesson in previous_lessons %}
+                                    <tr>
+                                        <td>{{ lesson.lesson_datetime|date:"F j, Y, g:i a" }}</td>
+                                        <td>{{ lesson.language }}</td>
+                                        <td>{{ lesson.subject|default:"Not specified" }}</td>
+                                        <td>{{ lesson.tutor.full_name }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No previous lessons found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mb-4">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
 </div>
 {% endblock %}

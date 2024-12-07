@@ -217,9 +217,9 @@ class AccessDeniedView(TemplateView):
     template_name="access_denied.html"
 
 class StudentProfileView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
-    """Redner the student's profile."""
+    """Render the student's profile."""
     required_role = ["student"]
-    template_name = "student_profile.html"    
+    template_name = "student_profile.html"   
 
 class StudentSupportView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     """Render the student support page."""
