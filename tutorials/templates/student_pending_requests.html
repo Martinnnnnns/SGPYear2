@@ -1,0 +1,51 @@
+{% extends 'base_content.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="text-center">Pending Lesson Requests</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            {% if lesson_requests %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Times</th>
+                                <th>Language</th>
+                                <th>Subject</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lr in lesson_requests %}
+                                <tr>
+                                    <td>{{ lr.start_datetime|date:"N j, Y" }}</td>
+                                    <td>{{ lr.start_datetime|date:"h:i" }} - {{ lr.end_datetime|date:"h:i A" }}</td>
+                                    <td>{{ lr.language }}</td>
+                                    <td>{% if lr.subject %}{{ lr.subject.name }}{% else %}General{% endif %}</td>
+                                    <td><span class="badge bg-warning">Pending</span></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">No pending lesson requests.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+            <a href="{% url 'request_lesson' %}" class="btn btn-primary">Request New Lesson</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

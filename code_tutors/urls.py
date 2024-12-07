@@ -60,5 +60,7 @@ urlpatterns = [
     path('lessons/calendar/', views.StudentLessonCalendarView.as_view(), name='student_lesson_calendar'),  
     path('tutor/students/previous/', views.PreviousStudentsListView.as_view(), name='previous_students'),  
     path('lessons/calendar/', views.StudentLessonCalendarView.as_view(), name='student_lesson_calendar'), 
+    path('student/invoices/', views.StudentInvoicesView.as_view(), name='student_invoices'),
+    path('student/pending-requests/', views.StudentPendingRequestsView.as_view(), name='student_pending_requests'),
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

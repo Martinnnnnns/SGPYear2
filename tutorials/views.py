@@ -1021,3 +1021,23 @@ class StudentLessonCalendarView(LoginRequiredMixin, RoleRequiredMixin, View):
             'current_year': year
         }
         return render(request, self.template_name, context)
+
+class StudentInvoicesView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    """Display all invoices for a student."""
+    template_name = 'student_invoices.html'
+    required_role = ['student']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['invoices'] = Invoice.objects.filter(student=self.request.user)
+        return context
+
+class StudentPendingRequestsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    """Display all pending lesson requests for a student."""
+    template_name = 'student_pending_requests.html'
+    required_role = ['student']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['lesson_requests'] = self.request.user.lesson_request.filter(status='pending')
+        return context
