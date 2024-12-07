@@ -58,5 +58,7 @@ urlpatterns = [
     path('tutor/students/current/', views.CurrentStudentsListView.as_view(), name='current_students'),
     path('tutor/students/previous/', views.PreviousStudentsListView.as_view(), name='previous_students'), 
     path('lessons/calendar/', views.StudentLessonCalendarView.as_view(), name='student_lesson_calendar'),  
+    path('tutor/students/previous/', views.PreviousStudentsListView.as_view(), name='previous_students'),  
+    path('lessons/calendar/', views.StudentLessonCalendarView.as_view(), name='student_lesson_calendar'), 
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
