@@ -48,6 +48,11 @@ Request Change of Bookings
         </div>
         
         <!-- Lessons Field -->
+        {% if not form.lessons.field.queryset.exists %}
+        <div class="alert alert-warning">
+          No lessons are available for rescheduling.
+        </div>
+        {% endif %}
         <div class="mb-3">
           <label for="id_lessons" class="form-label">Select Lessons to Change</label>
           {{ form.lessons }}
