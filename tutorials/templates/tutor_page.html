@@ -1,51 +1,78 @@
 {% extends "base_content.html" %}
-{% block title %} Tutor Page {% endblock %}
-
+{% block title %}
+Tutor Page
+{% endblock %}
 {% block content %}
-<div class="container mt-4">
-    <h1 class="text-center">Welcome, {{ user.first_name}}!</h1>
-    <p class="text-center">You are logged in as a tutor.</p>
 
-    <div class="row mt-5">
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">View Students</h5>
-                    <p class="card-text">Manage and review student information.</p>
-                    <a href="{% url 'tutor_students_list' %}" class="btn btn-primary">Go</a>
-                </div>
-            </div>
+<div class="container-fluid mt-5">
+  <div class="row">
+    <div class="col-12 text-center">
+      <h1 class="display-4 fw-bold">Welcome, {{ user.first_name }}!</h1>
+      <p class="lead text-muted">You are logged in as a tutor.</p>
+    </div>
+  </div>
+
+  <div class="row mt-4 justify-content-center">
+    <div class="col-lg-4 col-md-6 mb-4">
+      <a href="{% url 'tutor_students_list' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-4">
+            <i class="fas fa-user-graduate fa-2x text-primary mb-3"></i>
+            <h6 class="card-title fw-bold">View Students</h6>
+            <p class="card-text text-muted small">Manage and review student information.</p>
+          </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Manage Availability</h5>
-                    <p class="card-text">View and manage your availability.</p>
-                    <a href="{% url 'schedule_sessions' %}" class="btn btn-primary">Go</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Reports</h5>
-                    <p class="card-text">Generate reports for your activities.</p>
-                    <a href="{% url 'reports' %}" class="btn btn-primary">Go</a>
-                </div>
-            </div>
-        </div>
+      </a>
     </div>
 
-    <div class="row mt-5 justify-content-center">
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Manage Lessons</h5>
-                    <p class="card-text">View, cancel, or reschedule your lessons.</p>
-                    <a href="{% url 'tutor_lessons' %}" class="btn btn-primary">Go</a>
-                </div>
-            </div>
+    <div class="col-lg-4 col-md-6 mb-4">
+      <a href="{% url 'schedule_sessions' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-4">
+            <i class="fas fa-calendar-alt fa-2x text-primary mb-3"></i>
+            <h6 class="card-title fw-bold">Manage Availability</h6>
+            <p class="card-text text-muted small">View and manage your availability.</p>
+          </div>
         </div>
+      </a>
     </div>
+
+    <div class="col-lg-4 col-md-6 mb-4">
+      <a href="{% url 'reports' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-4">
+            <i class="fas fa-chart-bar fa-2x text-primary mb-3"></i>
+            <h6 class="card-title fw-bold">Reports</h6>
+            <p class="card-text text-muted small">Generate reports for your activities.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-4 col-md-6 mb-4">
+      <a href="{% url 'tutor_lessons' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-4">
+            <i class="fas fa-chalkboard fa-2x text-primary mb-3"></i>
+            <h6 class="card-title fw-bold">Manage Lessons</h6>
+            <p class="card-text text-muted small">View, cancel, or reschedule your lessons.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
 </div>
+
+<style>
+  .card {
+    min-height: 150px;
+    transition: transform 0.2s;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+  }
+</style>
 {% endblock %}

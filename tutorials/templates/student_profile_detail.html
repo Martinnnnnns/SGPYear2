@@ -1,5 +1,4 @@
 {% extends 'base_content.html' %}
-
 {% block content %}
 <div class="container mt-5">
     <h1 class="mb-4">Student Profile</h1>
@@ -120,7 +119,28 @@
     </div>
     
     <div class="mt-4 mb-5">
-        <a href="{% url 'tutor_students_list' %}" class="btn btn-secondary">Back to Students List</a>
+        {% if request.GET.source == 'current' %}
+            <a href="{% url 'current_students' %}" class="btn btn-secondary">Back to Current Students</a>
+        {% elif request.GET.source == 'previous' %}
+            <a href="{% url 'previous_students' %}" class="btn btn-secondary">Back to Previous Students</a>
+        {% else %}
+            <a href="{% url 'tutor_students_list' %}" class="btn btn-secondary">Back to Students List</a>
+        {% endif %}
     </div>
 </div>
+
+<style>
+  .btn-secondary {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+  }
+
+  .btn-secondary:hover,
+  .btn-secondary:focus,
+  .btn-secondary:active {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    box-shadow: none !important;
+  }
+</style>
 {% endblock %}

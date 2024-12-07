@@ -6,7 +6,6 @@ Admin Dashboard
 
 {% block content %}
 <div class="container-fluid mt-5">
-  <!-- Page Header -->
   <div class="row">
     <div class="col-12 text-center">
       <h1 class="display-4 fw-bold">Admin Dashboard</h1>
@@ -14,10 +13,8 @@ Admin Dashboard
     </div>
   </div>
 
-  <!-- Action Cards -->
-  <div class="row mt-5 justify-content-center">
-    <!-- Students Card -->
-    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+  <div class="row mt-4 justify-content-center">
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
       <a href="{% url 'admin_student_list' %}" class="text-decoration-none">
         <div class="card shadow">
           <div class="card-body text-center p-3">
@@ -29,8 +26,7 @@ Admin Dashboard
       </a>
     </div>
 
-    <!-- Tutors Card -->
-    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
       <a href="{% url 'admin_tutor_list' %}" class="text-decoration-none">
         <div class="card shadow">
           <div class="card-body text-center p-3">
@@ -42,8 +38,7 @@ Admin Dashboard
       </a>
     </div>
 
-    <!-- Bookings Card -->
-    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
       <a href="{% url 'admin_bookings_list' %}" class="text-decoration-none">
         <div class="card shadow">
           <div class="card-body text-center p-3">
@@ -54,9 +49,10 @@ Admin Dashboard
         </div>
       </a>
     </div>
+  </div>
 
-    <!-- Match Tutors Card -->
-    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
       <a href="{% url 'trigger_matching' %}" class="text-decoration-none">
         <div class="card shadow">
           <div class="card-body text-center p-3">
@@ -68,8 +64,7 @@ Admin Dashboard
       </a>
     </div>
 
-    <!-- Admin Review Requests Card -->
-    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
       <a href="{% url 'admin_review_requests' %}" class="text-decoration-none">
         <div class="card shadow">
           <div class="card-body text-center p-3">
@@ -81,8 +76,7 @@ Admin Dashboard
       </a>
     </div>
 
-    <!-- Tutor Availability Card -->
-    <div class="col-lg-2 col-md-3 col-sm-6 mb-4">
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
       <a href="{% url 'tutor_availability_list' %}" class="text-decoration-none">
         <div class="card shadow">
           <div class="card-body text-center p-3">
@@ -98,7 +92,12 @@ Admin Dashboard
 
 <style>
   .card {
-    min-height: 200px; /* Ensures consistent height */
+    min-height: 150px;
+    transition: transform 0.2s;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
   }
 </style>
 {% endblock %}
