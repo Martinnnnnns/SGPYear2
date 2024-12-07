@@ -1,53 +1,68 @@
 {% extends 'base_content.html' %}
-
-{% block title %}
-Reports Page
-{% endblock %}
-
+{% block title %}Reports Page{% endblock %}
 {% block content %}
-<div class="container mt-4">
-    <h1 class="text-center">Reports</h1>
-    <p class="text-center">Generate detailed reports of your tutoring activities.</p>
 
-    <div class="row mt-5">
-        <!-- Card for Last 7 Days -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Last 7 Days</h5>
-                    <p class="card-text">Generate a report for the last 7 days of your tutoring activities.</p>
-                    <form method="get" action="{% url 'generate_report' '7days' %}">
-                        <button type="submit" class="btn btn-primary">Generate</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card for Last Month -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Last Month</h5>
-                    <p class="card-text">Generate a report for the last month of your tutoring activities.</p>
-                    <form method="get" action="{% url 'generate_report' 'month' %}">
-                        <button type="submit" class="btn btn-primary">Generate</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card for All Time -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">All Time</h5>
-                    <p class="card-text">Generate a report for all your tutoring activities, starting with your first lesson!</p>
-                    <form method="get" action="{% url 'generate_report' 'all' %}">
-                        <button type="submit" class="btn btn-primary">Generate</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+<div class="container-fluid mt-5">
+  <div class="row">
+    <div class="col-12 text-center">
+      <h1 class="display-4 fw-bold">Reports</h1>
+      <p class="lead text-muted">Generate detailed reports of your tutoring activities.</p>
     </div>
+  </div>
+
+  <div class="row mt-4 justify-content-center">
+    <div class="col-lg-4 col-md-6 mb-4">
+      <a href="{% url 'generate_report' '7days' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-4">
+            <i class="fas fa-calendar-week fa-2x text-primary mb-3"></i>
+            <h6 class="card-title fw-bold">Last 7 Days</h6>
+            <p class="card-text text-muted small">Generate a report for the last 7 days of your tutoring activities.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-4">
+      <a href="{% url 'generate_report' 'month' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-4">
+            <i class="fas fa-calendar-alt fa-2x text-primary mb-3"></i>
+            <h6 class="card-title fw-bold">Last Month</h6>
+            <p class="card-text text-muted small">Generate a report for the last month of your tutoring activities.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-4">
+      <a href="{% url 'generate_report' 'all' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-4">
+            <i class="fas fa-history fa-2x text-primary mb-3"></i>
+            <h6 class="card-title fw-bold">All Time</h6>
+            <p class="card-text text-muted small">Generate a report for all your tutoring activities, starting with your first lesson!</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+    <div class="row mt-4">
+    <div class="col-12 text-center">
+      <a href="{% url 'dashboard' %}" class="btn btn-secondary px-4">Back to Tutor Page</a>
+    </div>
+  </div>
 </div>
+
+<style>
+  .card {
+    min-height: 150px;
+    transition: transform 0.2s;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+  }
+</style>
 {% endblock %}

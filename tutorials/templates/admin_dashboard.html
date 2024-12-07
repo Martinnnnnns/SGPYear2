@@ -5,83 +5,110 @@ Admin Dashboard
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-  <!-- Page Header -->
+<div class="container-fluid mt-5">
   <div class="row">
     <div class="col-12 text-center">
       <h1 class="display-4 fw-bold">Admin Dashboard</h1>
       <p class="lead text-muted">Manage students, tutors, bookings, and match tutors with students.</p>
     </div>
   </div>
-      
-  <!-- Action Cards -->
-  <div class="row mt-5 justify-content-center">
-    <!-- Students Card -->
-    <div class="col-md-3 col-sm-6 mb-4">
+
+  <div class="row mt-4 justify-content-center">
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
       <a href="{% url 'admin_list' 'students' %}" class="text-decoration-none">
-        <div class="card shadow h-100">
-          <div class="card-body text-center">
-            <i class="fas fa-user-graduate fa-3x text-primary mb-3"></i>
-            <h5 class="card-title fw-bold">Students</h5>
-            <p class="card-text text-muted">View and manage student accounts.</p>
+        <div class="card shadow">
+          <div class="card-body text-center p-3">
+            <i class="fas fa-user-graduate fa-2x text-primary mb-2"></i>
+            <h6 class="card-title fw-bold">Students</h6>
+            <p class="card-text text-muted small">Manage student accounts.</p>
           </div>
         </div>
       </a>
     </div>
 
-    <!-- Tutors Card -->
-    <div class="col-md-3 col-sm-6 mb-4">
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
       <a href="{% url 'admin_list' 'tutors' %}" class="text-decoration-none">
-        <div class="card shadow h-100">
-          <div class="card-body text-center">
-            <i class="fas fa-chalkboard-teacher fa-3x text-primary mb-3"></i>
-            <h5 class="card-title fw-bold">Tutors</h5>
-            <p class="card-text text-muted">View and manage tutor profiles.</p>
+        <div class="card shadow">
+          <div class="card-body text-center p-3">
+            <i class="fas fa-chalkboard-teacher fa-2x text-primary mb-2"></i>
+            <h6 class="card-title fw-bold">Tutors</h6>
+            <p class="card-text text-muted small">Manage tutor profiles.</p>
           </div>
         </div>
       </a>
     </div>
 
-    <!-- Bookings Card -->
-    <div class="col-md-3 col-sm-6 mb-4">
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
       <a href="{% url 'admin_list' 'bookings' %}" class="text-decoration-none">
-        <div class="card shadow h-100">
-          <div class="card-body text-center">
-            <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
-            <h5 class="card-title fw-bold">Bookings</h5>
-            <p class="card-text text-muted">Manage all lesson bookings.</p>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <!-- Match Tutors Card -->
-    <div class="col-md-3 col-sm-6 mb-4">
-      <a href="{% url 'trigger_matching' %}" class="text-decoration-none">
-        <div class="card shadow h-100">
-          <div class="card-body text-center">
-            <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
-            <h5 class="card-title fw-bold">Match Tutors</h5>
-            <p class="card-text text-muted">Automatically match tutors with students.</p>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <!-- Admin Stats Card -->
-    <div class="col-md-3 col-sm-6 mb-4">
-      <a href="{% url 'admin_stats' %}"" class="text-decoration-none">
-        <div class="card shadow h-100">
-          <div class="card-body text-center">
-            <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
-            <h5 class="card-title fw-bold">Admin Stats</h5>
-            <p class="card-text text-muted">View user statistics</p>
+        <div class="card shadow">
+          <div class="card-body text-center p-3">
+            <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
+            <h6 class="card-title fw-bold">Bookings</h6>
+            <p class="card-text text-muted small">Manage lesson bookings.</p>
           </div>
         </div>
       </a>
     </div>
   </div>
-</div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+      <a href="{% url 'trigger_matching' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-3">
+            <i class="fas fa-user-friends fa-2x text-primary mb-2"></i>
+            <h6 class="card-title fw-bold">Match Tutors</h6>
+            <p class="card-text text-muted small">Match tutors and students.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+      <a href="{% url 'admin_review_requests' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-3">
+            <i class="fas fa-tasks fa-2x text-primary mb-2"></i>
+            <h6 class="card-title fw-bold">Review Requests</h6>
+            <p class="card-text text-muted small">Review requests.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+      <a href="{% url 'tutor_availability_list' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-3">
+            <i class="fas fa-user-clock fa-2x text-primary mb-2"></i>
+            <h6 class="card-title fw-bold">Tutor Availability</h6>
+            <p class="card-text text-muted small">Check tutor availability.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+      <a href="{% url 'admin_stats' %}" class="text-decoration-none">
+        <div class="card shadow">
+          <div class="card-body text-center p-3">
+            <i class="fas fa-user-clock fa-2x text-primary mb-2"></i>
+            <h6 class="card-title fw-bold">Statistics</h6>
+            <p class="card-text text-muted small">View site statistics.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+
+<style>
+  .card {
+    min-height: 150px;
+    transition: transform 0.2s;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+  }
+</style>
 {% endblock %}
-
-

@@ -53,24 +53,24 @@
           <td class="text-end">
             {% if list_type == 'students' or list_type == 'tutors' %}
                 {% if list_type == 'students' %}
-                <a href="{% url 'student_profile_detail' student_id=row.id %}" class="text-primary me-2">
+                <a href="{% url 'student_profile_detail' student_id=row.id %}" class="btn text-primary me-2">
                   <i class="bi bi-person-fill" style="font-size: 1.5rem;"></i>
                 </a>
                 {% endif %}
                 {% if list_type == 'tutors' %}
-                <a href="{% url 'admin_view_profile' email=row.email %}" class="text-primary me-2">
+                <a href="{% url 'admin_view_profile' email=row.email %}" class="btn text-primary me-2">
                   <i class="bi bi-person-fill" style="font-size: 1.5rem;"></i>
                 </a>
                 {% endif %}
-                <a href="{% url 'update_record' row.email %}" class="text-primary me-2">
+                <a href="{% url 'update_record' row.email %}" class="btn text-primary me-2">
                     <i class="bi bi-pencil-fill" style="font-size: 1.5rem;"></i>
                 </a>
-                <a href="{% url 'delete_record' email=row.email %}" class="text-primary me-2">
+                <a href="{% url 'delete_record' email=row.email %}" class="btn text-primary me-2">
                     <i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i>
                 </a>
             {% endif %}
             {% if list_type == 'bookings' %}
-                <a href="{% url 'delete_booking' booking_id=row.id %}" class="text-danger me-2">
+                <a href="{% url 'delete_booking' booking_id=row.id %}" class="btn text-danger me-1">
                     <i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i>
                 </a>
             {% endif %}
@@ -115,4 +115,6 @@
     {% endif %}
   </ul>
 </div>
+
+
 {% endblock %}

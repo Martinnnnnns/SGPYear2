@@ -40,4 +40,10 @@ class AdminDashboardTestCase(TestCase):
         self.assertContains(response, 'Tutors')
         self.assertContains(response, 'Bookings')
         
+    def test_tutor_availability_button(self):
+        """Test that the Tutor Availability button is present and links correctly."""
+        response = self.client.get(reverse("admin_dashboard"))
+        self.assertContains(response, "Tutor Availability")
+        self.assertContains(response, reverse("tutor_availability_list"))    
+        
     

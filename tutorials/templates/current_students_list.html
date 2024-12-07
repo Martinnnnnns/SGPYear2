@@ -1,0 +1,66 @@
+{% extends 'base_content.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Current Students</h1>
+
+    {% if students %}
+    {% regroup students by last_name|first|upper as student_groups %}
+    
+    <div class="mb-4">
+        {% for group in student_groups %}
+        <a href="#section-{{ group.grouper }}" class="btn btn-outline-primary me-2 mb-2 hover-up" style="color: #0d6efd;">{{ group.grouper }}</a>
+        {% endfor %}
+    </div>
+
+    {% for group in student_groups %}
+    <div id="section-{{ group.grouper }}" class="mb-4">
+        <h3 class="border-bottom pb-2" style="color: #0d6efd;">{{ group.grouper }}</h3>
+        
+        <div class="row g-4">
+            {% for student in group.list %}
+            <div class="col-lg-4 col-md-6">
+                <a href="{% url 'student_profile_detail' student.id %}?source=current" class="text-decoration-none">
+                    <div class="card shadow-sm hover-up">
+                        <div class="card-body text-center p-4">
+                            <h5 class="card-title fw-bold mb-0" style="color: #0d6efd;">{{ student.first_name }} {{ student.last_name }}</h5>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="alert alert-info">
+        You don't have any current students.
+    </div>
+    {% endif %}
+
+    <a href="{% url 'tutor_students_list' %}" class="btn btn-secondary mt-3">Back to Students Overview</a>
+</div>
+
+<style>
+    .hover-up {
+        transition: transform 0.2s ease;
+    }
+    
+    .hover-up:hover {
+        transform: translateY(-5px);
+    }
+
+    .btn-secondary {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+    }
+
+    .btn-secondary:hover,
+    .btn-secondary:focus,
+    .btn-secondary:active {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        box-shadow: none !important;
+    }
+</style>
+{% endblock %}

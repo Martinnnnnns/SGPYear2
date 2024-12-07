@@ -1,58 +1,54 @@
 {% extends "base_content.html" %}
-
-{% block title %}
-Manage Lessons
-{% endblock %}
-
+{% block title %}Manage Lessons{% endblock %}
 {% block content %}
 <div class="container mt-5">
-  <!-- Page Title -->
-  <div class="row mb-4">
-    <div class="col-12 text-center">
-      <h1 class="display-4 fw-bold">Manage Lessons</h1>
-      <p class="lead text-muted">Cancel or reschedule your lessons.</p>
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h1 class="display-4 fw-bold">Manage Lessons</h1>
+            <p>Cancel or reschedule your lessons.</p>
+        </div>
     </div>
-  </div>
 
-  <!-- Lessons Table -->
-  <div class="row mt-5">
-    <div class="col-12">
-      {% if lessons %}
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Student</th>
-            <th>Subject</th>
-            <th>Language</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for lesson in lessons %}
-          <tr>
-            <td>{{ forloop.counter }}</td>
-            <td>{{ lesson.student.full_name }}</td>
-            <td>{{ lesson.subject.name|default:"General" }}</td>
-            <td>{{ lesson.language.name }}</td>
-            <td>{{ lesson.lesson_datetime|date:"D, M d, Y H:i" }}</td>
-            <td>{{ lesson.get_status_display }}</td>
-            <td>
-              <!-- Cancel Button -->
-              <a href="{% url 'request_cancel_bookings' lesson.id %}" class="btn btn-sm btn-danger">Cancel</a>
-              <!-- Reschedule Button -->
-              <a href="{% url 'request_change_bookings' lesson.id %}" class="btn btn-sm btn-warning">Reschedule</a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <p class="text-center text-muted">No lessons to display.</p>
-      {% endif %}
+    <div class="row mt-5">
+        <div class="col-12">
+            {% if lessons %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Student</th>
+                            <th>Subject</th>
+                            <th>Language</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lesson in lessons %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ lesson.student.full_name }}</td>
+                                <td>{{ lesson.subject.name|default:"General" }}</td>
+                                <td>{{ lesson.language.name }}</td>
+                                <td>{{ lesson.lesson_datetime|date:"D, M d, Y H:i" }}</td>
+                                <td>{{ lesson.get_status_display }}</td>
+                                <td>
+                                    <a href="{% url 'request_cancel_bookings' lesson.id %}" class="btn btn-sm btn-danger">Cancel</a>
+                                    <a href="{% url 'request_change_bookings' lesson.id %}" class="btn btn-sm btn-warning">Reschedule</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="alert alert-info">No lessons to display.</div>
+            {% endif %}
+        </div>
     </div>
-  </div>
+
+    <div class="mt-4 text-center">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Tutor Page</a>
+    </div>
 </div>
 {% endblock %}

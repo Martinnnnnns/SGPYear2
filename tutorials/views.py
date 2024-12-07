@@ -4,6 +4,13 @@ from django.conf import settings
 from django.contrib import messages
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse, HttpResponseForbidden
 from django.contrib.auth import login, logout, get_user_model
+from datetime import datetime
+from itertools import count
+from django.utils.timezone import now
+from django.conf import settings
+from django.contrib import messages
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import ImproperlyConfigured, ValidationError
@@ -20,9 +27,22 @@ from django.db.models import Count, Avg
 from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm, UpdateForm, AdminAddUserForm, AdminAddBookingForm
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, Subject, ProgrammingLanguage
 from django.db.models import Q, F
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.pdfgen import canvas
+
+from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
+from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, ProgrammingLanguage
+
 User = get_user_model()
+
+from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice
+from django.db.models import Count, Case, When, IntegerField,Q
+
+
 
 class RoleRequiredMixin:
     required_role = []  #Set this in views that use the mixin
@@ -99,7 +119,6 @@ class TutorLessonsView(LoginRequiredMixin, TemplateView):
         return context    
 
 """ <---- Admin Views ----> """
-
 class AdminViewProfile(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = ['admin']
     template_name = 'student_profile.html'
@@ -154,6 +173,56 @@ class AddRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
                 form = AdminAddUserForm()
             
         return render(request, 'add_record.html', {'form': form, 'role': role})
+
+class AdminReviewRequestsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    template_name = "admin_review_requests.html"
+    required_role = ['admin']
+
+    def get_context_data(self, **kwargs):
+        """Provide context for pending requests."""
+        context = super().get_context_data(**kwargs)
+        context["pending_cancellations"] = CancellationRequest.objects.filter(
+        status=CancellationRequest.STATUS_PENDING,
+        request_type__in=[CancellationRequest.REQUEST_SINGLE, CancellationRequest.REQUEST_ALL]
+    )
+        context["pending_changes"] = ChangeRequest.objects.filter(status=ChangeRequest.STATUS_PENDING)
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Handle approval or rejection of requests."""
+        request_id = request.POST.get("request_id")
+        request_type = request.POST.get("request_type")  # 'cancellation' or 'change'
+        action = request.POST.get("action")  # 'approve' or 'reject'
+        admin_comment = request.POST.get("admin_comment", "")
+
+        if request_type == "cancellation":
+            request_obj = get_object_or_404(CancellationRequest, id=request_id)
+            if action == "approve":
+                request_obj.process_approval()
+                messages.success(request, "Cancellation request approved successfully.")
+            elif action == "reject":
+                request_obj.process_rejection()
+                messages.success(request, "Cancellation request rejected successfully.")
+
+        elif request_type == "change":
+            request_obj = get_object_or_404(ChangeRequest, id=request_id)
+            if action == "approve":
+                if request_obj.is_within_tutor_availability():
+                    request_obj.process_approval()
+                    messages.success(request, "Change request approved successfully.")
+                else:
+                    messages.error(request, "New datetime does not align with tutor availability.")
+                    return redirect("admin_review_requests")
+            elif action == "reject":
+                request_obj.status = ChangeRequest.STATUS_DENIED
+                request_obj.save()
+                messages.success(request, "Change request rejected successfully.")
+
+        # Save admin comment
+        request_obj.admin_comment = admin_comment
+        request_obj.save()
+
+        return redirect("admin_review_requests")
     
 class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = ['admin']
@@ -331,6 +400,7 @@ class AdminStatsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
         return context
     
 class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """An automated button to match a Student with a Lesson Request with the first avalaible tutor"""
     required_role = ['admin']
     def get(self, request):
         lesson_requests = LessonRequest.objects.filter(
@@ -371,8 +441,26 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
             'matched_lessons': matched_lessons,
             'unmatched_requests': unmatched_requests,
         })
+        
+class TutorAvailabilityListView(LoginRequiredMixin, ListView):
+    """View for Admins to see how much are the tutors booked with thier distinct colors."""
+    template_name = "tutor_availability_list.html"
+    context_object_name = "tutors"
 
+    def get_queryset(self):
+        queryset = User.objects.filter(role="tutor").annotate(
+            scheduled_lessons=Count("lessons_as_tutor", filter=Q(lessons_as_tutor__status=Lesson.STATUS_SCHEDULED))
+        )
 
+        for tutor in queryset:
+            if tutor.scheduled_lessons < 5:
+                tutor.color = "green"
+            elif 5 <= tutor.scheduled_lessons < 10:
+                tutor.color = "yellow"
+            else:
+                tutor.color = "red"
+
+        return queryset
 """ <---- Student Views ----> """
 
 class MakeLessonRequestView(LoginRequiredMixin, RoleRequiredMixin, FormView):
@@ -418,9 +506,21 @@ class AccessDeniedView(TemplateView):
     template_name="access_denied.html"
 
 class StudentProfileView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
-    """Redner the student's profile."""
     required_role = ["student"]
-    template_name = "student_profile.html"    
+    template_name = "student_profile.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context["programming_languages"] = user.lessons_as_student.values_list('language__name', flat=True).distinct()
+        context["upcoming_lessons"] = user.lessons_as_student.filter(
+            lesson_datetime__gt=timezone.now()
+        ).order_by("lesson_datetime")
+        context["previous_lessons"] = user.lessons_as_student.filter(
+            lesson_datetime__lte=timezone.now()
+        ).order_by("-lesson_datetime")
+        return context
+   
 
 class StudentSupportView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     """Render the student support page."""
@@ -447,6 +547,7 @@ def download_invoice(request,invoice_id):
     
 
 class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
+    """A view to get the Lesson Details"""
     model = Lesson
     template_name = 'lesson_detail.html'
     context_object_name = 'lesson'
@@ -456,13 +557,14 @@ class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
         return get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
     
 class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
+    """A view for the toutor to see his Students."""
     template_name = 'student_list.html'
     context_object_name = 'students'
     paginate_by = 20
     required_role = ['tutor']
     def get_queryset(self):
         search_query = self.request.GET.get('search', '')
-        students_queryset = User.objects.filter(
+        students_queryset = User.STUDENT.objects.filter(
             role='student',
             lessons_as_student__tutor=self.request.user
         ).distinct().order_by('last_name', 'first_name')
@@ -479,6 +581,7 @@ class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     
     
 class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
+    """A view to Cancel a Booking"""
     template_name = 'request_cancel_bookings.html'
     form_class = CancellationRequestForm
     required_role = ['student', 'tutor']
@@ -491,6 +594,8 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
     def form_valid(self, form):
         cancellation_request = form.save(commit=False)
         cancellation_request.user = self.request.user
+        cancellation_request.status = ChangeRequest.STATUS_PENDING  
+
         cancellation_request.save()
 
         valid_statuses = [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
@@ -514,6 +619,7 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
         return redirect('dashboard')
     
 def process_cancellation_request(cancellation_request):
+    """a function to check whether the lesson is in the apportipte field."""
     lessons = cancellation_request.lessons.all()
     for lesson in lessons:
         if lesson.status in [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]:
@@ -522,6 +628,7 @@ def process_cancellation_request(cancellation_request):
 
 
 class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
+    """A view to request the admin for the change bookings."""
     template_name = 'request_change_bookings.html'
     form_class = ChangeBookingForm
     required_role = ['student', 'tutor']
@@ -534,6 +641,7 @@ class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
     def form_valid(self, form):
         change_request = form.save(commit=False)
         change_request.user = self.request.user
+        change_request.status = ChangeRequest.STATUS_PENDING
         change_request.save()
         change_request.lessons.set(form.cleaned_data['lessons'])
         change_request.save()
@@ -544,13 +652,18 @@ class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
 def process_change_request(change_request):
     new_datetime = change_request.new_datetime
     lessons = change_request.lessons.all()
+
     for lesson in lessons:
-        lesson.lesson_datetime = new_datetime
-        lesson.status = Lesson.STATUS_RESCHEDULED
-        lesson.save()
-    change_request.is_processed = True
-    change_request.status = ChangeRequest.STATUS_APPROVED
-    change_request.save()    
+        tutor_availability = TutorAvailability.objects.filter(
+            tutor=lesson.tutor,
+            date=new_datetime.date(),
+            start_time__lte=new_datetime.time(),
+            end_time__gte=new_datetime.time()
+        )
+        if tutor_availability.exists():
+            lesson.lesson_datetime = new_datetime
+            lesson.status = Lesson.STATUS_RESCHEDULED
+            lesson.save()
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
@@ -795,13 +908,8 @@ class ScheduleSessionsView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         })
         return context
 
-class DeleteAvailabilityView(LoginRequiredMixin, View):
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            return redirect('home')
-        return super().dispatch(request, *args, **kwargs)
+class DeleteAvailabilityView(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['tutor']
 
     def get(self, request, *args, **kwargs):
         return redirect('schedule_sessions')
@@ -812,13 +920,8 @@ class DeleteAvailabilityView(LoginRequiredMixin, View):
         request.session['success_message'] = "Availability slot deleted successfully"
         return redirect('schedule_sessions')
 
-class DeleteAllAvailabilityView(LoginRequiredMixin, View):
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            return redirect('home')
-        return super().dispatch(request, *args, **kwargs)
+class DeleteAllAvailabilityView(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['tutor']
 
     def get(self, request, *args, **kwargs):
         return redirect('schedule_sessions')
@@ -828,16 +931,9 @@ class DeleteAllAvailabilityView(LoginRequiredMixin, View):
         request.session['success_message'] = "All availability slots deleted successfully"
         return redirect('schedule_sessions')
 
-class ConfirmDeleteAvailabilityView(LoginRequiredMixin, TemplateView):
+class ConfirmDeleteAvailabilityView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     template_name = 'confirm_delete_availability.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        # Then check the role
-        if request.user.role != 'tutor':
-            raise Http404("Page not found")
-        return super().dispatch(request, *args, **kwargs)
+    required_role = ['tutor']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -852,15 +948,9 @@ class ConfirmDeleteAvailabilityView(LoginRequiredMixin, TemplateView):
         messages.success(request, "Availability slot deleted successfully.")
         return redirect('schedule_sessions')
 
-class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, TemplateView):
+class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     template_name = 'confirm_delete_all_availabilities.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            raise Http404("Page not found")
-        return super().dispatch(request, *args, **kwargs)
+    required_role = ['tutor']
 
     def get(self, request, *args, **kwargs):
         if not TutorAvailability.objects.filter(tutor=request.user).exists():
@@ -874,7 +964,7 @@ class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, TemplateView):
         return redirect('schedule_sessions')
 
 class GenerateReportView(LoginRequiredMixin, View):
-    """View for generating tutor reports."""
+    """View for generating styled tutor reports."""
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -888,10 +978,13 @@ class GenerateReportView(LoginRequiredMixin, View):
 
         if time_period == '7days':
             start_date = today - timedelta(days=7)
+            period_text = "Last 7 Days"
         elif time_period == 'month':
             start_date = today.replace(day=1)
+            period_text = f"Month of {today.strftime('%B %Y')}"
         elif time_period == 'all':
             start_date = None
+            period_text = "All Time"
         else:
             return HttpResponse("Invalid time period.", status=400)
 
@@ -902,74 +995,156 @@ class GenerateReportView(LoginRequiredMixin, View):
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="tutor_report_{time_period}.pdf"'
 
-        pdf = canvas.Canvas(response, pagesize=letter)
-        pdf.setFont("Helvetica", 12)
-        pdf.drawString(50, 750, f"Tutor Report for {request.user.full_name()}")
-        pdf.drawString(50, 730, f"Time Period: {time_period}")
+        doc = SimpleDocTemplate(
+            response,
+            pagesize=letter,
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=72
+        )
 
-        y_position = 700
+        story = []
+        styles = getSampleStyleSheet()
+
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            textColor=colors.HexColor('#1a237e')
+        )
+        
+        header_style = ParagraphStyle(
+            'CustomHeader',
+            parent=styles['Heading2'],
+            fontSize=18,
+            spaceAfter=20,
+            textColor=colors.HexColor('#303f9f')
+        )
+
+        story.append(Paragraph(f"Tutor Report", title_style))
+        
+        story.append(Paragraph(f"Tutor: {request.user.full_name()}", header_style))
+        story.append(Paragraph(f"Period: {period_text}", header_style))
+        story.append(Spacer(1, 20))
+
+        table_data = [
+            ['Date', 'Time', 'Student', 'Language', 'Status']
+        ]
+        
         for lesson in lessons:
-            if y_position < 50:
-                pdf.showPage()
-                y_position = 750
+            table_data.append([
+                lesson.lesson_datetime.strftime('%Y-%m-%d'),
+                lesson.lesson_datetime.strftime('%H:%M'),
+                lesson.student.full_name(),
+                lesson.language.name,
+                lesson.get_status_display()
+            ])
 
-            pdf.drawString(50, y_position, f"Student: {lesson.student.full_name()}")
-            pdf.drawString(250, y_position, f"Date: {lesson.lesson_datetime.strftime('%Y-%m-%d %H:%M')}")
-            pdf.drawString(450, y_position, f"Language: {lesson.language.name}")
-            y_position -= 20
+        table = Table(table_data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8eaf6')), 
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1a237e')),   
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f5f5')]),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ]))
 
-        pdf.save()
+        story.append(table)
+
+        story.append(Spacer(1, 30))
+        story.append(Paragraph("Summary Statistics", header_style))
+        
+        total_lessons = lessons.count()
+        completed_lessons = lessons.filter(status='completed').count()
+        cancelled_lessons = lessons.filter(status='cancelled').count()
+        
+        stats_data = [
+            ['Total Lessons', 'Completed', 'Cancelled'],
+            [str(total_lessons), str(completed_lessons), str(cancelled_lessons)]
+        ]
+        
+        stats_table = Table(stats_data, colWidths=[2*inch, 2*inch, 2*inch])
+        stats_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8eaf6')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1a237e')),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        
+        story.append(stats_table)
+
+        doc.build(story)
         return response
 
-class TutorStudentsListView(LoginRequiredMixin, ListView):
+class TutorStudentsListView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     template_name = 'tutor_students_list.html'
-    context_object_name = 'students'
+    required_role = ['tutor']
 
-    def handle_no_permission(self):
-        if not self.request.user.is_authenticated:
-            return redirect('/login/')
-        return redirect('home')
-    
-    def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            return redirect('home')
-        return super().get(request, *args, **kwargs)
+class CurrentStudentsListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
+    template_name = 'current_students_list.html'
+    context_object_name = 'students'
+    required_role = ['tutor']
 
     def get_queryset(self):
         return User.objects.filter(
-            lessons_as_student__tutor=self.request.user
-        ).distinct()
+            lessons_as_student__tutor=self.request.user,
+            lessons_as_student__lesson_datetime__gte=now(),
+            lessons_as_student__status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        ).distinct().order_by('last_name', 'first_name')
+    
+class PreviousStudentsListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
+    template_name = 'previous_students_list.html'
+    context_object_name = 'students'
+    required_role = ['tutor']
 
-class StudentProfileDetailView(LoginRequiredMixin, DetailView, RoleRequiredMixin):
+    def get_queryset(self):
+        current_students = User.objects.filter(
+            lessons_as_student__tutor=self.request.user,
+            lessons_as_student__lesson_datetime__gte=now(),
+            lessons_as_student__status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        )
+        
+        return User.objects.filter(
+            lessons_as_student__tutor=self.request.user,
+            lessons_as_student__lesson_datetime__lt=now()
+        ).exclude(
+            id__in=current_students
+        ).distinct().order_by('last_name', 'first_name')
+
+class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
     template_name = 'student_profile_detail.html'
     model = User
     context_object_name = 'student'
     pk_url_kwarg = 'student_id'
     required_role = ['tutor', 'admin']
 
-    '''
-    def handle_no_permission(self):
-        if not self.request.user.is_authenticated:
-            return redirect('/login/')
-        return redirect('home')
-    
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            return redirect('home')
-            
-        student = self.get_object()
-        if not Lesson.objects.filter(tutor=request.user, student=student).exists():
-            return redirect('home')
-            
-        return super().dispatch(request, *args, **kwargs)
-    '''
-    
     def get_object(self, queryset=None):
-        return get_object_or_404(User, id=self.kwargs['student_id'])
+        student = get_object_or_404(User, id=self.kwargs['student_id'])
+        # Check if the tutor has access to this student
+        if self.request.user.role == 'tutor':
+            if not Lesson.objects.filter(tutor=self.request.user, student=student).exists():
+                raise Http404("Student not found")
+        else:
+            if not Lesson.objects.filter(student=student).exists():
+                raise Http404("Student not found")      
+        return student
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1004,4 +1179,92 @@ class StudentProfileDetailView(LoginRequiredMixin, DetailView, RoleRequiredMixin
         all_lessons = Lesson.objects.filter(tutor=self.request.user, student=student)
         context['programming_languages'] = all_lessons.values_list('language__name', flat=True).distinct()
         
+        return context
+
+class StudentLessonCalendarView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """Display student lessons in a calendar format."""
+    template_name = 'student_calendar.html'
+    required_role = ['student']
+
+    def get(self, request):
+        # Get current month and year from request or use current date
+        current_date = timezone.now()
+        month = int(request.GET.get('month', current_date.month))
+        year = int(request.GET.get('year', current_date.year))
+
+        # Get calendar data
+        cal = calendar.monthcalendar(year, month)
+        
+        # Get all lessons for the month for this student
+        lessons = Lesson.objects.filter(
+            student=request.user,
+            lesson_datetime__year=year,
+            lesson_datetime__month=month,
+            status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        ).order_by('lesson_datetime')
+
+        # Create calendar with lessons
+        calendar_data = []
+        for week in cal:
+            week_data = []
+            for day in week:
+                if day == 0:
+                    week_data.append({'day': 0, 'lessons': []})
+                else:
+                    day_lessons = [
+                        lesson for lesson in lessons
+                        if lesson.lesson_datetime.day == day
+                    ]
+                    week_data.append({
+                        'day': day,
+                        'lessons': day_lessons
+                    })
+            calendar_data.append(week_data)
+
+        # Calculate previous and next month/year
+        if month == 1:
+            prev_month = 12
+            prev_year = year - 1
+        else:
+            prev_month = month - 1
+            prev_year = year
+
+        if month == 12:
+            next_month = 1
+            next_year = year + 1
+        else:
+            next_month = month + 1
+            next_year = year
+
+        context = {
+            'calendar': calendar_data,
+            'month_name': calendar.month_name[month],
+            'year': year,
+            'prev_month': prev_month,
+            'prev_year': prev_year,
+            'next_month': next_month,
+            'next_year': next_year,
+            'current_month': month,
+            'current_year': year
+        }
+        return render(request, self.template_name, context)
+
+class StudentInvoicesView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    """Display all invoices for a student."""
+    template_name = 'student_invoices.html'
+    required_role = ['student']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['invoices'] = Invoice.objects.filter(student=self.request.user)
+        return context
+
+class StudentPendingRequestsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    """Display all pending lesson requests for a student."""
+    template_name = 'student_pending_requests.html'
+    required_role = ['student']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['lesson_requests'] = self.request.user.lesson_request.filter(status='pending')
         return context
