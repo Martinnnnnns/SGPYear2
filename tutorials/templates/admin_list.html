@@ -9,22 +9,30 @@
     </div>
   </div>
 
+  <!-- Add new entry buttons -->
   <div class="row mt-3 d-flex">
     <div class="col-auto ms-auto">
       {% if list_type == 'students' %}
-      <a href="{% url 'add_user' role='student' %}" class="btn btn-primary btn-lg">
+      <a href="{% url 'add_record' role='student' %}" class="btn btn-primary btn-lg">
         {{ add_button_text }}
       </a>
       {% endif %}
 
       {% if list_type == 'tutors' %}
-      <a href="{% url 'add_user' role='tutor' %}" class="btn btn-primary btn-lg">
+      <a href="{% url 'add_record' role='tutor' %}" class="btn btn-primary btn-lg">
+        {{ add_button_text }}
+      </a>
+      {% endif %}
+
+      {% if list_type == 'bookings' %}
+      <a href="{% url 'add_record' role='booking' %}" class="btn btn-primary btn-lg">
         {{ add_button_text }}
       </a>
       {% endif %}
     </div>
   </div>
 
+  <!-- Table for data -->
   <table class="table table-striped table-hover table-sm mt-3">
     <thead>
       <tr>
@@ -36,14 +44,16 @@
     <tbody>
       {% for row in page_obj %}
       <tr>
+        <!-- Data fields for each entry -->
           {% for field in table_fields %}
-              <td>{{ row|get_item:field }}</td>
+              <td>{{ row|get_item:field|capfirst }}</td>
           {% endfor %}
+
+          <!-- Buttons for each entry -->
           <td class="text-end">
-            <!-- Common Buttons -->
             {% if list_type == 'students' or list_type == 'tutors' %}
-                <a class="text-primary me-2">
-                    <i class="bi bi-calendar-fill" style="font-size: 1.5rem;"></i>
+                <a href="{% url 'admin_view_profile' email=row.email %}" class="text-primary me-2">
+                  <i class="bi bi-person-fill" style="font-size: 1.5rem;"></i>
                 </a>
                 <a href="{% url 'update_record' row.email %}" class="text-primary me-2">
                     <i class="bi bi-pencil-fill" style="font-size: 1.5rem;"></i>
@@ -51,20 +61,11 @@
                 <a href="{% url 'delete_record' email=row.email %}" class="text-primary me-2">
                     <i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i>
                 </a>
-                <a href="{% url 'admin_view_profile' email=row.email %}" class="text-primary me-2">
-                  <i class="bi bi-file-earmark-text-fill" style="font-size: 1.5rem;"></i>
-                </a>
             {% endif %}
-            
-            <!-- Booking-specific Buttons -->
             {% if list_type == 'bookings' %}
-                <a class="text-success me-2">
-                    <i class="bi bi-pencil-fill" style="font-size: 1.5rem;"></i>
-                </a>
                 <a href="{% url 'delete_booking' booking_id=row.id %}" class="text-danger me-2">
                     <i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i>
                 </a>
-                
             {% endif %}
         </td>
       </tr>
@@ -73,7 +74,7 @@
   </table>
 </div>
 
-<!-- The Bootstrap Page Navigater -->
+<!-- Bootstrap Paginator -->
 <div class="pagination justify-content-center mb-3">
   <ul class="pagination">
     {% if page_obj.has_previous %}

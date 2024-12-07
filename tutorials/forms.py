@@ -52,6 +52,89 @@ class AdminAddUserForm(forms.ModelForm):
             user.save()  # Now save the user to the DB
         return user
 
+'''
+class AdminAddBookingForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
+
+    def clean_student(self):
+        """Validate that the student email corresponds to an existing user."""
+        student_email = self.cleaned_data.get('student')
+        try:
+            student = User.objects.get(email=student_email)
+            if student.role != 'student':
+                raise ValidationError("The provided email does not belong to a student.")
+            return student
+        except User.DoesNotExist:
+            raise ValidationError("No user with this email exists.")
+
+    def clean_tutor(self):
+        """Validate that the tutor email corresponds to an existing user."""
+        tutor_email = self.cleaned_data.get('tutor')
+        try:
+            tutor = User.objects.get(email=tutor_email)
+            if tutor.role != 'tutor':
+                raise ValidationError("The provided email does not belong to a tutor.")
+            return tutor
+        except User.DoesNotExist:
+            raise ValidationError("No user with this email exists.")
+
+    def save(self, commit=True):
+        """Create a new Lesson object."""
+        lesson = super().save(commit=False)
+
+        # The student and tutor fields now hold `User` objects, thanks to `clean_student` and `clean_tutor`.
+        lesson.student = self.cleaned_data.get('student')
+        lesson.tutor = self.cleaned_data.get('tutor')
+
+        if commit:
+            lesson.save()
+        return lesson
+'''
+
+class AdminAddBookingForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
+
+    student = forms.ModelChoiceField(
+        queryset=User.objects.filter(role='student'),  # Only show users with role 'student'
+        required=True,
+        label="Student"
+    )
+    tutor = forms.ModelChoiceField(
+        queryset=User.objects.filter(role='tutor'),  # Only show users with role 'tutor'
+        required=True,
+        label="Tutor"
+    )
+
+    def clean_student(self):
+        """Validate that the student corresponds to an existing user."""
+        student = self.cleaned_data.get('student')
+        if student and student.role != 'student':
+            raise ValidationError("The selected user is not a student.")
+        return student
+
+    def clean_tutor(self):
+        """Validate that the tutor corresponds to an existing user."""
+        tutor = self.cleaned_data.get('tutor')
+        if tutor and tutor.role != 'tutor':
+            raise ValidationError("The selected user is not a tutor.")
+        return tutor
+
+    def save(self, commit=True):
+        """Create a new Lesson object."""
+        lesson = super().save(commit=False)
+
+        # Set the student and tutor from the cleaned data (which are now User instances)
+        lesson.student = self.cleaned_data.get('student')
+        lesson.tutor = self.cleaned_data.get('tutor')
+
+        if commit:
+            lesson.save()
+        return lesson
+
 
 class UserForm(forms.ModelForm):
     """Form to update user profiles."""

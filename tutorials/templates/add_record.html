@@ -7,11 +7,8 @@
     <form method="POST">
       {% csrf_token %}
       {% include 'partials/bootstrap_form.html' with form=form %}
-      
-
-      <!-- Hidden role field (if you want to pass it via the form) -->
+    
       <input type="hidden" name="role" value="{{ role }}">
-
       <button type="submit" class="btn btn-primary">Create {{ role|capfirst }}</button>
     </form>
   </div>

@@ -17,7 +17,7 @@ import calendar
 from tutorials.helpers import login_prohibited
 from django.core.paginator import Paginator
 from django.db.models import Count, Avg
-from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm, UpdateForm, AdminAddUserForm
+from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm, UpdateForm, AdminAddUserForm, AdminAddBookingForm
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, Subject, ProgrammingLanguage
 from django.db.models import Q, F
 from reportlab.lib.pagesizes import letter
@@ -105,27 +105,37 @@ class AdminViewProfile(LoginRequiredMixin, RoleRequiredMixin, View):
     template_name = 'student_profile.html'
 
     def get(self, request, email):
-        """This method renders the confirmation page for deleting a booking."""
+        """Renders the confirmation page for deleting a booking."""
         userToFetch = get_object_or_404(User, email=email)
         return render(request, 'student_profile.html', {'user': userToFetch})
 
-class AddUserView(LoginRequiredMixin, RoleRequiredMixin, View):
+class AddRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = ['admin']
 
     def get(self, request, role):
-        """Display the form to create a new user, with the role pre-set based on the URL."""
-        form = AdminAddUserForm()
-        return render(request, 'add_user.html', {'form': form, 'role': role})
+        """Displays form for new record, with the role based on the URL."""
+        if role == 'booking':
+            form = AdminAddBookingForm()
+        else:
+            form = AdminAddUserForm()
+            
+        return render(request, 'add_record.html', {'form': form, 'role': role})
 
     def post(self, request, role):
-        """Handle form submission and create the new user with the assigned role."""
-        form = AdminAddUserForm(request.POST)
-        
+        """Handles form submission and creates the new user with the assigned role."""
+        if role == 'booking':
+            form = AdminAddBookingForm(request.POST)
+        else:
+            form = AdminAddUserForm(request.POST)
+                    
         if form.is_valid():
-            new_user = form.save(commit=False)
-            new_user.set_password(form.cleaned_data['password'])
-            new_user.role = role  # Set the role to the one passed in the URL
-            new_user.save()
+            new_record = form.save(commit=False)
+            
+            if role != 'booking': 
+                new_record.set_password(form.cleaned_data['password'])
+                new_record.role = role  # Set the role to the one passed in the URL
+            
+            new_record.save()
 
             # Success message
             messages.success(request, f"{role.capitalize()} created successfully.")
@@ -136,58 +146,32 @@ class AddUserView(LoginRequiredMixin, RoleRequiredMixin, View):
             elif role == 'tutor':
                 return redirect('admin_list', list_type='tutors')
             else:
-                return redirect('')
-
-        return render(request, 'add_user.html', {'form': form, 'role': role})
+                return redirect('admin_list', list_type='bookings')
+            
+            if role == 'booking':
+                form = AdminAddBookingForm() 
+            else:
+                form = AdminAddUserForm()
+            
+        return render(request, 'add_record.html', {'form': form, 'role': role})
     
-    
-
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from tutorials.models import Lesson
-from django.views.generic import View
-from django.http import Http404
-
 class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = ['admin']
     template_name = 'delete_booking.html'
 
     def get(self, request, booking_id):
-        """This method renders the confirmation page for deleting a booking."""
+        """Renders the confirmation page for deleting a booking."""
         booking_to_delete = get_object_or_404(Lesson, id=booking_id)
 
-        # Get active lessons or any necessary filter
-        '''
-        objects = Lesson.objects.filter(status="active")
-
-        if not objects:
-            # No active lessons found
-            print("No active lessons found")
-            messages.warning(request, "No active lessons found.")
-            return render(request, self.template_name, {'booking': booking_to_delete})
-
-        # At this point, objects is guaranteed to be non-empty
-        print(f"Found {len(objects)} active lessons.")
-        for obj in objects:
-            print(f"Active lesson: {obj.status}")  # Debugging output'''
-
-        # Continue rendering the page after handling the lessons
         return render(request, self.template_name, {'booking': booking_to_delete})
 
     def post(self, request, booking_id):
-        """This method deletes the booking after confirmation."""
+        """Deletes the booking after confirmation."""
         booking_to_delete = get_object_or_404(Lesson, id=booking_id)
-        
-        # Debugging: Confirm the booking is found before deletion
-        print(f"Booking to delete (POST): {booking_to_delete}")
-        
-        # Perform deletion
         booking_to_delete.delete()
 
-        # Debugging: Check if the lesson is really deleted
         try:
             booking_to_delete.refresh_from_db()  # Trying to access the object after deletion
-            print(f"Booking after deletion (should not appear): {booking_to_delete}")
         except Lesson.DoesNotExist:
             print("Booking successfully deleted!")
 
@@ -200,10 +184,7 @@ class DeleteRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
     template_name = 'delete_record.html'
     
     def get(self, request, email):
-        """
-        This method renders the confirmation page.
-        It fetches the user to be deleted and renders the confirmation template.
-        """
+        """Renders the confirmation page."""
         user_to_delete = get_object_or_404(User, email=email)
         
         # Render the confirmation template
@@ -212,12 +193,9 @@ class DeleteRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
         })
 
     def post(self, request, email):
-        """
-        This method performs the deletion after the admin has confirmed.
-        """
+        """Deletes after the admin has confirmed."""
         user_to_delete = get_object_or_404(User, email=email)
         
-        # Perform the delete operation
         user_to_delete.delete()
         
         # Success message
@@ -248,15 +226,14 @@ class UpdateRecordView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
             user.set_password(form.cleaned_data['password'])
         user.save()
         messages.success(self.request, "User updated successfully!")
-        return super().form_valid(form)  # Ensure the redirect happens here
+        return super().form_valid(form) 
 
-    
     def form_invalid(self, form):
-        context = self.get_context_data(form=form)  # Add the form to context
+        context = self.get_context_data(form=form)  
         return self.render_to_response(context)
 
     def get_success_url(self):
-        return reverse('dashboard')  # Adjust for your redirect
+        return reverse('dashboard')  
         
 
 class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
@@ -281,9 +258,7 @@ class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
             table_fields = ['username', 'first_name', 'email', 'tutorprofile__language__name', 'tutorprofile__subject__name']
 
         elif list_type == 'bookings':
-            #objects = Lesson.objects.select_related('student', 'tutor', 'language', 'subject')
             objects = Lesson.objects.all()
-            print(objects[0].status)
             page_heading = "Bookings"
             add_button_text = "Add Booking"
             table_headers = ["Student", "Tutor", "Programming Language", "Subject", "Date", "Status"]
@@ -342,7 +317,6 @@ class AdminStatsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
 
         most_popular_languages = Lesson.objects.values('language__name').annotate(language_count=Count('id')).order_by('-language_count')
         most_popular_subjects = Lesson.objects.values('subject__name').annotate(subject_count=Count('id')).order_by('-subject_count')
-
 
         context = {
             'total_lessons': total_lessons,
