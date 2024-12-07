@@ -9,8 +9,45 @@ Reports Page
     <h1 class="text-center">Reports</h1>
     <p class="text-center">Generate detailed reports of your tutoring activities.</p>
 
-    <div class="text-center mt-4">
-        <a href="#" class="btn btn-primary">Generate Report</a>
+    <div class="row mt-5">
+        <!-- Card for Last 7 Days -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Last 7 Days</h5>
+                    <p class="card-text">Generate a report for the last 7 days of your tutoring activities.</p>
+                    <form method="get" action="{% url 'generate_report' '7days' %}">
+                        <button type="submit" class="btn btn-primary">Generate</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card for Last Month -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Last Month</h5>
+                    <p class="card-text">Generate a report for the last month of your tutoring activities.</p>
+                    <form method="get" action="{% url 'generate_report' 'month' %}">
+                        <button type="submit" class="btn btn-primary">Generate</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card for All Time -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">All Time</h5>
+                    <p class="card-text">Generate a report for all your tutoring activities, starting with your first lesson!</p>
+                    <form method="get" action="{% url 'generate_report' 'all' %}">
+                        <button type="submit" class="btn btn-primary">Generate</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

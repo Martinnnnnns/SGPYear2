@@ -42,7 +42,7 @@ class ScheduleSessionsViewTests(TestCase):
         """Test that an unauthenticated user is redirected to the login page."""
         response = self.client.get(reverse('schedule_sessions'))
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith('/log_in/'))
+        self.assertTrue(response.url.startswith('/login/'))
         
     def tearDown(self):
         # Remove test users to clean up after the test

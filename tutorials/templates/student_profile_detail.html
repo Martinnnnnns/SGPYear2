@@ -1,0 +1,126 @@
+{% extends 'base_content.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Student Profile</h1>
+    
+    <div class="row">
+        <!-- Personal Information Card -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2>Personal Information</h2>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <strong>First Name:</strong> {{ student.first_name }}
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Last Name:</strong> {{ student.last_name }}
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Email:</strong> {{ student.email }}
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Username:</strong> {{ student.username }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Programming Languages Card -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2>Programming Languages</h2>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for language in programming_languages %}
+                        <li class="list-group-item">{{ language }}</li>
+                    {% empty %}
+                        <li class="list-group-item">No programming languages specified yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Lessons Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2>Upcoming Lessons</h2>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_lessons %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Language</th>
+                                        <th>Subject</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lesson in upcoming_lessons %}
+                                    <tr>
+                                        <td>{{ lesson.lesson_datetime|date:"F j, Y, g:i a" }}</td>
+                                        <td>{{ lesson.language }}</td>
+                                        <td>{{ lesson.subject|default:"Not specified" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No upcoming lessons scheduled.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Previous Lessons Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2>Previous Lessons</h2>
+                </div>
+                <div class="card-body">
+                    {% if previous_lessons %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Language</th>
+                                        <th>Subject</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lesson in previous_lessons %}
+                                    <tr>
+                                        <td>{{ lesson.lesson_datetime|date:"F j, Y, g:i a" }}</td>
+                                        <td>{{ lesson.language }}</td>
+                                        <td>{{ lesson.subject|default:"Not specified" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No previous lessons found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4 mb-5">
+        <a href="{% url 'tutor_students_list' %}" class="btn btn-secondary">Back to Students List</a>
+    </div>
+</div>
+{% endblock %}

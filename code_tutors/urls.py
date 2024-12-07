@@ -17,10 +17,9 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path,include
+from django.urls import path, include
 from tutorials import views
 from tutorials.views import AdminListView, DeleteRecordView, DeleteBookingView, AddUserView, AdminViewProfile, UpdateRecordView
-
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.HomeView.as_view(), name='home'),
@@ -41,19 +40,23 @@ urlpatterns = [
     path('student_support/', views.StudentSupportView.as_view(), name='student_support'),  
     path('download_invoice/<int:invoice_id>/', views.download_invoice, name='download_invoice'),
     path('lesson/<int:lesson_id>/', views.LessonDetailView.as_view(), name='lesson_detail'),
-    path('schedule_sessions/', views.schedule_sessions, name='schedule_sessions'),
+    path('schedule_sessions/', views.ScheduleSessionsView.as_view(), name='schedule_sessions'),
     path('reports/', views.ReportsView.as_view(), name='reports'),
     path('trigger_matching/', views.TriggerMatchingView.as_view(), name='trigger_matching'),
-    path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
+    path('tutor_page/delete_availability/<int:slot_id>/', views.DeleteAvailabilityView.as_view(), name='delete_availability'),
     path('tutor_student_list/students/' , views.StudentListView.as_view(), name = 'student_list'),
-    path('confirm_delete/<int:slot_id>/', views.confirm_delete_availability, name='confirm_delete_availability'),
-    path('confirm_delete_all/', views.confirm_delete_all_availabilities, name='confirm_delete_all_availabilities'),
-    path('tutor_page/delete_availability/<int:slot_id>/', views.delete_availability, name='delete_availability'),
+    path('confirm_delete/<int:slot_id>/', views.ConfirmDeleteAvailabilityView.as_view(), name='confirm_delete_availability'),
+    path('confirm_delete_all/', views.ConfirmDeleteAllAvailabilitiesView.as_view(), name='confirm_delete_all_availabilities'),
+    path('tutor_page/delete_all_availability/', views.DeleteAllAvailabilityView.as_view(), name='delete_all_availability'),
     path('tutor/lessons/', views.TutorLessonsView.as_view(), name='tutor_lessons'),
+
     path('update_record/<str:email>', views.UpdateRecordView.as_view(), name='update_record'),
     path('<int:booking_id>/delete/', DeleteBookingView.as_view(), name='delete_booking'),
     path('<str:email>/delete/', DeleteRecordView.as_view(), name='delete_record'),
     path('<str:role>/add_user/', AddUserView.as_view(), name='add_user'),
     path('admin_view_profile/<str:email>', AdminViewProfile.as_view(), name='admin_view_profile'),
-    ]
+    path('tutor/students/', views.TutorStudentsListView.as_view(), name='tutor_students_list'),
+    path('tutor/student/<int:student_id>/', views.StudentProfileDetailView.as_view(), name='student_profile_detail'),
+    path('reports/generate/<str:time_period>/', views.GenerateReportView.as_view(), name='generate_report'),
+]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
