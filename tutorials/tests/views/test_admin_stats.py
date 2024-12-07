@@ -6,7 +6,6 @@ from django.db.models import Count
 class AdminStatsViewTests(TestCase):
 
     def setUp(self):
-        # Set up a test client
         self.client = Client()
 
         # Create roles
@@ -47,9 +46,9 @@ class AdminStatsViewTests(TestCase):
             )
 
     def test_admin_can_access_stats(self):
-        # Log in as admin
         self.client.login(username='admin_user', password='adminpass')
         response = self.client.get(reverse('admin_stats'))
+        
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'admin_stats.html')
         self.assertIn('total_lessons', response.context)
@@ -61,49 +60,49 @@ class AdminStatsViewTests(TestCase):
         self.assertIn('language_subject_statistics', response.context)
 
     def test_non_admin_redirected(self):
-        # Log in as student
         self.client.login(username='student_user', password='studentpass')
         response = self.client.get(reverse('admin_stats'))
+
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('access_denied'))
 
     def test_total_lessons_calculation(self):
-        # Log in as admin
         self.client.login(username='admin_user', password='adminpass')
         response = self.client.get(reverse('admin_stats'))
+        
         self.assertEqual(response.context['total_lessons'], 5)
 
     def test_lessons_per_tutor(self):
-        # Log in as admin
         self.client.login(username='admin_user', password='adminpass')
         response = self.client.get(reverse('admin_stats'))
+        
         lessons_per_tutor = response.context['lessons_per_tutor']
-        self.assertEqual(len(lessons_per_tutor), 1)  # Only 1 tutor
+        self.assertEqual(len(lessons_per_tutor), 1) 
         self.assertEqual(lessons_per_tutor[0]['tutor__first_name'], self.tutor_user.first_name)
         self.assertEqual(lessons_per_tutor[0]['lesson_count'], 5)
 
     def test_lessons_per_student(self):
-        # Log in as admin
         self.client.login(username='admin_user', password='adminpass')
         response = self.client.get(reverse('admin_stats'))
+        
         lessons_per_student = response.context['lessons_per_student']
-        self.assertEqual(len(lessons_per_student), 1)  # Only 1 student
+        self.assertEqual(len(lessons_per_student), 1)  
         self.assertEqual(lessons_per_student[0]['student__first_name'], self.student_user.first_name)
         self.assertEqual(lessons_per_student[0]['lesson_count'], 5)
 
     def test_most_popular_languages(self):
-        # Log in as admin
         self.client.login(username='admin_user', password='adminpass')
         response = self.client.get(reverse('admin_stats'))
+        
         most_popular_languages = response.context['most_popular_languages']
         self.assertEqual(len(most_popular_languages), 1)
         self.assertEqual(most_popular_languages[0]['language__name'], self.language.name)
         self.assertEqual(most_popular_languages[0]['language_count'], 5)
 
     def test_language_subject_statistics(self):
-        # Log in as admin
         self.client.login(username='admin_user', password='adminpass')
         response = self.client.get(reverse('admin_stats'))
+        
         language_subject_statistics = response.context['language_subject_statistics']
         self.assertEqual(len(language_subject_statistics), 2)
         self.assertIn({

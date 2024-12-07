@@ -52,9 +52,16 @@
           <!-- Buttons for each entry -->
           <td class="text-end">
             {% if list_type == 'students' or list_type == 'tutors' %}
+                {% if list_type == 'students' %}
+                <a href="{% url 'student_profile_detail' student_id=row.id %}" class="text-primary me-2">
+                  <i class="bi bi-person-fill" style="font-size: 1.5rem;"></i>
+                </a>
+                {% endif %}
+                {% if list_type == 'tutors' %}
                 <a href="{% url 'admin_view_profile' email=row.email %}" class="text-primary me-2">
                   <i class="bi bi-person-fill" style="font-size: 1.5rem;"></i>
                 </a>
+                {% endif %}
                 <a href="{% url 'update_record' row.email %}" class="text-primary me-2">
                     <i class="bi bi-pencil-fill" style="font-size: 1.5rem;"></i>
                 </a>

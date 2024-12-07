@@ -4,11 +4,11 @@ from tutorials.models import User  # Import your custom User model
 
 class UpdateUserTests(TestCase):
     def setUp(self):
-        # Create an admin user using the custom User model
+        # Create an admin user 
         self.admin = User.objects.create_superuser(
             username='@admin', email='admin@example.com', password='adminpass', role='admin'
         )
-        # Create a test user to update using the custom User model
+        # Create a test user 
         self.user_to_update = User.objects.create_user(
             username='@testuser', email='testuser@example.com', password='password123'
         )
@@ -64,14 +64,11 @@ class UpdateUserTests(TestCase):
         url = reverse('update_record', kwargs={'email': self.user_to_update.email})
         response = self.client.post(url, invalid_data)
 
-        # Check that the form is rendered again (200 status)
-        self.assertEqual(response.status_code, 200)  # Should be 200 if the form is re-rendered with errors
-
+        self.assertEqual(response.status_code, 200)  
+        
         # Check for specific validation message in the response content
-        # Just checking if the form errors are somewhere in the response content
         self.assertIn("This field is required.", str(response.content))
 
-        # Optionally, you can also test if the user data hasn't been changed
         self.user_to_update.refresh_from_db()
         self.assertEqual(self.user_to_update.username, '@testuser')
         

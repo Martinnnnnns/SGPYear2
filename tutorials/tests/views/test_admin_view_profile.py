@@ -14,7 +14,7 @@ class AdminViewProfileTests(TestCase):
             email='admin@example.com',
             first_name='Admin',
             last_name='User',
-            role='admin'  # Assuming the User model has a 'role' field
+            role='admin'  
         )
 
         # Create a regular user
@@ -27,17 +27,14 @@ class AdminViewProfileTests(TestCase):
         )
 
     def test_admin_can_view_user_profile(self):
-        """Test that an admin can view a user's profile."""
+        """Test admin can view a user's profile."""
         self.client.login(username='@admin', password='adminpass')  # Log in as admin
 
         # URL for viewing the student's profile
         url = reverse('admin_view_profile', kwargs={'email': self.student_user.email})
         response = self.client.get(url)
 
-        # Check that the status code is 200 (OK)
         self.assertEqual(response.status_code, 200)
-
-        # Check that the correct template is used
         self.assertTemplateUsed(response, 'student_profile.html')
 
         # Check that the profile information is rendered correctly
@@ -54,9 +51,6 @@ class AdminViewProfileTests(TestCase):
         url = reverse('admin_view_profile', kwargs={'email': self.admin_user.email})
         response = self.client.get(url)
 
-        # Check that the user is redirected (HTTP 302)
         self.assertEqual(response.status_code, 302)
-
-        # Ensure the user is redirected to the access denied page
         self.assertRedirects(response, reverse('access_denied'))
 

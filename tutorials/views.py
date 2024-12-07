@@ -942,12 +942,14 @@ class TutorStudentsListView(LoginRequiredMixin, ListView):
             lessons_as_student__tutor=self.request.user
         ).distinct()
 
-class StudentProfileDetailView(LoginRequiredMixin, DetailView):
+class StudentProfileDetailView(LoginRequiredMixin, DetailView, RoleRequiredMixin):
     template_name = 'student_profile_detail.html'
     model = User
     context_object_name = 'student'
     pk_url_kwarg = 'student_id'
+    required_role = ['tutor', 'admin']
 
+    '''
     def handle_no_permission(self):
         if not self.request.user.is_authenticated:
             return redirect('/login/')
@@ -964,7 +966,8 @@ class StudentProfileDetailView(LoginRequiredMixin, DetailView):
             return redirect('home')
             
         return super().dispatch(request, *args, **kwargs)
-
+    '''
+    
     def get_object(self, queryset=None):
         return get_object_or_404(User, id=self.kwargs['student_id'])
 
@@ -972,17 +975,31 @@ class StudentProfileDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         student = self.object
         
-        context['upcoming_lessons'] = Lesson.objects.filter(
-            tutor=self.request.user,
-            student=student,
-            lesson_datetime__gt=now()
-        ).order_by('lesson_datetime')
-        
-        context['previous_lessons'] = Lesson.objects.filter(
-            tutor=self.request.user,
-            student=student,
-            lesson_datetime__lte=now()
-        ).order_by('-lesson_datetime')
+        if self.request.user.role == 'admin':
+            # Admins can see all lessons for the student, regardless of the tutor.
+            context['upcoming_lessons'] = Lesson.objects.filter(
+                student=student,
+                lesson_datetime__gt=now()
+            ).order_by('lesson_datetime')
+
+            context['previous_lessons'] = Lesson.objects.filter(
+                student=student,
+                lesson_datetime__lte=now()
+            ).order_by('-lesson_datetime')
+
+        elif self.request.user.role == 'tutor':
+            # Tutors can only see their own lessons with the student.
+            context['upcoming_lessons'] = Lesson.objects.filter(
+                tutor=self.request.user,
+                student=student,
+                lesson_datetime__gt=now()
+            ).order_by('lesson_datetime')
+
+            context['previous_lessons'] = Lesson.objects.filter(
+                tutor=self.request.user,
+                student=student,
+                lesson_datetime__lte=now()
+            ).order_by('-lesson_datetime')
         
         all_lessons = Lesson.objects.filter(tutor=self.request.user, student=student)
         context['programming_languages'] = all_lessons.values_list('language__name', flat=True).distinct()

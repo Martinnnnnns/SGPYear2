@@ -9,7 +9,7 @@ class AdminDashboardTestCase(TestCase):
         self.admin_user = User.objects.create_user(email="bobby@gmail.com", first_name="bob", last_name="bobby", username='@admin', password='Password123', role='admin')
 
     def test_dashboard_url(self):
-        """Test that the dashboard URL resolves correctly."""
+        """Test the dashboard URL resolves correctly."""
         self.assertEqual(self.url, '/dashboard/')  
 
     def test_dashboard_view_renders(self):
@@ -20,7 +20,7 @@ class AdminDashboardTestCase(TestCase):
         self.assertTemplateUsed(response, 'admin_dashboard.html')
 
     def test_dashboard_links(self):
-        """Test that the buttons link to the correct views."""
+        """Test the buttons link to the correct views."""
         self.client.login(username='@admin', password='Password123')
         response = self.client.get(self.url)
         html = response.content.decode('utf-8')
