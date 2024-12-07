@@ -953,3 +953,71 @@ class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView
         context['programming_languages'] = all_lessons.values_list('language__name', flat=True).distinct()
         
         return context
+
+class StudentLessonCalendarView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """Display student lessons in a calendar format."""
+    template_name = 'student_calendar.html'
+    required_role = ['student']
+
+    def get(self, request):
+        # Get current month and year from request or use current date
+        current_date = timezone.now()
+        month = int(request.GET.get('month', current_date.month))
+        year = int(request.GET.get('year', current_date.year))
+
+        # Get calendar data
+        cal = calendar.monthcalendar(year, month)
+        
+        # Get all lessons for the month for this student
+        lessons = Lesson.objects.filter(
+            student=request.user,
+            lesson_datetime__year=year,
+            lesson_datetime__month=month,
+            status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        ).order_by('lesson_datetime')
+
+        # Create calendar with lessons
+        calendar_data = []
+        for week in cal:
+            week_data = []
+            for day in week:
+                if day == 0:
+                    week_data.append({'day': 0, 'lessons': []})
+                else:
+                    day_lessons = [
+                        lesson for lesson in lessons
+                        if lesson.lesson_datetime.day == day
+                    ]
+                    week_data.append({
+                        'day': day,
+                        'lessons': day_lessons
+                    })
+            calendar_data.append(week_data)
+
+        # Calculate previous and next month/year
+        if month == 1:
+            prev_month = 12
+            prev_year = year - 1
+        else:
+            prev_month = month - 1
+            prev_year = year
+
+        if month == 12:
+            next_month = 1
+            next_year = year + 1
+        else:
+            next_month = month + 1
+            next_year = year
+
+        context = {
+            'calendar': calendar_data,
+            'month_name': calendar.month_name[month],
+            'year': year,
+            'prev_month': prev_month,
+            'prev_year': prev_year,
+            'next_month': next_month,
+            'next_year': next_year,
+            'current_month': month,
+            'current_year': year
+        }
+        return render(request, self.template_name, context)
