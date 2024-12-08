@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from django.utils.timezone import now
 from django.conf import settings
 from django.contrib import messages
-from django.http import Http404, HttpRequest, HttpResponse, JsonResponse, HttpResponseForbidden
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponseForbidden
 from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -17,7 +17,8 @@ import calendar
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
-from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, ProgrammingLanguage
+from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, ProgrammingLanguage, Role
+from tutorials.constants import UserRoles
 
 User = get_user_model()
 from django.db.models import Q
@@ -25,22 +26,24 @@ from django.db.models import Q
 class RoleRequiredMixin:
     required_role = []  #Set this in views that use the mixin
 
-    def dispatch(self, request, *args, **kwargs):
-        if self.required_role and request.user.role not in self.required_role:
+    def dispatch(self, request: HttpRequest, *args, **kwargs):
+        if self.required_role and request.user.current_active_role.name not in self.required_role:
             return redirect('access_denied')  # Redirect to an access denied page
         return super().dispatch(request, *args, **kwargs)
 
 class DashboardView(LoginRequiredMixin, View):
     """Display the appropriate dashboard based on the user's role."""
-    
-    def get(self, request, *args, **kwargs):
+
+    def get(self, request: HttpRequest, *args, **kwargs):
+        if not request.user.current_active_role:
+            return redirect(reverse("role_select"))
+
         role_dispatch = {
             'admin': self.render_admin_dashboard,
             'tutor': self.render_tutor_dashboard,
             'student': self.render_student_dashboard,
         }
-        
-        handler = role_dispatch.get(request.user.role, self.redirect_to_login)
+        handler = role_dispatch.get(request.user.current_active_role.name, self.redirect_to_login)
         return handler(request)
 
     def render_admin_dashboard(self, request):
@@ -67,19 +70,44 @@ class DashboardView(LoginRequiredMixin, View):
     def redirect_to_login(self, request):
         """Redirect to login if no valid role is found."""
         return redirect(reverse('log_in'))
-from django.core.paginator import Paginator
-from datetime import timedelta
+    
+class SetActiveRoleView(LoginRequiredMixin, TemplateView):
+    """View to set the user's current active role and redirect to the dashboard."""
+    template_name = "set_active_role.html"
 
-@login_required
-def dashboard(request):
-    """Display the current user's dashboard."""
+    def get(self, request: HttpRequest, *args, **kwargs):
+        """Handle GET requests."""
+        roles = request.user.roles.all()
 
-    current_user = request.user
-    return render(request, 'dashboard.html', {'user': current_user})
-def home(request):
-    """Display the application's start/home screen."""
+        #Redirect if there is only one role
+        if roles.count() == 1:
+            request.user.current_active_role = roles.first()
+            request.user.save()
+            return HttpResponseRedirect(reverse("dashboard"))
 
-    return render(request, 'home.html')
+        # Show the template for role selection if multiple roles exist
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        """Pass the user's roles to the template."""
+        context = super().get_context_data(**kwargs)
+        context['roles'] = self.request.user.roles.all()
+        return context
+
+    def post(self, request: HttpRequest, *args, **kwargs):
+        """Handle setting the active role."""
+        role = request.POST.get('role')
+        if not role:
+            return self.render_to_response(self.get_context_data(error="No role selected."))
+
+        try:
+            selected_role = Role.objects.get(name=role)
+        except Role.DoesNotExist:
+            return self.render_to_response(self.get_context_data(error="Invalid role selection."))
+
+        request.user.current_active_role = selected_role
+        request.user.save()
+        return HttpResponseRedirect(reverse("dashboard"))
 
 """ <---- Tutor Views ----> """
 
@@ -168,7 +196,7 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
 
 """ <---- Student Views ----> """
 
-class MakeLessonRequestView(LoginRequiredMixin, RoleRequiredMixin, FormView):
+class MakeLessonRequestView(LoginRequiredMixin, FormView):
     """View for students to request lessons."""
     template_name = 'make_lesson_request.html'
     form_class = LessonRequestForm
@@ -268,9 +296,6 @@ class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
             )
         return students_queryset    
     
-    
-    
-    
 class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
     template_name = 'request_cancel_bookings.html'
     form_class = CancellationRequestForm
@@ -291,7 +316,7 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
             lessons = form.cleaned_data['lessons'].filter(status__in=valid_statuses)
             cancellation_request.lessons.set(lessons)
         else:
-            if self.request.user.role == User.TUTOR:
+            if self.request.user.current_active_role.name == UserRoles.TUTOR:
                 lessons = Lesson.objects.filter(
                     tutor=self.request.user, status__in=valid_statuses
                 )
@@ -393,12 +418,11 @@ class LogInView(LoginProhibitedMixin, View):
         user = form.get_user()
         if user is not None and user.is_active:
             login(request, user)
-            return redirect(reverse("dashboard"))
+            return redirect(reverse("role_select"))
         else:
             messages.add_message(request, messages.ERROR, "The credentials provided were invalid!")
             return self.render()
         
-
     def render(self):
         """Render log in template with blank log in form."""
         form = LogInForm()
@@ -407,6 +431,9 @@ class LogInView(LoginProhibitedMixin, View):
 class LogoutView(View):
     """Log out the current user"""
     def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            request.user.current_active_role = None
+            request.user.save()
         logout(request)
         return redirect('home')
 
@@ -463,17 +490,16 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
 class SignUpView(LoginProhibitedMixin, FormView):
     """Display the sign up screen and handle sign ups."""
-
     form_class = SignUpForm
     template_name = "sign_up.html"
     redirect_when_logged_in_url = settings.REDIRECT_URL_WHEN_LOGGED_IN
 
-    def form_valid(self, form): 
-        """come back"""
-        self.object = form.save()
-        login(self.request, self.object)
-            
-        self.success_url = reverse("dashboard")
+    def form_valid(self, form: SignUpForm):
+        """Process the form data and save the new user."""        
+        user = form.save()
+        login(self.request, user)
+
+        self.success_url = reverse("role_select")
         return super().form_valid(form)
 
     def get_success_url(self): 
@@ -481,7 +507,7 @@ class SignUpView(LoginProhibitedMixin, FormView):
     
     def get_redirect_when_logged_in_url(self):
         """Redirect logged-in users based on their role."""
-        return reverse("dashboard")
+        return reverse("role_select")
             
 class ScheduleSessionsView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     template_name = 'schedule_sessions.html'
@@ -490,7 +516,7 @@ class ScheduleSessionsView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     login_url = '/login/' 
     
     def test_func(self):
-        return self.request.user.role == 'tutor'
+        return self.request.user.current_active_role.name == UserRoles.TUTOR
         
     def handle_no_permission(self):
         if not self.request.user.is_authenticated:
@@ -588,13 +614,8 @@ class ScheduleSessionsView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         })
         return context
 
-class DeleteAvailabilityView(LoginRequiredMixin, View):
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            return redirect('home')
-        return super().dispatch(request, *args, **kwargs)
+class DeleteAvailabilityView(LoginRequiredMixin, View, RoleRequiredMixin):
+    required_role = [UserRoles.TUTOR]
 
     def get(self, request, *args, **kwargs):
         return redirect('schedule_sessions')
@@ -605,14 +626,8 @@ class DeleteAvailabilityView(LoginRequiredMixin, View):
         request.session['success_message'] = "Availability slot deleted successfully"
         return redirect('schedule_sessions')
 
-class DeleteAllAvailabilityView(LoginRequiredMixin, View):
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            return redirect('home')
-        return super().dispatch(request, *args, **kwargs)
-
+class DeleteAllAvailabilityView(LoginRequiredMixin, View, RoleRequiredMixin):
+    required_role = [UserRoles.TUTOR]
     def get(self, request, *args, **kwargs):
         return redirect('schedule_sessions')
 
@@ -621,16 +636,9 @@ class DeleteAllAvailabilityView(LoginRequiredMixin, View):
         request.session['success_message'] = "All availability slots deleted successfully"
         return redirect('schedule_sessions')
 
-class ConfirmDeleteAvailabilityView(LoginRequiredMixin, TemplateView):
+class ConfirmDeleteAvailabilityView(LoginRequiredMixin, TemplateView, RoleRequiredMixin):
     template_name = 'confirm_delete_availability.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        # Then check the role
-        if request.user.role != 'tutor':
-            raise Http404("Page not found")
-        return super().dispatch(request, *args, **kwargs)
+    required_role = [UserRoles.TUTOR]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -645,15 +653,9 @@ class ConfirmDeleteAvailabilityView(LoginRequiredMixin, TemplateView):
         messages.success(request, "Availability slot deleted successfully.")
         return redirect('schedule_sessions')
 
-class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, TemplateView):
+class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, TemplateView, RoleRequiredMixin):
     template_name = 'confirm_delete_all_availabilities.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            raise Http404("Page not found")
-        return super().dispatch(request, *args, **kwargs)
+    required_role = [UserRoles.TUTOR]
 
     def get(self, request, *args, **kwargs):
         if not TutorAvailability.objects.filter(tutor=request.user).exists():
@@ -666,15 +668,9 @@ class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, TemplateView):
         messages.success(request, "All availability slots deleted successfully.")
         return redirect('schedule_sessions')
 
-class GenerateReportView(LoginRequiredMixin, View):
+class GenerateReportView(LoginRequiredMixin, View, RoleRequiredMixin):
     """View for generating tutor reports."""
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            return HttpResponse("You are not authorized to access this resource.", status=403)
-        return super().dispatch(request, *args, **kwargs)
+    required_role = [UserRoles.TUTOR]
 
     def get(self, request, time_period):
         today = now().date()
@@ -714,44 +710,24 @@ class GenerateReportView(LoginRequiredMixin, View):
         pdf.save()
         return response
 
-class TutorStudentsListView(LoginRequiredMixin, ListView):
+class TutorStudentsListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     template_name = 'tutor_students_list.html'
-    context_object_name = 'students'
-
-    def handle_no_permission(self):
-        if not self.request.user.is_authenticated:
-            return redirect('/login/')
-        return redirect('home')
-    
-    def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            return redirect('home')
-        return super().get(request, *args, **kwargs)
+    context_object_name = 'students'   
+    required_role = ["tutor"]
 
     def get_queryset(self):
         return User.objects.filter(
             lessons_as_student__tutor=self.request.user
         ).distinct()
 
-class StudentProfileDetailView(LoginRequiredMixin, DetailView):
+class StudentProfileDetailView(LoginRequiredMixin, DetailView, RoleRequiredMixin):
     template_name = 'student_profile_detail.html'
+    required_role = [UserRoles.TUTOR]
     model = User
     context_object_name = 'student'
     pk_url_kwarg = 'student_id'
-
-    def handle_no_permission(self):
-        if not self.request.user.is_authenticated:
-            return redirect('/login/')
-        return redirect('home')
     
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if request.user.role != 'tutor':
-            return redirect('home')
-            
         student = self.get_object()
         if not Lesson.objects.filter(tutor=request.user, student=student).exists():
             return redirect('home')

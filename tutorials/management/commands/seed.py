@@ -1,21 +1,22 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
-
-from tutorials.models import User, ProgrammingLanguage, Subject, Lesson
+from django.core.exceptions import ObjectDoesNotExist
+from tutorials.models import User, ProgrammingLanguage, Subject, Lesson, Role
 
 import pytz
 from faker import Faker
 from random import randint, choices, choice
 from datetime import datetime, timedelta
+from tutorials.constants import UserRoles
 
 DEFAULT_ADMIN = {
     'username': '@johndoe',
     'email': 'john.doe@example.org',
     'first_name': 'John',
     'last_name': 'Doe',
-    'role': 'admin',
+    'roles': [UserRoles.ADMIN],
     'is_staff': True,
-    'is_superuser': True
+    'is_superuser': True,
 }
 
 DEFAULT_TUTOR = {
@@ -23,7 +24,7 @@ DEFAULT_TUTOR = {
     'email': 'jane.doe@example.org',
     'first_name': 'Jane',
     'last_name': 'Doe',
-    'role': 'tutor'
+    'roles': [UserRoles.TUTOR]
 }
 
 DEFAULT_STUDENT = {
@@ -31,7 +32,7 @@ DEFAULT_STUDENT = {
     'email': 'charlie.johnson@example.org',
     'first_name': 'Charlie',
     'last_name': 'Johnson',
-    'role': 'student'
+    'roles': [UserRoles.STUDENT]
 }
 FIXED_USER_FIXTURES = (DEFAULT_ADMIN, DEFAULT_TUTOR, DEFAULT_STUDENT)
 
@@ -129,7 +130,7 @@ programming_topics = {
 class Command(BaseCommand):
     """Build automation command to seed the database."""
 
-    USER_COUNT = 300
+    USER_COUNT = 0 #300
     DEFAULT_PASSWORD = 'Password123'
     help = 'Seeds the database with sample data'
 
@@ -137,6 +138,8 @@ class Command(BaseCommand):
         self.faker = Faker('en_GB')
 
     def handle(self, *args, **options):
+        self.create_roles()
+        print("Sucessfully created roles")
         self.create_users()
         self.create_programming_languages()
         self.create_subjects()
@@ -147,6 +150,11 @@ class Command(BaseCommand):
     def create_users(self):
         self.generate_user_fixtures()
         self.generate_random_users()
+
+    def create_roles(self):
+        """MUST BE CALLED FIRST ELSE USER DEFINITION BREAKS!!!"""
+        for role in [UserRoles.STUDENT, UserRoles.TUTOR, UserRoles.ADMIN]:
+            Role.objects.get_or_create(name=role)
 
     def generate_user_fixtures(self):
         for data in FIXED_USER_FIXTURES:
@@ -165,37 +173,54 @@ class Command(BaseCommand):
         last_name = self.faker.last_name()
         email = create_email(first_name, last_name)
         username = create_username(first_name, last_name)
-        role = choices(
-            [User.STUDENT, User.TUTOR, User.ADMIN],
+        roles = choices(
+            [UserRoles.STUDENT, UserRoles.TUTOR, UserRoles.ADMIN],
             weights=[0.8, 0.15, 0.05],
             k=1
-        )[0]
+        )
         
         self.try_create_user({
             'username': username,
             'email': email,
             'first_name': first_name,
             'last_name': last_name,
-            'role': role
+            'roles': roles
         })
        
     def try_create_user(self, data):
+        print(data)
         try:
             self.create_user(data)
-        except:
-            pass
+        except Exception as e:
+            print(f"Failed to create {data.get('username')} {e}")
 
-    def create_user(self, data):
-        User.objects.create_user(
+    def create_user(self, data: dict):
+        """Create random user, assigning roles etc."""
+        roles = data.get('roles', [UserRoles.STUDENT])
+
+        role_objects = []
+        
+        for role_name in roles:
+            try:
+                role_obj = Role.objects.get(name=role_name)
+                role_objects.append(role_obj)
+            except ObjectDoesNotExist:
+                raise ValueError(f"Role '{role_name}' does not exist in the database.")
+        print(role_objects)
+        # Create the user and assign roles
+        user = User.objects.create_user(
             username=data['username'],
             email=data['email'],
             password=Command.DEFAULT_PASSWORD,
             first_name=data['first_name'],
             last_name=data['last_name'],
-            role=data.get('role', User.STUDENT),
             is_staff=data.get('is_staff', False),
             is_superuser=data.get('is_superuser', False)
         )
+
+        #Assign the roles
+        user.roles.set(role_objects)
+        user.save()
     
     def create_programming_languages(self):
         """Populate programming language table."""
@@ -240,9 +265,10 @@ class Command(BaseCommand):
         """Create random lessons."""
         start_time = datetime(2024, 1, 1)
         end_time = datetime(2025, 12, 31)
-        for i in range(500):
-            tutor = choice(User.objects.filter(role="tutor"))
-            student = choice(User.objects.filter(role="student"))
+        for i in range(5): # 500
+            tutor_role, student_role = Role.objects.get(name="tutor"), Role.objects.get(name="student") 
+            tutor = choice(User.objects.filter(roles=tutor_role))
+            student = choice(User.objects.filter(roles=student_role).exclude(id=tutor.id))
             language = choice(ProgrammingLanguage.objects.all())
             subject = choice(Subject.objects.filter(language=language))
             random_date = random_datetime(start_time, end_time)

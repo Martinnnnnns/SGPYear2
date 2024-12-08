@@ -12,20 +12,16 @@ from django.db import models
 from libgravatar import Gravatar
 from datetime import datetime, timedelta
 
+class Role(models.Model):
+    """Class to model the 3 role types: student, tutor and admin."""
+    name = models.CharField(max_length=50, unique=True)
+    
+    def __str__(self):
+        return self.name
+
 class User(AbstractUser):
-    """Model used for user authentication, and team member related information."""
-    
-    # User role choices
-    STUDENT = 'student'
-    TUTOR = 'tutor'
-    ADMIN = 'admin'
-    
-    ROLE_CHOICES = [
-        (STUDENT, 'Student'),
-        (TUTOR, 'Tutor'),
-        (ADMIN, 'Admin'),
-    ]
-    
+    """Custom User model with support for multiple roles and an active role."""
+
     username = models.CharField(
         max_length=30,
         unique=True,
@@ -37,15 +33,24 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=50, blank=False)
     last_name = models.CharField(max_length=50, blank=False)
     email = models.EmailField(unique=True, blank=False)
-    role = models.CharField(
-        max_length=10,
-        choices=ROLE_CHOICES,
-        default=STUDENT,
+    roles = models.ManyToManyField(Role, related_name='users', blank=False)
+    current_active_role = models.ForeignKey(
+        Role,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='user_current_role',
+        help_text="The currently active role for this user."
     )
 
     class Meta:
         """Model options."""
         ordering = ['last_name', 'first_name']
+
+    def save(self, *args, **kwargs):
+        if self.current_active_role and self.current_active_role not in self.roles.all():
+            raise ValueError("Current active role must be one of the assigned roles.")
+        super().save(*args, **kwargs)
 
     def full_name(self):
         """Return a string containing the user's full name."""
@@ -58,8 +63,15 @@ class User(AbstractUser):
         return gravatar_url
 
     def mini_gravatar(self):
-        """Return a URL to a miniature version of the user's gravatar."""        
-        return self.gravatar(size=60)
+        """Return a URL to a miniature version of the user's gravatar."""
+        return self.gravatar(size=40)
+    
+    def __str__(self):
+        full_name = self.full_name()
+        roles = ', '.join([role.name for role in self.roles.all()])
+        active_role_name = self.current_active_role.name if self.current_active_role else 'Null'
+        return f"{full_name} ({roles}) - Active Role: {active_role_name}"
+
     
 class ProgrammingLanguage(models.Model):
     """Model for programming languages that we offer lessons in."""
@@ -161,12 +173,11 @@ class LessonRequest(models.Model):
         (ALLOCATED, 'Allocated'),
     ]
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING)
+
     def clean(self):
         # Convert naive datetime to aware datetime if needed
         if timezone.is_naive(self.start_datetime):
             self.start_datetime = timezone.make_aware(self.start_datetime)
-        if timezone.is_naive(self.end_datetime):
-            self.end_datetime = timezone.make_aware(self.end_datetime)
 
         if not self.is_future_datetime(self.start_datetime):
             raise ValidationError("Lesson must be on a future date and time.")
@@ -186,18 +197,6 @@ class LessonRequest(models.Model):
         
         if LessonRequest.objects.filter(user=self.user, start_datetime=self.start_datetime).exists():
             raise ValidationError("A lesson request for this time already exists.")
-        
-    def is_future_datetime(self, datetime_value):
-        """Check if the datetime is in the future."""
-        return datetime_value > timezone.now()
-
-    def is_end_after_start(self, start_datetime, end_datetime):
-        """Check that the end time is after the start time."""
-        return end_datetime > start_datetime
-
-    def is_minimum_duration(self, start_datetime, end_datetime):
-        """Check that the duration is at least 30 minutes."""
-        return end_datetime - start_datetime >= timedelta(minutes=30)
 
     def is_subject_language_matching(self, subject, language):
         """Check that the subject belongs to the correct language."""
