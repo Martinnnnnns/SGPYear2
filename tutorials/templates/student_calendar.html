@@ -11,15 +11,15 @@
 
     <div class="card">
         <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <a href="?month={{ prev_month }}&year={{ prev_year }}" class="btn btn-outline-primary">
-                    &lt; Previous Month
-                </a>
-                <h3 class="mb-0">{{ month_name }} {{ year }}</h3>
-                <a href="?month={{ next_month }}&year={{ next_year }}" class="btn btn-outline-primary">
-                    Next Month &gt;
-                </a>
-            </div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="?month={{ prev_month }}&year={{ prev_year }}" class="btn btn-outline-primary">
+                Previous Month
+            </a>
+            <h3 class="mb-0">{{ month_name }} {{ year }}</h3>
+            <a href="?month={{ next_month }}&year={{ next_year }}" class="btn btn-outline-primary">
+                Next Month
+            </a>
+        </div>
         </div>
         
         <div class="card-body">
@@ -46,26 +46,20 @@
                                                 {{ day.day }}
                                             </div>
                                             {% for lesson in day.lessons %}
-                                                <div class="lesson-card p-2 mb-1 bg-light border rounded">
-                                                    <small class="d-block text-primary">
-                                                        {{ lesson.lesson_datetime|date:"H:i" }}
-                                                    </small>
-                                                    <small class="d-block">
-                                                        {{ lesson.subject.name|default:"General" }}
-                                                    </small>
-                                                    <small class="d-block">
-                                                        {{ lesson.language.name }}
-                                                    </small>
-                                                    <div class="mt-1">
-                                                        <a href="{% url 'lesson_detail' lesson.id %}" 
-                                                           class="btn btn-primary btn-sm">View</a>
-                                                        <a href="{% url 'request_change_bookings' lesson.id %}" 
-                                                           class="btn btn-warning btn-sm">Change</a>
-                                                        <a href="{% url 'request_cancel_bookings' lesson.id %}" 
-                                                           class="btn btn-danger btn-sm">Cancel</a>
-                                                    </div>
+                                            <div class="lesson-card p-2 mb-1 bg-light border rounded">
+                                                <span class="small">{{ lesson.lesson_datetime|date:"H:i" }}</span>
+                                                <span class="small">{{ lesson.subject.name|default:"General" }}</span>
+                                                <span class="small">{{ lesson.language.name }}</span>
+
+                                                <div class="mt-1">
+                                                    <a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-primary btn-sm">View</a>
+                                                    {% if not lesson.is_past %}
+                                                        <a href="{% url 'request_change_bookings' lesson.id %}" class="btn btn-warning btn-sm">Change</a>
+                                                        <a href="{% url 'request_cancel_bookings' lesson.id %}" class="btn btn-danger btn-sm">Cancel</a>
+                                                    {% endif %}
                                                 </div>
-                                            {% endfor %}
+                                            </div>
+                                        {% endfor %}
                                         {% endif %}
                                     </td>
                                 {% endfor %}

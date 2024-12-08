@@ -110,13 +110,74 @@ class ReportsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     required_role = ['tutor', 'admin']   
     
 
-class TutorLessonsView(LoginRequiredMixin, TemplateView):
+class TutorLessonsView(LoginRequiredMixin, RoleRequiredMixin, View):
     template_name = "tutor_lessons.html"
+    required_role = ['tutor']
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["lessons"] = Lesson.objects.filter(tutor=self.request.user).order_by("lesson_datetime")
-        return context    
+    def get(self, request):
+        current_date = timezone.now()
+        
+        try:
+            month = int(request.GET.get('month') or current_date.month)
+            year = int(request.GET.get('year') or current_date.year)
+        except (ValueError, TypeError):
+            month = current_date.month
+            year = current_date.year
+
+        cal = calendar.monthcalendar(year, month)
+        
+        lessons = Lesson.objects.filter(
+            tutor=request.user,
+            lesson_datetime__year=year,
+            lesson_datetime__month=month,
+            status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        ).order_by('lesson_datetime')
+
+        calendar_data = []
+        for week in cal:
+            week_data = []
+            for day in week:
+                if day == 0:
+                    week_data.append({'day': 0, 'lessons': []})
+                else:
+                    day_lessons = []
+                    for lesson in lessons:
+                        if lesson.lesson_datetime.day == day:
+                            lesson.is_past = lesson.lesson_datetime < timezone.now()
+                            day_lessons.append(lesson)
+                            
+                    week_data.append({
+                        'day': day,
+                        'lessons': day_lessons
+                    })
+            calendar_data.append(week_data)
+
+        if month == 1:
+            prev_month = 12
+            prev_year = year - 1
+        else:
+            prev_month = month - 1
+            prev_year = year
+
+        if month == 12:
+            next_month = 1
+            next_year = year + 1
+        else:
+            next_month = month + 1
+            next_year = year
+
+        context = {
+            'calendar': calendar_data,
+            'month_name': calendar.month_name[month],
+            'year': year,
+            'prev_month': prev_month,
+            'prev_year': prev_year,
+            'next_month': next_month,
+            'next_year': next_year,
+            'current_month': month,
+            'current_year': year
+        }
+        return render(request, self.template_name, context)
 
 """ <---- Admin Views ----> """
 class AdminViewProfile(LoginRequiredMixin, RoleRequiredMixin, View):
@@ -512,13 +573,21 @@ class StudentProfileView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        context["programming_languages"] = user.lessons_as_student.values_list('language__name', flat=True).distinct()
+        context["programming_languages"] = (
+            ProgrammingLanguage.objects
+            .filter(lesson__student=user)
+            .distinct()
+            .values_list('name', flat=True)
+        )
+        
         context["upcoming_lessons"] = user.lessons_as_student.filter(
             lesson_datetime__gt=timezone.now()
         ).order_by("lesson_datetime")
+        
         context["previous_lessons"] = user.lessons_as_student.filter(
             lesson_datetime__lte=timezone.now()
         ).order_by("-lesson_datetime")
+        
         return context
    
 
@@ -586,84 +655,81 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
     form_class = CancellationRequestForm
     required_role = ['student', 'tutor']
 
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        self.lesson = get_object_or_404(
+            Lesson,
+            id=self.kwargs['lesson_id'],
+            status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        )
+        if request.user not in [self.lesson.student, self.lesson.tutor]:
+            raise Http404("Lesson not found")
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['lesson'] = self.lesson
+        return context
+
     def form_valid(self, form):
-        cancellation_request = form.save(commit=False)
-        cancellation_request.user = self.request.user
-        cancellation_request.status = ChangeRequest.STATUS_PENDING  
-
+        cancellation_request = CancellationRequest(
+            user=self.request.user,
+            request_type=CancellationRequest.REQUEST_SINGLE,
+            reason=form.cleaned_data.get('reason', ''),
+            status=CancellationRequest.STATUS_PENDING
+        )
         cancellation_request.save()
-
-        valid_statuses = [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
-        if form.cleaned_data['request_type'] == CancellationRequest.REQUEST_SINGLE:
-            lessons = form.cleaned_data['lessons'].filter(status__in=valid_statuses)
-            cancellation_request.lessons.set(lessons)
-        else:
-            if self.request.user.role == User.TUTOR:
-                lessons = Lesson.objects.filter(
-                    tutor=self.request.user, status__in=valid_statuses
-                )
-            else:
-                lessons = Lesson.objects.filter(
-                    student=self.request.user, status__in=valid_statuses
-                )
-            cancellation_request.lessons.set(lessons)
-
-        cancellation_request.save()
-        process_cancellation_request(cancellation_request)
-        messages.success(self.request, "Your cancellation request has been submitted.")
-        return redirect('dashboard')
-    
-def process_cancellation_request(cancellation_request):
-    """a function to check whether the lesson is in the apportipte field."""
-    lessons = cancellation_request.lessons.all()
-    for lesson in lessons:
-        if lesson.status in [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]:
-            lesson.status = Lesson.STATUS_CANCELED
-            lesson.save()
+        cancellation_request.lessons.add(self.lesson)
+        
+        messages.success(self.request, "Your cancellation request has been submitted successfully.")
+        return redirect('student_lesson_calendar')
 
 
 class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
-    """A view to request the admin for the change bookings."""
+    """A view to request changes to bookings."""
     template_name = 'request_change_bookings.html'
     form_class = ChangeBookingForm
     required_role = ['student', 'tutor']
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        self.lesson = get_object_or_404(
+            Lesson,
+            id=self.kwargs['lesson_id'],
+            status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        )
+        if request.user not in [self.lesson.student, self.lesson.tutor]:
+            raise Http404("Lesson not found")
+
+    def get_initial(self):
+        return {
+            'new_datetime': self.lesson.lesson_datetime,
+        }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['lesson'] = self.lesson
+        return context
 
     def form_valid(self, form):
-        change_request = form.save(commit=False)
-        change_request.user = self.request.user
-        change_request.status = ChangeRequest.STATUS_PENDING
-        change_request.save()
-        change_request.lessons.set(form.cleaned_data['lessons'])
-        change_request.save()
-        process_change_request(change_request)
-        messages.success(self.request, "Your change request has been submitted.")
-        return redirect('dashboard')
-    
-def process_change_request(change_request):
-    new_datetime = change_request.new_datetime
-    lessons = change_request.lessons.all()
-
-    for lesson in lessons:
-        tutor_availability = TutorAvailability.objects.filter(
-            tutor=lesson.tutor,
-            date=new_datetime.date(),
-            start_time__lte=new_datetime.time(),
-            end_time__gte=new_datetime.time()
+        change_request = ChangeRequest(
+            user=self.request.user,
+            new_datetime=form.cleaned_data['new_datetime'],
+            reason=form.cleaned_data.get('reason', ''),
+            status=ChangeRequest.STATUS_PENDING
         )
-        if tutor_availability.exists():
-            lesson.lesson_datetime = new_datetime
-            lesson.status = Lesson.STATUS_RESCHEDULED
-            lesson.save()
+        change_request.save()
+        change_request.lessons.add(self.lesson)
+        
+        messages.success(self.request, "Your change request has been submitted successfully.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('student_lesson_calendar')
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
@@ -1182,20 +1248,16 @@ class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView
         return context
 
 class StudentLessonCalendarView(LoginRequiredMixin, RoleRequiredMixin, View):
-    """Display student lessons in a calendar format."""
     template_name = 'student_calendar.html'
     required_role = ['student']
 
     def get(self, request):
-        # Get current month and year from request or use current date
         current_date = timezone.now()
         month = int(request.GET.get('month', current_date.month))
         year = int(request.GET.get('year', current_date.year))
 
-        # Get calendar data
         cal = calendar.monthcalendar(year, month)
         
-        # Get all lessons for the month for this student
         lessons = Lesson.objects.filter(
             student=request.user,
             lesson_datetime__year=year,
@@ -1203,7 +1265,6 @@ class StudentLessonCalendarView(LoginRequiredMixin, RoleRequiredMixin, View):
             status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
         ).order_by('lesson_datetime')
 
-        # Create calendar with lessons
         calendar_data = []
         for week in cal:
             week_data = []
@@ -1211,17 +1272,18 @@ class StudentLessonCalendarView(LoginRequiredMixin, RoleRequiredMixin, View):
                 if day == 0:
                     week_data.append({'day': 0, 'lessons': []})
                 else:
-                    day_lessons = [
-                        lesson for lesson in lessons
-                        if lesson.lesson_datetime.day == day
-                    ]
+                    day_lessons = []
+                    for lesson in lessons:
+                        if lesson.lesson_datetime.day == day:
+                            lesson.is_past = lesson.lesson_datetime < timezone.now()
+                            day_lessons.append(lesson)
+                            
                     week_data.append({
                         'day': day,
                         'lessons': day_lessons
                     })
             calendar_data.append(week_data)
 
-        # Calculate previous and next month/year
         if month == 1:
             prev_month = 12
             prev_year = year - 1
