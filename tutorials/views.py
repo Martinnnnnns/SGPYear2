@@ -106,13 +106,74 @@ class ReportsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     required_role = ['tutor', 'admin']   
     
 
-class TutorLessonsView(LoginRequiredMixin, TemplateView):
+class TutorLessonsView(LoginRequiredMixin, RoleRequiredMixin, View):
     template_name = "tutor_lessons.html"
+    required_role = ['tutor']
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["lessons"] = Lesson.objects.filter(tutor=self.request.user).order_by("lesson_datetime")
-        return context    
+    def get(self, request):
+        current_date = timezone.now()
+        
+        try:
+            month = int(request.GET.get('month') or current_date.month)
+            year = int(request.GET.get('year') or current_date.year)
+        except (ValueError, TypeError):
+            month = current_date.month
+            year = current_date.year
+
+        cal = calendar.monthcalendar(year, month)
+        
+        lessons = Lesson.objects.filter(
+            tutor=request.user,
+            lesson_datetime__year=year,
+            lesson_datetime__month=month,
+            status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+        ).order_by('lesson_datetime')
+
+        calendar_data = []
+        for week in cal:
+            week_data = []
+            for day in week:
+                if day == 0:
+                    week_data.append({'day': 0, 'lessons': []})
+                else:
+                    day_lessons = []
+                    for lesson in lessons:
+                        if lesson.lesson_datetime.day == day:
+                            lesson.is_past = lesson.lesson_datetime < timezone.now()
+                            day_lessons.append(lesson)
+                            
+                    week_data.append({
+                        'day': day,
+                        'lessons': day_lessons
+                    })
+            calendar_data.append(week_data)
+
+        if month == 1:
+            prev_month = 12
+            prev_year = year - 1
+        else:
+            prev_month = month - 1
+            prev_year = year
+
+        if month == 12:
+            next_month = 1
+            next_year = year + 1
+        else:
+            next_month = month + 1
+            next_year = year
+
+        context = {
+            'calendar': calendar_data,
+            'month_name': calendar.month_name[month],
+            'year': year,
+            'prev_month': prev_month,
+            'prev_year': prev_year,
+            'next_month': next_month,
+            'next_year': next_year,
+            'current_month': month,
+            'current_year': year
+        }
+        return render(request, self.template_name, context)
 
 """ <---- Admin Views ----> """
 class AdminReviewRequestsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
