@@ -42,6 +42,10 @@
 
                                                 <div class="mt-1">
                                                     <a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-primary btn-sm">View</a>
+                                                    {% if not lesson.is_past %}
+                                                        <a href="{% url 'request_change_bookings' lesson.id %}" class="btn btn-warning btn-sm">Change</a>
+                                                        <a href="{% url 'request_cancel_bookings' lesson.id %}" class="btn btn-danger btn-sm">Cancel</a>
+                                                    {% endif %}
                                                 </div>
                                             </div>
                                         {% endfor %}
