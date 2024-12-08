@@ -384,8 +384,8 @@ class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
             objects = User.objects.filter(role=User.TUTOR)
             page_heading = "Tutors"
             add_button_text = "Add Tutor"
-            table_headers = ["Username", "Name", "Email", "Programming Language", "Subject"]
-            table_fields = ['username', 'first_name', 'email', 'tutorprofile__language__name', 'tutorprofile__subject__name']
+            table_headers = ["Username", "Name", "Email"]
+            table_fields = ['username', 'first_name', 'email']
 
         elif list_type == 'bookings':
             objects = Lesson.objects.all()
