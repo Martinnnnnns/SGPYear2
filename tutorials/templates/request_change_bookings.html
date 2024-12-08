@@ -1,96 +1,67 @@
-<!-- templates/request_change_booking.html -->
-
 {% extends 'base_content.html' %}
-
-{% block title %}
-Request Change of Bookings
-{% endblock %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-5">
-  <div class="row mb-4">
-    <div class="col-12">
-      <h2 class="mb-3">Request Change of Bookings</h2>
-      <p class="text-muted">Modify your scheduled lessons by selecting the bookings you wish to change.</p>
-    </div>
-  </div>
+<div class="container mt-4">
+    <h2 class="mb-4">Request Lesson Change</h2>
 
-  <div class="row">
-    <div class="col-md-8 offset-md-2">
-      <form method="post" class="needs-validation" novalidate>
-        {% csrf_token %}
-        
-        <!-- Display Form Errors -->
-        {% if form.errors %}
-          <div class="alert alert-danger">
-            <ul class="mb-0">
-              {% for field in form %}
-                {% for error in field.errors %}
-                  <li>{{ error }}</li>
-                {% endfor %}
-              {% endfor %}
-              {% for error in form.non_field_errors %}
-                <li>{{ error }}</li>
-              {% endfor %}
-            </ul>
-          </div>
-        {% endif %}
-        
-        <!-- Request Type Field -->
-        <div class="mb-3">
-          <label class="form-label">Request Type</label>
-          {{ form.request_type }}
-          {% if form.request_type.errors %}
-            <div class="invalid-feedback">
-              {{ form.request_type.errors }}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Current Lesson Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Subject:</strong> {{ lesson.subject.name|default:"General" }}</p>
+                    <p><strong>Programming Language:</strong> {{ lesson.language.name }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Current Date & Time:</strong> {{ lesson.lesson_datetime|date:"F j, Y, g:i a" }}</p>
+                    <p><strong>Tutor:</strong> {{ lesson.tutor.full_name }}</p>
+                </div>
             </div>
-          {% endif %}
         </div>
-        
-        <!-- Lessons Field -->
-        {% if not form.lessons.field.queryset.exists %}
-        <div class="alert alert-warning">
-          No lessons are available for rescheduling.
-        </div>
-        {% endif %}
-        <div class="mb-3">
-          <label for="id_lessons" class="form-label">Select Lessons to Change</label>
-          {{ form.lessons }}
-          {% if form.lessons.errors %}
-            <div class="invalid-feedback">
-              {{ form.lessons.errors }}
-            </div>
-          {% endif %}
-        </div>
-        
-        <!-- New Date & Time Field -->
-        <div class="mb-3">
-          <label for="id_new_datetime" class="form-label">New Date & Time</label>
-          {{ form.new_datetime }}
-          {% if form.new_datetime.errors %}
-            <div class="invalid-feedback">
-              {{ form.new_datetime.errors }}
-            </div>
-          {% endif %}
-        </div>
-        
-        <!-- Reason Field (Optional) -->
-        <div class="mb-3">
-          <label for="id_reason" class="form-label">Reason for Change</label>
-          {{ form.reason }}
-          {% if form.reason.errors %}
-            <div class="invalid-feedback">
-              {{ form.reason.errors }}
-            </div>
-          {% endif %}
-        </div>
-
-        <!-- Submit and Cancel Buttons -->
-        <button type="submit" class="btn btn-primary">Submit Change Request</button>
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
-      </form>
     </div>
-  </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Change Request Form</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="{{ form.new_datetime.id_for_label }}" class="form-label">New Date & Time</label>
+                    {{ form.new_datetime }}
+                </div>
+
+                <div class="form-group mb-3">
+                    Reason for Change
+                    <div class="mt-2">
+                        {{ form.reason }}
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Submit Change Request</button>
+                    <a href="{% url 'student_lesson_calendar' %}" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
-
 {% endblock %}
