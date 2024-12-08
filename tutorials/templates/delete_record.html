@@ -1,0 +1,19 @@
+{% extends 'base_content.html' %}
+
+{% block content %}
+  <div class="container">
+    <h1>Are you sure you want to delete this user?</h1>
+
+    <div>
+      <p>Username: {{ user.username }}</p>
+      <p>Email: {{ user.email }}</p>
+    </div>
+
+    <!-- Confirmation form -->
+    <form action="{% url 'delete_record' email=user.email %}" method="POST">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Yes, delete this user</button>
+      <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+  </div>
+{% endblock %}

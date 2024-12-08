@@ -24,6 +24,117 @@ class LogInForm(forms.Form):
             user = authenticate(username=username, password=password)
         return user
 
+class AdminAddUserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', 'password']
+        widgets = {
+            'password': forms.PasswordInput(),
+        }
+
+    # You can also add custom validation here if necessary
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+
+        # Exclude the current instance when checking for unique emails
+        if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+            raise ValidationError('This email is already in use by another user.')
+
+        return email
+
+    def save(self, commit=True):
+        # If the password is being set, make sure it's hashed
+        user = super().save(commit=False)  # Don't save to DB just yet
+        password = self.cleaned_data.get('password')
+        if password:
+            user.set_password(password)  # This will hash the password
+        if commit:
+            user.save()  # Now save the user to the DB
+        return user
+
+'''
+class AdminAddBookingForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
+
+    def clean_student(self):
+        """Validate that the student email corresponds to an existing user."""
+        student_email = self.cleaned_data.get('student')
+        try:
+            student = User.objects.get(email=student_email)
+            if student.role != 'student':
+                raise ValidationError("The provided email does not belong to a student.")
+            return student
+        except User.DoesNotExist:
+            raise ValidationError("No user with this email exists.")
+
+    def clean_tutor(self):
+        """Validate that the tutor email corresponds to an existing user."""
+        tutor_email = self.cleaned_data.get('tutor')
+        try:
+            tutor = User.objects.get(email=tutor_email)
+            if tutor.role != 'tutor':
+                raise ValidationError("The provided email does not belong to a tutor.")
+            return tutor
+        except User.DoesNotExist:
+            raise ValidationError("No user with this email exists.")
+
+    def save(self, commit=True):
+        """Create a new Lesson object."""
+        lesson = super().save(commit=False)
+
+        # The student and tutor fields now hold `User` objects, thanks to `clean_student` and `clean_tutor`.
+        lesson.student = self.cleaned_data.get('student')
+        lesson.tutor = self.cleaned_data.get('tutor')
+
+        if commit:
+            lesson.save()
+        return lesson
+'''
+
+class AdminAddBookingForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
+
+    student = forms.ModelChoiceField(
+        queryset=User.objects.filter(role='student'),  # Only show users with role 'student'
+        required=True,
+        label="Student"
+    )
+    tutor = forms.ModelChoiceField(
+        queryset=User.objects.filter(role='tutor'),  # Only show users with role 'tutor'
+        required=True,
+        label="Tutor"
+    )
+
+    def clean_student(self):
+        """Validate that the student corresponds to an existing user."""
+        student = self.cleaned_data.get('student')
+        if student and student.role != 'student':
+            raise ValidationError("The selected user is not a student.")
+        return student
+
+    def clean_tutor(self):
+        """Validate that the tutor corresponds to an existing user."""
+        tutor = self.cleaned_data.get('tutor')
+        if tutor and tutor.role != 'tutor':
+            raise ValidationError("The selected user is not a tutor.")
+        return tutor
+
+    def save(self, commit=True):
+        """Create a new Lesson object."""
+        lesson = super().save(commit=False)
+
+        # Set the student and tutor from the cleaned data (which are now User instances)
+        lesson.student = self.cleaned_data.get('student')
+        lesson.tutor = self.cleaned_data.get('tutor')
+
+        if commit:
+            lesson.save()
+        return lesson
+
 
 class UserForm(forms.ModelForm):
     """Form to update user profiles."""
@@ -32,6 +143,28 @@ class UserForm(forms.ModelForm):
         """Form options."""
         model = User
         fields = ['first_name', 'last_name', 'username', 'email', 'role']
+        
+class UpdateForm(forms.ModelForm):
+    class Meta:
+        """Form options."""
+        model = User
+        fields = ['first_name', 'last_name', 'username', 'email', 'role', 'password']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Clear any pre-populated data for the password field
+        self.initial['password'] = ''  # Set the initial value explicitly
+        self.fields['password'].widget = forms.PasswordInput()  # Ensure it's rendered as a password input
+
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+
+        # Exclude the current instance when checking for unique emails
+        if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+            raise ValidationError('This email is already in use by another user.')
+
+        return email
 
 class NewPasswordMixin(forms.Form):
     """Form mixing for new_password and password_confirmation fields."""

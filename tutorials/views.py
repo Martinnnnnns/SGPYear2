@@ -21,7 +21,12 @@ from django.views.generic import ListView, TemplateView, DetailView
 from django.urls import reverse
 from django.utils import timezone
 import calendar
-
+from tutorials.helpers import login_prohibited
+from django.core.paginator import Paginator
+from django.db.models import Count, Avg
+from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm, UpdateForm, AdminAddUserForm, AdminAddBookingForm
+from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, Subject, ProgrammingLanguage
+from django.db.models import Q, F
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -33,7 +38,6 @@ from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInFor
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, ProgrammingLanguage
 
 User = get_user_model()
-from django.db.models import Q
 
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice
 from django.db.models import Count, Case, When, IntegerField,Q
@@ -176,6 +180,61 @@ class TutorLessonsView(LoginRequiredMixin, RoleRequiredMixin, View):
         return render(request, self.template_name, context)
 
 """ <---- Admin Views ----> """
+class AdminViewProfile(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['admin']
+    template_name = 'student_profile.html'
+
+    def get(self, request, email):
+        """Renders the confirmation page for deleting a booking."""
+        userToFetch = get_object_or_404(User, email=email)
+        return render(request, 'student_profile.html', {'user': userToFetch})
+
+class AddRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['admin']
+
+    def get(self, request, role):
+        """Displays form for new record, with the role based on the URL."""
+        if role == 'booking':
+            form = AdminAddBookingForm()
+        else:
+            form = AdminAddUserForm()
+            
+        return render(request, 'add_record.html', {'form': form, 'role': role})
+
+    def post(self, request, role):
+        """Handles form submission and creates the new user with the assigned role."""
+        if role == 'booking':
+            form = AdminAddBookingForm(request.POST)
+        else:
+            form = AdminAddUserForm(request.POST)
+                    
+        if form.is_valid():
+            new_record = form.save(commit=False)
+            
+            if role != 'booking': 
+                new_record.set_password(form.cleaned_data['password'])
+                new_record.role = role  # Set the role to the one passed in the URL
+            
+            new_record.save()
+
+            # Success message
+            messages.success(request, f"{role.capitalize()} created successfully.")
+            
+            # Redirect to the appropriate list page
+            if role == 'student':
+                return redirect('admin_list', list_type='students')
+            elif role == 'tutor':
+                return redirect('admin_list', list_type='tutors')
+            else:
+                return redirect('admin_list', list_type='bookings')
+            
+            if role == 'booking':
+                form = AdminAddBookingForm() 
+            else:
+                form = AdminAddUserForm()
+            
+        return render(request, 'add_record.html', {'form': form, 'role': role})
+
 class AdminReviewRequestsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     template_name = "admin_review_requests.html"
     required_role = ['admin']
@@ -226,30 +285,180 @@ class AdminReviewRequestsView(LoginRequiredMixin, RoleRequiredMixin, TemplateVie
 
         return redirect("admin_review_requests")
     
-class AdminListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
-    paginate_by = 20
-    required_role = ['admin']  
-    model = None
-    template_name = None  
+class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['admin']
+    template_name = 'delete_booking.html'
 
-    def get_queryset(self):
-        return super().get_queryset()
+    def get(self, request, booking_id):
+        """Renders the confirmation page for deleting a booking."""
+        booking_to_delete = get_object_or_404(Lesson, id=booking_id)
 
-class AdminStudentListView(AdminListView):
+        return render(request, self.template_name, {'booking': booking_to_delete})
+
+    def post(self, request, booking_id):
+        """Deletes the booking after confirmation."""
+        booking_to_delete = get_object_or_404(Lesson, id=booking_id)
+        booking_to_delete.delete()
+
+        try:
+            booking_to_delete.refresh_from_db()  # Trying to access the object after deletion
+        except Lesson.DoesNotExist:
+            print("Booking successfully deleted!")
+
+        messages.success(request, f"Booking was deleted successfully.")
+        return redirect(reverse('admin_list', kwargs={'list_type': 'bookings'}))
+
+
+class DeleteRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['admin']
+    template_name = 'delete_record.html'
+    
+    def get(self, request, email):
+        """Renders the confirmation page."""
+        user_to_delete = get_object_or_404(User, email=email)
+        
+        # Render the confirmation template
+        return render(request, 'delete_record.html', {
+            'user': user_to_delete,
+        })
+
+    def post(self, request, email):
+        """Deletes after the admin has confirmed."""
+        user_to_delete = get_object_or_404(User, email=email)
+        
+        user_to_delete.delete()
+        
+        # Success message
+        messages.success(request, f"The user {user_to_delete.email} was deleted successfully.")
+        
+        # Redirect back to the list of users (students, tutors, etc.)
+        return redirect(reverse('admin_list', kwargs={'list_type': 'students'}))  
+
+class UpdateRecordView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
+    required_role = ['admin']
     model = User
-    template_name = 'admin_student_list.html'
-    context_object_name = 'students'
+    template_name = 'update_record.html'
+    form_class = UpdateForm
 
-class AdminTutorListView(AdminListView):
-    model = User
-    template_name = 'admin_tutor_list.html'
-    context_object_name = 'tutors'
+    def get_object(self):
+        # Get the user being updated
+        user_id = self.kwargs.get('email') 
+        return get_object_or_404(User, email=user_id)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.get_object()
+        return context
 
-class AdminBookingsListView(AdminListView):
-    model = Lesson
-    template_name = 'admin_bookings_list.html'
-    context_object_name = 'bookings'
+    def form_valid(self, form):
+        user = form.save(commit=False)
+        if form.cleaned_data['password']:
+            user.set_password(form.cleaned_data['password'])
+        user.save()
+        messages.success(self.request, "User updated successfully!")
+        return super().form_valid(form) 
 
+    def form_invalid(self, form):
+        context = self.get_context_data(form=form)  
+        return self.render_to_response(context)
+
+    def get_success_url(self):
+        return reverse('dashboard')  
+        
+
+class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
+    required_role = ['admin']
+
+    def get(self, request, list_type):
+        if request.user.role != 'admin':
+            return render(request, 'home.html')
+
+        if list_type == 'students':
+            objects = User.objects.filter(role=User.STUDENT)
+            page_heading = "Students"
+            add_button_text = "Add Student"
+            table_headers = ["Username", "Name", "Email"]
+            table_fields = ['username', 'first_name', 'email']
+
+        elif list_type == 'tutors':
+            objects = User.objects.filter(role=User.TUTOR)
+            page_heading = "Tutors"
+            add_button_text = "Add Tutor"
+            table_headers = ["Username", "Name", "Email"]
+            table_fields = ['username', 'first_name', 'email']
+
+        elif list_type == 'bookings':
+            objects = Lesson.objects.all()
+            page_heading = "Bookings"
+            add_button_text = "Add Booking"
+            table_headers = ["Student", "Tutor", "Programming Language", "Subject", "Date", "Status"]
+            table_fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
+
+        else:
+            return render(request, '404.html')  
+
+        paginator = Paginator(objects, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        # Convert the QuerySet to a list of dictionaries with the required fields
+        rows = []
+        for obj in page_obj:
+            row = {field: getattr(obj, field, '') for field in table_fields}
+            rows.append(row)
+
+        context = {
+            'page_obj': page_obj,
+            'page_heading': page_heading,
+            'add_button_text': add_button_text,
+            'table_headers': table_headers,
+            'table_fields': table_fields,
+            'rows': rows,
+            'list_type' : list_type
+        }
+
+        return render(request, 'admin_list.html', context)
+
+class AdminStatsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    template_name = 'admin_stats.html'
+    required_role = ['admin']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        user_counts_by_role = User.objects.values('role').annotate(count=Count('id')).order_by('-count')
+        
+        subjects = Subject.objects.select_related('language').all()
+        language_subject_statistics = []
+
+        # Creates a dictionary for each subject
+        for subject in subjects:
+            language_subject_statistics.append({
+                'language': subject.language.name,
+                'subject': subject.name,
+                'description': subject.description or 'No description available',
+            })
+            
+            total_lessons = Lesson.objects.count()
+
+        # SQL queries for table data
+        lessons_per_tutor = Lesson.objects.values('tutor__first_name').annotate(lesson_count=Count('id')).order_by('-lesson_count')[:10]
+        lessons_per_student = Lesson.objects.values('student__first_name').annotate(lesson_count=Count('id')).order_by('-lesson_count')[:10]
+
+        most_popular_languages = Lesson.objects.values('language__name').annotate(language_count=Count('id')).order_by('-language_count')
+        most_popular_subjects = Lesson.objects.values('subject__name').annotate(subject_count=Count('id')).order_by('-subject_count')
+
+        context = {
+            'total_lessons': total_lessons,
+            'lessons_per_tutor': lessons_per_tutor,
+            'lessons_per_student': lessons_per_student,
+            'most_popular_languages': most_popular_languages,
+            'most_popular_subjects': most_popular_subjects,
+            'user_counts_by_role': user_counts_by_role,
+            'language_subject_statistics': language_subject_statistics,
+        }
+        
+        return context
     
 class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
     """An automated button to match a Student with a Lesson Request with the first avalaible tutor"""
@@ -965,7 +1174,7 @@ class CurrentStudentsListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
             lessons_as_student__lesson_datetime__gte=now(),
             lessons_as_student__status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
         ).distinct().order_by('last_name', 'first_name')
-
+    
 class PreviousStudentsListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     template_name = 'previous_students_list.html'
     context_object_name = 'students'
@@ -990,30 +1199,48 @@ class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView
     model = User
     context_object_name = 'student'
     pk_url_kwarg = 'student_id'
-    required_role = ['tutor']
+    required_role = ['tutor', 'admin']
 
     def get_object(self, queryset=None):
         student = get_object_or_404(User, id=self.kwargs['student_id'])
         # Check if the tutor has access to this student
-        if not Lesson.objects.filter(tutor=self.request.user, student=student).exists():
-            raise Http404("Student not found")
+        if self.request.user.role == 'tutor':
+            if not Lesson.objects.filter(tutor=self.request.user, student=student).exists():
+                raise Http404("Student not found")
+        else:
+            if not Lesson.objects.filter(student=student).exists():
+                raise Http404("Student not found")      
         return student
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         student = self.object
         
-        context['upcoming_lessons'] = Lesson.objects.filter(
-            tutor=self.request.user,
-            student=student,
-            lesson_datetime__gt=now()
-        ).order_by('lesson_datetime')
-        
-        context['previous_lessons'] = Lesson.objects.filter(
-            tutor=self.request.user,
-            student=student,
-            lesson_datetime__lte=now()
-        ).order_by('-lesson_datetime')
+        if self.request.user.role == 'admin':
+            # Admins can see all lessons for the student, regardless of the tutor.
+            context['upcoming_lessons'] = Lesson.objects.filter(
+                student=student,
+                lesson_datetime__gt=now()
+            ).order_by('lesson_datetime')
+
+            context['previous_lessons'] = Lesson.objects.filter(
+                student=student,
+                lesson_datetime__lte=now()
+            ).order_by('-lesson_datetime')
+
+        elif self.request.user.role == 'tutor':
+            # Tutors can only see their own lessons with the student.
+            context['upcoming_lessons'] = Lesson.objects.filter(
+                tutor=self.request.user,
+                student=student,
+                lesson_datetime__gt=now()
+            ).order_by('lesson_datetime')
+
+            context['previous_lessons'] = Lesson.objects.filter(
+                tutor=self.request.user,
+                student=student,
+                lesson_datetime__lte=now()
+            ).order_by('-lesson_datetime')
         
         all_lessons = Lesson.objects.filter(tutor=self.request.user, student=student)
         context['programming_languages'] = all_lessons.values_list('language__name', flat=True).distinct()

@@ -19,6 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from tutorials import views
+from tutorials.views import AdminListView, DeleteRecordView, DeleteBookingView, AddRecordView, AdminViewProfile, UpdateRecordView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,10 +30,9 @@ urlpatterns = [
     path('password/', views.PasswordView.as_view(), name='password'),
     path('profile/', views.ProfileUpdateView.as_view(), name='profile'),
     path('sign_up/', views.SignUpView.as_view(), name='sign_up'),
+    path('admin_stats/', views.AdminStatsView.as_view(), name='admin_stats'),
+    path('admin_list/<str:list_type>/', AdminListView.as_view(), name='admin_list'),
     path("access_denied", views.AccessDeniedView.as_view(), name="access_denied"),
-    path('admin_student_list/', views.AdminStudentListView.as_view(), name='admin_student_list'),
-    path('admin_tutor_list/', views.AdminTutorListView.as_view(), name='admin_tutor_list'),
-    path('admin_bookings_list/', views.AdminBookingsListView.as_view(), name='admin_bookings_list'),
     path("admin-review/", views.AdminReviewRequestsView.as_view(), name="admin_review_requests"),
     path('tutor-availability/', views.TutorAvailabilityListView.as_view(), name="tutor_availability_list"),
     path('request_change_bookings/<int:lesson_id>/', views.RequestChangeBookingsView.as_view(), name='request_change_bookings'),
@@ -52,6 +52,11 @@ urlpatterns = [
     path('confirm_delete_all/', views.ConfirmDeleteAllAvailabilitiesView.as_view(), name='confirm_delete_all_availabilities'),
     path('tutor_page/delete_all_availability/', views.DeleteAllAvailabilityView.as_view(), name='delete_all_availability'),
     path('tutor/lessons/', views.TutorLessonsView.as_view(), name='tutor_lessons'),
+    path('update_record/<str:email>', views.UpdateRecordView.as_view(), name='update_record'),
+    path('<int:booking_id>/delete/', DeleteBookingView.as_view(), name='delete_booking'),
+    path('<str:email>/delete/', DeleteRecordView.as_view(), name='delete_record'),
+    path('<str:role>/add_record/', AddRecordView.as_view(), name='add_record'),
+    path('admin_view_profile/<str:email>', AdminViewProfile.as_view(), name='admin_view_profile'),
     path('tutor/students/', views.TutorStudentsListView.as_view(), name='tutor_students_list'),
     path('tutor/student/<int:student_id>/', views.StudentProfileDetailView.as_view(), name='student_profile_detail'),
     path('reports/generate/<str:time_period>/', views.GenerateReportView.as_view(), name='generate_report'),

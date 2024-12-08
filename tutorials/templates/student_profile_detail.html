@@ -119,12 +119,16 @@
     </div>
     
     <div class="mt-4 mb-5">
-        {% if request.GET.source == 'current' %}
-            <a href="{% url 'current_students' %}" class="btn btn-secondary">Back to Current Students</a>
-        {% elif request.GET.source == 'previous' %}
-            <a href="{% url 'previous_students' %}" class="btn btn-secondary">Back to Previous Students</a>
+        {% if request.user.role == 'admin' %}
+            <a href="{% url 'admin_list' 'students' %}" class="btn btn-secondary">Back to Students</a>
         {% else %}
-            <a href="{% url 'tutor_students_list' %}" class="btn btn-secondary">Back to Students List</a>
+            {% if request.GET.source == 'current' %}
+                <a href="{% url 'current_students' %}" class="btn btn-secondary">Back to Current Students</a>
+            {% elif request.GET.source == 'previous' %}
+                <a href="{% url 'previous_students' %}" class="btn btn-secondary">Back to Previous Students</a>
+            {% else %}
+                <a href="{% url 'tutor_students_list' %}" class="btn btn-secondary">Back to Students List</a>
+            {% endif %}
         {% endif %}
     </div>
 </div>
