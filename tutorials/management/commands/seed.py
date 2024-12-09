@@ -142,7 +142,7 @@ class Command(BaseCommand):
         self.create_subjects()
         self.create_default_lessons()
         self.assign_tutor_expertise() 
-        self.create_tutor_availability()  # Add this call
+        self.create_tutor_availability() 
         self.users = User.objects.all()
         self.create_lessons()
 
@@ -283,27 +283,25 @@ class Command(BaseCommand):
             lesson.save()
     def create_tutor_availability(self):
         """Generate random availability slots for tutors across a 24-hour range."""
-        tutors = User.objects.filter(role='tutor')  # Fetch all tutors
+        tutors = User.objects.filter(role='tutor')  
         for tutor in tutors:
-            num_slots = randint(3, 10)  # Each tutor gets 3-10 availability slots
+            num_slots = randint(3, 10)  
             for _ in range(num_slots):
-                date = self.faker.date_between(start_date='-30d', end_date='+30d')  # Random date within ±30 days
-                start_hour = randint(0, 23)  # Start time can be any hour in 24-hour range
-                start_minute = choice([0, 15, 30, 45])  # Randomize minutes for variety
+                date = self.faker.date_between(start_date='-30d', end_date='+30d') 
+                start_hour = randint(0, 23)  
+                start_minute = choice([0, 15, 30, 45])  
                 start_time = time(start_hour, start_minute)
 
-                # Ensure end time doesn't exceed 23:59
-                max_end_hour = min(23, start_hour + randint(1, 3))  # Duration of 1-3 hours
+                max_end_hour = min(23, start_hour + randint(1, 3))  
                 end_minute = start_minute if max_end_hour > start_hour else 59
                 end_time = time(max_end_hour, end_minute)
 
-                # Create availability slot
                 TutorAvailability.objects.get_or_create(
                     tutor=tutor,
                     date=date,
                     start_time=start_time,
                     end_time=end_time,
-                    recurrence='none'  # One-time availability
+                    recurrence='none'  
                 )
         print("Tutor availability slots seeded.")                    
 
