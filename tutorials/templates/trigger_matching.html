@@ -4,20 +4,48 @@
 <div class="container">
     <h1 class="my-4">Lesson Requests Pending Matching</h1>
 
-    {% if lesson_requests %}
-        <ul class="list-group">
-            {% for request in lesson_requests %}
-                <li class="list-group-item">
-                    {{ request.user.full_name }} ({{ request.language.name }}) at {{ request.start_datetime }}
-                </li>
-            {% endfor %}
-        </ul>
+    {% if data %}
         <form method="POST" action="{% url 'trigger_matching' %}">
             {% csrf_token %}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Requested Language</th>
+                        <th>Subject</th>
+                        <th>Start Time</th>
+                        <th>Available Tutors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                        <tr>
+                            <td>{{ item.lesson_request.user.full_name }}</td>
+                            <td>{{ item.lesson_request.language.name }}</td>
+                            <td>{{ item.lesson_request.subject.name }}</td>
+                            <td>{{ item.lesson_request.start_datetime }}</td>
+                            <td>
+                                {% if item.available_tutors %}
+                                    <select name="lesson_request_{{ item.lesson_request.id }}" class="form-select">
+                                        <option value="">-- Select Tutor --</option>
+                                        {% for tutor in item.available_tutors %}
+                                            <option value="{{ tutor.id }}">
+                                                {{ tutor.username }} ({{ tutor.expertise_language.name }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                {% else %}
+                                    <p class="text-danger">No available tutors</p>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             <button type="submit" class="btn btn-primary mt-3">Match Tutors</button>
         </form>
     {% else %}
-        <p>No pending lesson requests.</p>
+        <p class="text-muted">No pending lesson requests at the moment.</p>
     {% endif %}
 </div>
 {% endblock %}
