@@ -45,42 +45,44 @@
       {% for row in page_obj %}
       <tr>
         <!-- Data fields for each entry -->
-          {% for field in table_fields %}
-              <td>{{ row|get_item:field|capfirst }}</td>
-          {% endfor %}
+        {% for field in table_fields %}
+          <td>{{ row|get_item:field|capfirst }}</td>
+        {% endfor %}
 
-          <!-- Buttons for each entry -->
-          <td class="text-end">
-            {% if list_type == 'students' or list_type == 'tutors' %}
-                {% if list_type == 'students' %}
-                <a href="{% url 'student_profile_detail' student_id=row.id %}" class="btn text-primary me-2">
-                  <i class="bi bi-person-fill" style="font-size: 1.5rem;"></i>
-                </a>
-                {% endif %}
-                {% if list_type == 'tutors' %}
-                <a href="{% url 'admin_view_profile' email=row.email %}" class="btn text-primary me-2">
-                  <i class="bi bi-person-fill" style="font-size: 1.5rem;"></i>
-                </a>
-                {% endif %}
-                <a href="{% url 'update_record' row.email %}" class="btn text-primary me-2">
-                    <i class="bi bi-pencil-fill" style="font-size: 1.5rem;"></i>
-                </a>
-                <a href="{% url 'delete_record' email=row.email %}" class="btn text-primary me-2">
-                    <i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i>
-                </a>
-            {% endif %}
-            {% if list_type == 'bookings' %}
-                <a href="{% url 'delete_booking' booking_id=row.id %}" class="btn text-danger me-1">
-                    <i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i>
-                </a>
-                {% if row.invoice %}
-                <a href="{% url 'invoice_pdf' row.invoice.id %}" class="btn btn-sm btn-primary" title="Download Invoice">
-                    <i class="bi bi-file-earmark-text"></i> Download Invoice
-                </a>
-                {% endif %}  
+        <!-- Buttons for each entry -->
+        <td class="text-end">
+          {% if list_type == 'students' or list_type == 'tutors' %}
+              {% if list_type == 'students' %}
+              <a href="{% url 'student_profile_detail' student_id=row.id %}" class="btn text-primary me-2">
+                <i class="bi bi-person-fill" style="font-size: 1.5rem;"></i>
+              </a>
+              {% endif %}
+              {% if list_type == 'tutors' %}
+              <a href="{% url 'admin_view_profile' email=row.email %}" class="btn text-primary me-2">
+                <i class="bi bi-person-fill" style="font-size: 1.5rem;"></i>
+              </a>
+              {% endif %}
+              <a href="{% url 'update_record' row.email %}" class="btn text-primary me-2">
+                  <i class="bi bi-pencil-fill" style="font-size: 1.5rem;"></i>
+              </a>
+              <a href="{% url 'delete_record' email=row.email %}" class="btn text-primary me-2">
+                  <i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i>
+              </a>
+          {% endif %}
 
+          {% if list_type == 'bookings' %}
+              <a href="{% url 'delete_booking' booking_id=row.id %}" class="btn text-danger me-1">
+                  <i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i>
+              </a>
+              {% if row.invoice %}
+              <a href="{% url 'download_invoice' row.invoice.id %}" class="btn btn-sm btn-primary" title="Download Invoice">
+                <i class="bi bi-file-earmark-text"></i> Download Invoice
+              {% else %}  
+              <span class="text-muted">No Invoice</span>
 
-            {% endif %}
+              </a>
+              {% endif %}
+          {% endif %}
         </td>
       </tr>
       {% endfor %}
@@ -122,6 +124,5 @@
     {% endif %}
   </ul>
 </div>
-
 
 {% endblock %}
