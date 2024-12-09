@@ -29,15 +29,15 @@
         </div>
 
         <div class="card-body">
+            <form method ="post">
             {% csrf_token %}
             {% if form.errors %}
             <div class="alert alert-danger">
                 {% for field in form %}
-                    {% for error in field.errors %}
+                    {% for error in field.form.non_field_error %}
                     <div>{{ error }}</div>
                     {% endfor %}
                 {% endfor %}
-                {% for error in form.non_field_errors %}
                 <div>{{ error }}</div>
                 {% endfor %}
             </div>

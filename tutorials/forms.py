@@ -52,7 +52,7 @@ class AdminAddUserForm(forms.ModelForm):
             user.save()  # Now save the user to the DB
         return user
 
-'''
+
 class AdminAddBookingForm(forms.ModelForm):
     class Meta:
         model = Lesson
@@ -91,7 +91,7 @@ class AdminAddBookingForm(forms.ModelForm):
         if commit:
             lesson.save()
         return lesson
-'''
+
 
 class AdminAddBookingForm(forms.ModelForm):
     class Meta:

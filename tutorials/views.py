@@ -401,7 +401,6 @@ class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
 
-        # Convert the QuerySet to a list of dictionaries with the required fields
         rows = []
         for obj in page_obj:
             row = {field: getattr(obj, field, '') for field in table_fields}
@@ -461,43 +460,62 @@ class AdminStatsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
         return context
     
 class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
-    """An automated button to match a Student with a Lesson Request with the first avalaible tutor"""
+    """Manually match students with tutors for pending lesson requests."""
     required_role = ['admin']
+
     def get(self, request):
+        """Display pending lesson requests with available tutors."""
         lesson_requests = LessonRequest.objects.filter(
             start_datetime__gte=now(), status='pending'
         )
-        return render(request, 'trigger_matching.html', {
-            'lesson_requests': lesson_requests,
-        })
-    def post(self, request):
-        lesson_requests = LessonRequest.objects.filter(
-            start_datetime__gte=now(), status='pending'
-        )
-        matched_lessons = []
-        unmatched_requests = []
+        data = []
+
+        # Gather available tutors for each lesson request
         for lesson_request in lesson_requests:
             busy_tutors = Lesson.objects.filter(
                 lesson_datetime=lesson_request.start_datetime
             ).values_list('tutor', flat=True)
-            free_tutors = User.objects.filter(
-                role='tutor'
+            available_tutors = User.objects.filter(
+                role='tutor', expertise_language=lesson_request.language
             ).exclude(id__in=busy_tutors)
-            if free_tutors.exists():
-                tutor = free_tutors.first()
-                lesson = Lesson.objects.create(
-                    student=lesson_request.user,
-                    tutor=tutor,
-                    lesson_datetime=lesson_request.start_datetime,
-                    language=lesson_request.language,
-                    subject=lesson_request.subject,
-                    status=Lesson.STATUS_SCHEDULED, 
-                )
-                lesson_request.status = 'allocated'
-                lesson_request.save()
-                matched_lessons.append(lesson)
-            else:
-                unmatched_requests.append(lesson_request)
+
+            data.append({
+                'lesson_request': lesson_request,
+                'available_tutors': available_tutors
+            })
+
+        return render(request, 'trigger_matching.html', {'data': data})
+
+    def post(self, request):
+        """Process manual tutor matching."""
+        matched_lessons = []
+        unmatched_requests = []
+
+        for key, value in request.POST.items():
+            if key.startswith('lesson_request_'):
+                lesson_request_id = key.split('_')[-1]
+                tutor_id = value
+
+                try:
+                    lesson_request = LessonRequest.objects.get(id=lesson_request_id)
+                    tutor = User.objects.get(id=tutor_id, role='tutor')
+
+                    lesson = Lesson.objects.create(
+                        student=lesson_request.user,
+                        tutor=tutor,
+                        lesson_datetime=lesson_request.start_datetime,
+                        language=lesson_request.language,
+                        subject=lesson_request.subject,
+                        status=Lesson.STATUS_SCHEDULED,
+                    )
+
+                    lesson_request.status = 'allocated'
+                    lesson_request.save()
+
+                    matched_lessons.append(lesson)
+                except (LessonRequest.DoesNotExist, User.DoesNotExist):
+                    unmatched_requests.append(lesson_request)
+
         return render(request, 'trigger_matching.html', {
             'matched_lessons': matched_lessons,
             'unmatched_requests': unmatched_requests,
@@ -605,14 +623,68 @@ class StudentSupportView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
         ]
         return context
 
-@login_required  
-def download_invoice(request,invoice_id):
-    """Download invoices - NOT FUNCTIONAL YET."""
-    invoice = get_object_or_404(Invoice, id=invoice_id, student=request.user)
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.id}.pdf"'
-    response.write("the amount paid is this number")  
-    return response
+class InvoicePDFView(LoginRequiredMixin, View):
+    def get(self, request, invoice_id):
+        try:
+            invoice = Invoice.objects.get(id=invoice_id)
+            if request.user.role == 'student' and invoice.student != request.user:
+                return HttpResponse("Unauthorized: You can only access your own invoices.", status=403)
+            if request.user.role == 'admin':
+                pass
+        except Invoice.DoesNotExist:
+            return HttpResponse("Invoice not found.", status=404)
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.id}.pdf"'
+
+        self.generate_invoice_pdf(response, invoice)
+
+        return response
+    
+    def generate_invoice_pdf(self, response, invoice):
+        """Helper function to generate a styled PDF."""
+        p = canvas.Canvas(response, pagesize=letter)
+        width, height = letter
+
+        p.setFont("Helvetica", 20)
+        p.drawString(200, height - 50, f"Invoice #{invoice.id}")
+
+        p.setFont("Helvetica", 12)
+        p.drawString(50, height - 100, f"Date: {invoice.date}")
+        p.drawString(50, height - 120, f"Student: {invoice.student.full_name()}")  # Call the method
+
+        status_color = colors.green if invoice.status == 'paid' else colors.red
+        p.setFillColor(status_color)
+        p.drawString(50, height - 140, f"Status: {invoice.get_status_display()}")
+        p.setFillColor(colors.black)  
+       
+        data = [
+            ['Description', 'Amount'],
+            ['Lesson Fee', f"${invoice.amount:.2f}"],
+            ['Total', f"${invoice.amount:.2f}"]
+        ]
+        table = Table(data, colWidths=[300, 200])
+
+        style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ])
+        table.setStyle(style)
+
+        table.wrapOn(p, width, height)
+        table.drawOn(p, 50, height - 300)
+        p.setFont("Helvetica", 10)
+        p.drawString(50, 50, "Thank you for using our services!")
+
+        p.showPage()
+        p.save()
+    
     
 
 class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
@@ -654,7 +726,6 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
     template_name = 'request_cancel_bookings.html'
     form_class = CancellationRequestForm
     required_role = ['student', 'tutor']
-
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
         self.lesson = get_object_or_404(
@@ -663,16 +734,11 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
             status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
         )
         if request.user not in [self.lesson.student, self.lesson.tutor]:
-            raise Http404("Lesson not found")
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
+            raise Http404("Lesson not found.")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['lesson'] = self.lesson
+        context['lesson'] = self.lesson  
         return context
 
     def form_valid(self, form):
@@ -684,9 +750,12 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
         )
         cancellation_request.save()
         cancellation_request.lessons.add(self.lesson)
-        
         messages.success(self.request, "Your cancellation request has been submitted successfully.")
         return redirect('student_lesson_calendar')
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
 
 
 class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):

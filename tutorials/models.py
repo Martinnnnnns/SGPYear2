@@ -12,6 +12,34 @@ from django.db import models
 from libgravatar import Gravatar
 from datetime import datetime, timedelta
 
+
+
+class Invoice(models.Model):
+    """
+    Represents an invoice for a student.
+    """
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
+    date = models.DateField(auto_now_add=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(
+        max_length=10,
+        choices=[
+            ('paid', 'Paid'),
+            ('unpaid', 'Unpaid'),
+        ]
+    )
+
+class ProgrammingLanguage(models.Model):
+    """Model for programming languages that we offer lessons in."""
+    name = models.CharField(max_length=100, unique=True, blank=False)
+
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        ordering = ['name']
+        
+        
 class User(AbstractUser):
     """Model used for user authentication, and team member related information."""
     
@@ -42,6 +70,14 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         default=STUDENT,
     )
+    expertise_language = models.ForeignKey(
+        ProgrammingLanguage,
+        on_delete=models.SET_NULL,  
+        null=True,
+        blank=True,
+        related_name='tutors',
+        help_text="Programming language expertise for tutors"
+    )
 
     class Meta:
         """Model options."""
@@ -61,15 +97,7 @@ class User(AbstractUser):
         """Return a URL to a miniature version of the user's gravatar."""        
         return self.gravatar(size=60)
     
-class ProgrammingLanguage(models.Model):
-    """Model for programming languages that we offer lessons in."""
-    name = models.CharField(max_length=100, unique=True, blank=False)
 
-    def __str__(self):
-        return self.name
-    
-    class Meta:
-        ordering = ['name']
 
 class Subject(models.Model):
     """Model for topics that a lesson in a given programming langauge can be about."""
