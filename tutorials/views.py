@@ -470,14 +470,18 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
         )
         data = []
 
-        # Gather available tutors for each lesson request
         for lesson_request in lesson_requests:
             busy_tutors = Lesson.objects.filter(
                 lesson_datetime=lesson_request.start_datetime
             ).values_list('tutor', flat=True)
+            
             available_tutors = User.objects.filter(
                 role='tutor', expertise_language=lesson_request.language
-            ).exclude(id__in=busy_tutors)
+            ).exclude(id__in=busy_tutors).filter(
+                 availability_slots__date=lesson_request.start_datetime.date(),
+            availability_slots__start_time__lte=lesson_request.start_datetime.time(),
+            availability_slots__end_time__gte=lesson_request.start_datetime.time(),
+            ).distinct()
 
             data.append({
                 'lesson_request': lesson_request,
