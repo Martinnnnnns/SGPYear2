@@ -4,6 +4,9 @@ from datetime import timedelta
 from tutorials.models import User, TutorAvailability
 from django.contrib.messages import get_messages
 
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
+
 class TestConfirmDeleteViews(RoleSetupTest, StudentMixin, TutorMixin):
     def setUp(self):        
         self.setup_tutor()

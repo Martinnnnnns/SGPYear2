@@ -11,10 +11,12 @@ from tutorials.models import (
     TutorAvailability
 )
 from tutorials.forms import CancellationRequestForm, ChangeBookingForm
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
 
 User = get_user_model()
 
-class BookingRequestTests(TestCase):
+class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
     def setUp(self):
         # Create Language and Subject
         self.language = ProgrammingLanguage.objects.create(name="Python")
@@ -23,19 +25,15 @@ class BookingRequestTests(TestCase):
         self.setup_student()
         self.setup_tutor()
 
-        # Create Users
-        self.tutor = User.objects.create_user(
-            username="tutor",
+        self.setup_student()
+        self.setup_tutor()
+
+        self.other_tutor_user = User.objects.create_user(
+            username="other_tutor",
             password="Password123",
-            email="tutor@example.com",
-            role="tutor"
+            email="othertutor@example.com",
         )
-        self.student = User.objects.create_user(
-            username="student",
-            password="Password123",
-            email="student@example.com",
-            role="student"
-        )
+        self.other_tutor_user.roles.set([self.tutor_role])
 
         # Create Lessons
         self.scheduled_lesson = Lesson.objects.create(
@@ -47,8 +45,8 @@ class BookingRequestTests(TestCase):
             status=Lesson.STATUS_SCHEDULED
         )
         self.scheduled_lesson_2 = Lesson.objects.create(
-            student=self.student,
-            tutor=self.tutor,
+            student=self.student_user,
+            tutor=self.tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now() + timedelta(days=2),
@@ -61,7 +59,7 @@ class BookingRequestTests(TestCase):
         self.dashboard_url = reverse("dashboard")
 
         # Log in as student
-        self.client.login(username="student", password="Password123")
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
 
     # ---- Change Request Tests ----
     def test_successful_change_request(self):

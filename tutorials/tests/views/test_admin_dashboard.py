@@ -1,4 +1,3 @@
-from django.test import TestCase
 from django.urls import reverse
 from tutorials.tests.base import RoleSetupTest
 from tutorials.tests.mixins import AdminMixin
@@ -14,14 +13,14 @@ class AdminDashboardTestCase(RoleSetupTest, AdminMixin):
 
     def test_dashboard_view_renders(self):
         """Test the dashboard renders the correct template successfully."""
-        self.client.login(username='@admin', password='Password123')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(self.url, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'admin_dashboard.html')
 
     def test_dashboard_links(self):
         """Test the buttons link to the correct views."""
-        self.client.login(username='@admin', password='Password123')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(self.url, follow=True)
         html = response.content.decode('utf-8')
 
@@ -34,7 +33,7 @@ class AdminDashboardTestCase(RoleSetupTest, AdminMixin):
         self.assertIn(f'href="{bookings_list_url}"', html)
         
     def test_dashboard_contains_buttons(self):
-        self.client.login(username='@admin', password='Password123')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(self.url, follow=True)
         self.assertContains(response, 'Students')
         self.assertContains(response, 'Tutors')

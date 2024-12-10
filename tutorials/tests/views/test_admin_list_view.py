@@ -1,23 +1,15 @@
-from django.test import TestCase
 from django.urls import reverse
-from tutorials.models import User, Lesson, ProgrammingLanguage, Subject
-from django.core.paginator import Paginator
+from tutorials.models import Lesson, ProgrammingLanguage, Subject
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import AdminMixin, StudentMixin, TutorMixin
 
-
-class AdminListTestMixin:
+class AdminListTestMixin(RoleSetupTest, AdminMixin):
     """Mixin for testing admin list views."""
     list_type = None  
     
     def setUp(self):
-        self.admin_user = User.objects.create_user(
-            email="bobby@gmail.com", 
-            first_name="bob", 
-            last_name="bobby", 
-            username='@admin', 
-            password='Password123', 
-            role='admin'
-        )
-        self.client.login(username='@admin', password='Password123')
+        self.setup_admin()
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
 
     def test_url_resolves_correctly(self):
         """Test reverse resolves to the expected URL."""
@@ -52,72 +44,40 @@ class AdminListTestMixin:
             self.assertContains(response, "Date")
 
 
-class AdminStudentListTestCase(AdminListTestMixin, TestCase):
+class AdminStudentListTestCase(AdminListTestMixin, StudentMixin):
     list_type = 'students'
 
     def setUp(self):
         super().setUp()
+        self.setup_student()
 
-        self.student = User.objects.create_user(
-            email="student@gmail.com", 
-            first_name="John", 
-            last_name="Doe", 
-            username='@student', 
-            password='Password123', 
-            role='student'
-        )
-
-class AdminTutorListTestCase(AdminListTestMixin, TestCase):
+class AdminTutorListTestCase(AdminListTestMixin, TutorMixin):
     list_type = 'tutors'
 
     def setUp(self):
         super().setUp()
-        self.tutor = User.objects.create_user(
-            email="tutor@gmail.com", 
-            first_name="Alice", 
-            last_name="Smith", 
-            username='@tutor', 
-            password='Password123', 
-            role='tutor'
-        )
+        self.setup_tutor()
 
 
-class AdminBookingsListTestCase(AdminListTestMixin, TestCase):
+class AdminBookingsListTestCase(AdminListTestMixin, StudentMixin, TutorMixin):
     list_type = 'bookings'
 
     def setUp(self):
         super().setUp()
-        self.student = User.objects.create_user(
-            email="student@gmail.com", 
-            first_name="John", 
-            last_name="Doe", 
-            username='@student', 
-            password='Password123', 
-            role='student'
-        )
-        self.tutor = User.objects.create_user(
-            email="tutor@gmail.com", 
-            first_name="Alice", 
-            last_name="Smith", 
-            username='@tutor', 
-            password='Password123', 
-            role='tutor'
-        )
+        self.setup_tutor()
+        self.setup_student()
         
-        # Create a programming language instance
         self.language = ProgrammingLanguage.objects.create(name="Python")
 
-        # Create a subject instance related to the language
         self.subject = Subject.objects.create(
             name="Flask", 
             language=self.language, 
             description="Web development in Flask"
         )
         
-        # Create a booking
         self.booking = Lesson.objects.create(
-            student=self.student, 
-            tutor=self.tutor, 
+            student=self.student_user, 
+            tutor=self.tutor_user, 
             language=self.language,
             subject=self.subject,
             lesson_datetime="2024-12-12 10:00:00",

@@ -1,41 +1,19 @@
-from django.test import TestCase, Client
 from django.urls import reverse
-from tutorials.models import User, Lesson, Subject, ProgrammingLanguage
-from django.db.models import Count
+from tutorials.models import Lesson, Subject, ProgrammingLanguage
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import AdminMixin, StudentMixin, TutorMixin
 
-class AdminStatsViewTests(TestCase):
+class AdminStatsViewTests(RoleSetupTest, AdminMixin, StudentMixin, TutorMixin):
 
     def setUp(self):
-        self.client = Client()
+        self.setup_admin()
+        self.setup_tutor()
+        self.setup_student()
 
-        # Create roles
-        self.admin_user = User.objects.create_user(
-            username='admin_user', 
-            email='admin@example.com', 
-            password='adminpass',
-            role='admin'
-        )
-        self.student_user = User.objects.create_user(
-            username='student_user', 
-            email='student@example.com', 
-            password='studentpass',
-            role='student'
-        )
-        self.tutor_user = User.objects.create_user(
-            username='tutor_user', 
-            email='tutor@example.com', 
-            password='tutorpass',
-            role='tutor'
-        )
-
-        # Create programming language
         self.language = ProgrammingLanguage.objects.create(name='Python')
-
-        # Create subjects
         self.subject1 = Subject.objects.create(name='Django Basics', language=self.language)
         self.subject2 = Subject.objects.create(name='Flask Advanced', language=self.language)
 
-        # Create lessons
         for i in range(5):
             Lesson.objects.create(
                 student=self.student_user,
@@ -46,7 +24,7 @@ class AdminStatsViewTests(TestCase):
             )
 
     def test_admin_can_access_stats(self):
-        self.client.login(username='admin_user', password='adminpass')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('admin_stats'))
         
         self.assertEqual(response.status_code, 200)
@@ -60,20 +38,20 @@ class AdminStatsViewTests(TestCase):
         self.assertIn('language_subject_statistics', response.context)
 
     def test_non_admin_redirected(self):
-        self.client.login(username='student_user', password='studentpass')
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('admin_stats'))
 
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('access_denied'))
 
     def test_total_lessons_calculation(self):
-        self.client.login(username='admin_user', password='adminpass')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('admin_stats'))
         
         self.assertEqual(response.context['total_lessons'], 5)
 
     def test_lessons_per_tutor(self):
-        self.client.login(username='admin_user', password='adminpass')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('admin_stats'))
         
         lessons_per_tutor = response.context['lessons_per_tutor']
@@ -82,7 +60,7 @@ class AdminStatsViewTests(TestCase):
         self.assertEqual(lessons_per_tutor[0]['lesson_count'], 5)
 
     def test_lessons_per_student(self):
-        self.client.login(username='admin_user', password='adminpass')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('admin_stats'))
         
         lessons_per_student = response.context['lessons_per_student']
@@ -91,7 +69,7 @@ class AdminStatsViewTests(TestCase):
         self.assertEqual(lessons_per_student[0]['lesson_count'], 5)
 
     def test_most_popular_languages(self):
-        self.client.login(username='admin_user', password='adminpass')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('admin_stats'))
         
         most_popular_languages = response.context['most_popular_languages']
@@ -100,7 +78,7 @@ class AdminStatsViewTests(TestCase):
         self.assertEqual(most_popular_languages[0]['language_count'], 5)
 
     def test_language_subject_statistics(self):
-        self.client.login(username='admin_user', password='adminpass')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('admin_stats'))
         
         language_subject_statistics = response.context['language_subject_statistics']
