@@ -10,55 +10,55 @@ from django.contrib.messages import get_messages
 from tutorials.models import (
     Lesson,
     ProgrammingLanguage,
+    Role,
     Subject,
+    User,
     CancellationRequest,
     ChangeRequest
 )
 from tutorials.forms import CancellationRequestForm, ChangeBookingForm, ChangeRequestForm
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
 
 User = get_user_model()
 
 
-class BookingViewsTest(TestCase):
+class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
     def setUp(self):
         # Create Programming Language and Subject
         self.language = ProgrammingLanguage.objects.create(name="Python")
         self.subject = Subject.objects.create(name="Mathematics", language=self.language)
+        
+        self.setup_student()
+        self.setup_tutor()
 
-        # Create Users
-        self.student = User.objects.create_user(
-            username="student",
+        self.other_tutor_user = User.objects.create_user(
+            username="other_tutor",
             password="Password123",
-            email="student@example.com",
-            role="student"
+            email="othertutor@example.com",
         )
-        self.tutor = User.objects.create_user(
-            username="tutor",
-            password="Password123",
-            email="tutor@example.com",
-            role="tutor"
-        )
+        self.other_tutor_user.roles.set(self.tutor_role)
 
         # Create Lessons
         self.scheduled_lesson = Lesson.objects.create(
-            student=self.student,
-            tutor=self.tutor,
+            student=self.student_user,
+            tutor=self.tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now() + timedelta(days=1),
             status=Lesson.STATUS_SCHEDULED
         )
         self.rescheduled_lesson = Lesson.objects.create(
-            student=self.student,
-            tutor=self.tutor,
+            student=self.student_user,
+            tutor=self.tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now() + timedelta(days=2),
             status=Lesson.STATUS_RESCHEDULED
         )
         self.completed_lesson = Lesson.objects.create(
-            student=self.student,
-            tutor=self.tutor,
+            student=self.student_user,
+            tutor=self.tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now() - timedelta(days=1),
@@ -72,7 +72,7 @@ class BookingViewsTest(TestCase):
         self.home_url = reverse("home")
 
         # Log in as the tutor
-        self.client.login(username="tutor", password="Password123")
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
 
     # ----- Tests for Cancellation Views -----
     def test_successful_cancellation_view(self):
@@ -109,16 +109,10 @@ class BookingViewsTest(TestCase):
 
     def test_cancellation_view_permission_denied(self):
         """Test that a tutor cannot cancel another tutor's lesson."""
-        # Create another tutor and a lesson for them
-        other_tutor = User.objects.create_user(
-            username="other_tutor",
-            password="Password123",
-            email="othertutor@example.com",
-            role="tutor"
-        )
+        
         other_lesson = Lesson.objects.create(
-            student=self.student,
-            tutor=other_tutor,
+            student=self.student_user,
+            tutor=self.other_tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now() + timedelta(days=2),
@@ -190,16 +184,9 @@ class BookingViewsTest(TestCase):
 
     def test_reschedule_view_permission_denied(self):
         """Test that a tutor cannot reschedule another tutor's lesson."""
-        # Create another tutor and a lesson for them
-        other_tutor = User.objects.create_user(
-            username="other_tutor",
-            password="Password123",
-            email="othertutor@example.com",
-            role="tutor"
-        )
         other_lesson = Lesson.objects.create(
-            student=self.student,
-            tutor=other_tutor,
+            student=self.student_user,
+            tutor=self.other_tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now() + timedelta(days=2),

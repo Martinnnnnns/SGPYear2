@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from tutorials.models import User
+from tutorials.models import User, Role
 
 class AdminListTestMixin:
     """Mixin for testing admin list views."""
@@ -9,7 +9,11 @@ class AdminListTestMixin:
     
     def setUp(self):
         self.url = reverse(self.url_name)
-        self.admin_user = User.objects.create_user(email="bobby@gmail.com", first_name="bob", last_name="bobby", username='@admin', password='Password123', role='admin')
+        self.admin_user = User.objects.create_user(email="bobby@gmail.com", first_name="bob", last_name="bobby", username='@admin', password='Password123')
+        self.adminRole = Role.objects.create(name='admin')
+        self.admin_user.roles.set([self.adminRole])
+        self.admin_user.current_active_role = self.adminRole
+        self.admin_user.save()
 
     def test_url_resolves_correctly(self):
         """Test that reverse resolves to the expected URL."""

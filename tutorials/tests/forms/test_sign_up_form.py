@@ -1,11 +1,12 @@
 """Unit tests of the sign up form."""
 from django.contrib.auth.hashers import check_password
 from django import forms
-from django.test import TestCase
 from tutorials.forms import SignUpForm
-from tutorials.models import User
+from tutorials.models import User, Role
+from tutorials.constants import UserRoles
+from tutorials.tests.base import RoleSetupTest
 
-class SignUpFormTestCase(TestCase):
+class SignUpFormTestCase(RoleSetupTest):
     """Unit tests of the sign up form."""
 
     def setUp(self):
@@ -16,7 +17,7 @@ class SignUpFormTestCase(TestCase):
             'email': 'janedoe@example.org',
             'new_password': 'Password123',
             'password_confirmation': 'Password123',
-            'role': User.STUDENT  # Add default role
+            'roles': [self.student_role.pk]
         }
 
     def test_valid_sign_up_form(self):
@@ -29,11 +30,11 @@ class SignUpFormTestCase(TestCase):
         self.assertIn('last_name', form.fields)
         self.assertIn('username', form.fields)
         self.assertIn('email', form.fields)
-        self.assertIn('role', form.fields)  # Test for role field
+        self.assertIn('roles', form.fields)  # Test for role field
         email_field = form.fields['email']
         self.assertTrue(isinstance(email_field, forms.EmailField))
-        role_field = form.fields['role']
-        self.assertTrue(isinstance(role_field, forms.ChoiceField))  # Test role field type
+        role_field = form.fields['roles']
+        self.assertTrue(isinstance(role_field, forms.ModelMultipleChoiceField))  # Test role field type
         self.assertIn('new_password', form.fields)
         new_password_widget = form.fields['new_password'].widget
         self.assertTrue(isinstance(new_password_widget, forms.PasswordInput))
@@ -72,13 +73,16 @@ class SignUpFormTestCase(TestCase):
     def test_form_must_save_correctly(self):
         form = SignUpForm(data=self.form_input)
         before_count = User.objects.count()
-        form.save()
+        self.assertTrue(form.is_valid()) 
+        user = form.save()  
+        self.assertIsNotNone(user.pk) 
+        self.assertEqual(user.first_name, self.form_input['first_name'])
+        self.assertEqual(user.last_name, self.form_input['last_name'])
+        self.assertEqual(user.email, self.form_input['email'])
+        self.assertTrue(check_password(self.form_input['new_password'], user.password))
+        self.assertEqual(list(user.roles.all()), [self.student_role]) 
         after_count = User.objects.count()
         self.assertEqual(after_count, before_count+1)
-        user = User.objects.get(username='@janedoe')
-        self.assertEqual(user.first_name, 'Jane')
-        self.assertEqual(user.last_name, 'Doe')
-        self.assertEqual(user.email, 'janedoe@example.org')
-        self.assertEqual(user.role, User.STUDENT)  # Test role was saved
-        is_password_correct = check_password('Password123', user.password)
-        self.assertTrue(is_password_correct)
+
+       
+        

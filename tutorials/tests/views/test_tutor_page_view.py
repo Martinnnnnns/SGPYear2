@@ -1,44 +1,28 @@
-from django.test import TestCase
 from django.urls import reverse
 from tutorials.models import User
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
 
-class TutorPageTestCase(TestCase):
+class TutorPageTestCase(RoleSetupTest, StudentMixin, TutorMixin):
 
     def setUp(self):
         self.url = reverse('dashboard')
-        # Create a user with the 'Tutor' role
-        self.tutor_user = User.objects.create_user(
-            username='@tutor_user',
-            password='testpassword123',
-            email='tutor_user@example.com',
-            first_name='Tutor',
-            last_name='User',
-            role=User.TUTOR
-        )
-
-        # Create a user with the 'Student' role
-        self.student_user = User.objects.create_user(
-            username='@student_user',
-            password='testpassword123',
-            email='student_user@example.com',
-            first_name='Student',
-            last_name='User',
-            role=User.STUDENT
-        )
+        self.setup_student()
+        self.setup_tutor()
 
     def test_tutor_page_url(self):
         self.assertEqual(self.url, reverse('dashboard'))
 
     def test_tutor_access(self):
         """Test that a user with the 'Tutor' role can access the tutor page."""
-        self.client.login(username='@tutor_user', password='testpassword123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'tutor_page.html') 
 
     def test_non_tutor_redirect(self):
         """Test that a user without the 'Tutor' role is redirected to the home page."""
-        self.client.login(username='@student_user', password='testpassword123')
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('dashboard')) 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'student_dashboard.html')
@@ -51,11 +35,6 @@ class TutorPageTestCase(TestCase):
 
     def tearDown(self):
         # Remove test users to clean up after the test
-        """
-        self.admin_user.delete()
-        self.tutor_user.delete()
-        self.student_user.delete()
-        self.user.delete()"""
         User.objects.all().delete()
 
 

@@ -11,50 +11,39 @@ from tutorials.models import (
     ChangeRequest
 )
 from tutorials.forms import CancellationRequestForm, ChangeBookingForm, ChangeRequestForm
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
 
 User = get_user_model()
 
 
-class BookingFormsTest(TestCase):
+class BookingFormsTest(RoleSetupTest, StudentMixin, TutorMixin):
     def setUp(self):
-        # Create Programming Language and Subject
         self.language = ProgrammingLanguage.objects.create(name="Python")
         self.subject = Subject.objects.create(name="Mathematics", language=self.language)
-
-        # Create Users
-        self.student = User.objects.create_user(
-            username="student",
-            password="Password123",
-            email="student@example.com",
-            role="student"
-        )
-        self.tutor = User.objects.create_user(
-            username="tutor",
-            password="Password123",
-            email="tutor@example.com",
-            role="tutor"
-        )
+        self.setup_student()
+        self.setup_tutor()
 
         # Create Lessons
         self.scheduled_lesson = Lesson.objects.create(
-            student=self.student,
-            tutor=self.tutor,
+            student=self.student_user,
+            tutor=self.tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now() + timedelta(days=1),
             status=Lesson.STATUS_SCHEDULED
         )
         self.rescheduled_lesson = Lesson.objects.create(
-            student=self.student,
-            tutor=self.tutor,
+            student=self.student_user,
+            tutor=self.tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now() + timedelta(days=2),
             status=Lesson.STATUS_RESCHEDULED
         )
         self.completed_lesson = Lesson.objects.create(
-            student=self.student,
-            tutor=self.tutor,
+            student=self.student_user,
+            tutor=self.tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now() - timedelta(days=1),
@@ -69,7 +58,7 @@ class BookingFormsTest(TestCase):
             "lessons": [self.scheduled_lesson.id],
             "reason": "Need to cancel."
         }
-        form = CancellationRequestForm(data=form_data, user=self.student)
+        form = CancellationRequestForm(data=form_data, user=self.student_user)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["lessons"].count(), 1)
 
@@ -80,7 +69,7 @@ class BookingFormsTest(TestCase):
             "lessons": [],
             "reason": "No lessons selected."
         }
-        form = CancellationRequestForm(data=form_data, user=self.student)
+        form = CancellationRequestForm(data=form_data, user=self.student_user)
         self.assertIn("Please select at least one lesson to cancel.", form.errors["lessons"])
 
     def test_cancellation_form_valid_all(self):
@@ -89,7 +78,7 @@ class BookingFormsTest(TestCase):
             "request_type": ChangeBookingForm.REQUEST_ALL,
             "reason": "Cancel all lessons."
         }
-        form = CancellationRequestForm(data=form_data, user=self.tutor)
+        form = CancellationRequestForm(data=form_data, user=self.tutor_user)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["lessons"].count(), 2)  # Scheduled and Rescheduled
 
@@ -101,7 +90,7 @@ class BookingFormsTest(TestCase):
             "request_type": ChangeBookingForm.REQUEST_ALL,
             "reason": "Attempting to cancel all with no valid lessons."
         }
-        form = CancellationRequestForm(data=form_data, user=self.tutor)
+        form = CancellationRequestForm(data=form_data, user=self.tutor_user)
         self.assertIn("No valid lessons found to cancel.", form.non_field_errors())
 
     # ----- Tests for ChangeRequestForm -----
@@ -114,7 +103,7 @@ class BookingFormsTest(TestCase):
             "new_datetime": new_datetime.strftime('%Y-%m-%dT%H:%M'),
             "reason": "Need to reschedule."
         }
-        form = ChangeRequestForm(data=form_data, user=self.student)
+        form = ChangeRequestForm(data=form_data, user=self.student_user)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["lessons"].count(), 1)
         self.assertEqual(form.cleaned_data["new_datetime"], new_datetime)
@@ -128,7 +117,7 @@ class BookingFormsTest(TestCase):
             "new_datetime": new_datetime.strftime('%Y-%m-%dT%H:%M'),
             "reason": "No lessons selected."
         }
-        form = ChangeRequestForm(data=form_data, user=self.student)
+        form = ChangeRequestForm(data=form_data, user=self.student_user)
         self.assertFalse(form.is_valid())
         self.assertIn("Please select at least one lesson to change.", form.errors["lessons"])
 
@@ -141,5 +130,5 @@ class BookingFormsTest(TestCase):
             "new_datetime": past_datetime.strftime('%Y-%m-%dT%H:%M'),
             "reason": "Invalid datetime."
         }
-        form = ChangeRequestForm(data=form_data, user=self.student)
+        form = ChangeRequestForm(data=form_data, user=self.student_user)
         self.assertIn("The new date and time must be in the future.", form.errors["new_datetime"])

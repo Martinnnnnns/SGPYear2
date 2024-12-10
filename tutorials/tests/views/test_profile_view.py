@@ -1,27 +1,32 @@
 from django.contrib import messages
-from django.test import TestCase
 from django.urls import reverse
+from tutorials.constants import UserRoles
 from tutorials.forms import UserForm
 from tutorials.models import User
+from tutorials.tests.base import RoleSetupTest
 from tutorials.tests.helpers import reverse_with_next
+from tutorials.tests.mixins import AdminMixin, StudentMixin, TutorMixin
 from tutorials.views import ProfileUpdateView
 
-class ProfileViewTest(TestCase):
-    fixtures = [
-        'tutorials/tests/fixtures/default_user.json',
-        'tutorials/tests/fixtures/other_users.json'
-    ]
-
+class ProfileViewTest(RoleSetupTest, StudentMixin, TutorMixin, AdminMixin):
     def setUp(self):
-        self.user = User.objects.get(username='@johndoe')
         self.url = reverse('profile')
+        self.setup_student()
+        self.student_user.first_name = "John"
+        self.student_user.last_name = "Doe"
+        self.student_user.save()
+
+        self.setup_tutor()
+        self.setup_admin(
+
+        )
         self.form_input = {
             'first_name': 'John2',
             'last_name': 'Doe2',
             'username': '@johndoe2',
             'email': 'johndoe2@example.org',
-            'role': User.STUDENT
         }
+
         self.admin_form_input = {
             'first_name': 'bob',
             'last_name': 'bobby',
@@ -29,9 +34,8 @@ class ProfileViewTest(TestCase):
             'email': 'bobby@gmail.com',
             'new_password': 'Password123',
             'password_confirmation': 'Password123',
-            'role': User.ADMIN
-        }
-
+        }       
+ 
         self.tutor_form_input = {
             'first_name': 'angela',
             'last_name': 'fred',
@@ -39,7 +43,6 @@ class ProfileViewTest(TestCase):
             'email': 'angela@gmail.com',
             'new_password': 'Password123',
             'password_confirmation': 'Password123',
-            'role': User.TUTOR
         }
 
         self.student_form_input = {
@@ -49,24 +52,19 @@ class ProfileViewTest(TestCase):
             'email': 'liam@gmail.com',
             'new_password': 'Password123',
             'password_confirmation': 'Password123',
-            'role': User.STUDENT
         }
-        self.admin_user = User.objects.create_user(email="bobby@gmail.com", first_name="bob", last_name="bobby", username='@admin', password='Password123', role='admin')
-        self.tutor_user = User.objects.create_user(email="angela@gmail.com",first_name="angela", last_name="fred",username='@tutor', password='Password123', role='tutor')
-        self.student_user = User.objects.create_user(email="liam@gmail.com",first_name="liam", last_name="smith",username='@student', password='Password123', role='student')
-
 
     def test_profile_url(self):
         self.assertEqual(self.url, '/profile/')
 
     def test_get_profile(self):
-        self.client.login(username=self.user.username, password='Password123')
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'profile.html')
         form = response.context['form']
         self.assertTrue(isinstance(form, UserForm))
-        self.assertEqual(form.instance, self.user)
+        self.assertEqual(form.instance, self.student_user)
 
     def test_get_profile_redirects_when_not_logged_in(self):
         redirect_url = reverse_with_next('log_in', self.url)
@@ -74,7 +72,7 @@ class ProfileViewTest(TestCase):
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
 
     def test_unsuccesful_profile_update(self):
-        self.client.login(username=self.user.username, password='Password123')
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         self.form_input['username'] = 'BAD_USERNAME'
         before_count = User.objects.count()
         response = self.client.post(self.url, self.form_input)
@@ -85,15 +83,15 @@ class ProfileViewTest(TestCase):
         form = response.context['form']
         self.assertTrue(isinstance(form, UserForm))
         self.assertTrue(form.is_bound)
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.username, '@johndoe')
-        self.assertEqual(self.user.first_name, 'John')
-        self.assertEqual(self.user.last_name, 'Doe')
-        self.assertEqual(self.user.email, 'johndoe@example.org')
+        self.student_user.refresh_from_db()
+        self.assertEqual(self.student_user.username, '@student')
+        self.assertEqual(self.student_user.first_name, 'John')
+        self.assertEqual(self.student_user.last_name, 'Doe')
+        self.assertEqual(self.student_user.email, 'student@example.com')
 
     def test_unsuccessful_profile_update_due_to_duplicate_username(self):
-        self.client.login(username=self.user.username, password='Password123')
-        self.form_input['username'] = '@janedoe'
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
+        self.form_input['username'] = '@tutor'
         before_count = User.objects.count()
         response = self.client.post(self.url, self.form_input)
         after_count = User.objects.count()
@@ -103,11 +101,11 @@ class ProfileViewTest(TestCase):
         form = response.context['form']
         self.assertTrue(isinstance(form, UserForm))
         self.assertTrue(form.is_bound)
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.username, '@johndoe')
-        self.assertEqual(self.user.first_name, 'John')
-        self.assertEqual(self.user.last_name, 'Doe')
-        self.assertEqual(self.user.email, 'johndoe@example.org')
+        self.student_user.refresh_from_db()
+        self.assertEqual(self.student_user.username, '@student')
+        self.assertEqual(self.student_user.first_name, 'John')
+        self.assertEqual(self.student_user.last_name, 'Doe')
+        self.assertEqual(self.student_user.email, 'student@example.com')
 
     def test_post_profile_redirects_when_not_logged_in(self):
         redirect_url = reverse_with_next('log_in', self.url)
@@ -115,7 +113,7 @@ class ProfileViewTest(TestCase):
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
         
     def test_successful_profile_update_admin(self):
-        self.client.login(username=self.admin_user.username, password='Password123')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         before_count = User.objects.count()
         response = self.client.post(self.url, self.admin_form_input, follow=True)
         after_count = User.objects.count()
@@ -133,10 +131,10 @@ class ProfileViewTest(TestCase):
         self.assertEqual(self.admin_user.first_name, 'bob')
         self.assertEqual(self.admin_user.last_name, 'bobby')
         self.assertEqual(self.admin_user.email, 'bobby@gmail.com')
-        self.assertEqual(self.admin_user.role, 'admin')
+        self.assertEqual(self.admin_user.current_active_role.name, UserRoles.ADMIN)
     
     def test_successful_profile_update_tutor(self):
-        self.client.login(username=self.tutor_user.username, password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         before_count = User.objects.count()
         response = self.client.post(self.url, self.tutor_form_input, follow=True)
         after_count = User.objects.count()
@@ -154,10 +152,10 @@ class ProfileViewTest(TestCase):
         self.assertEqual(self.tutor_user.first_name, 'angela')
         self.assertEqual(self.tutor_user.last_name, 'fred')
         self.assertEqual(self.tutor_user.email, 'angela@gmail.com')
-        self.assertEqual(self.tutor_user.role, 'tutor')
+        self.assertEqual(self.tutor_user.current_active_role.name, UserRoles.TUTOR)
     
     def test_successful_profile_update_student(self):
-        self.client.login(username=self.student_user.username, password='Password123')
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         before_count = User.objects.count()
         response = self.client.post(self.url, self.student_form_input, follow=True)
         after_count = User.objects.count()
@@ -175,7 +173,7 @@ class ProfileViewTest(TestCase):
         self.assertEqual(self.student_user.first_name, 'liam')
         self.assertEqual(self.student_user.last_name, 'smith')
         self.assertEqual(self.student_user.email, 'liam@gmail.com')
-        self.assertEqual(self.student_user.role, 'student')
+        self.assertEqual(self.student_user.current_active_role.name, UserRoles.STUDENT)
   
     def test_get_success_url_for_admin(self):
         view = ProfileUpdateView()

@@ -5,7 +5,6 @@ from tutorials.models import Invoice
 User = get_user_model()
 
 class InvoiceModelTest(TestCase):
-
     def setUp(self):
         # Create a test user
         self.user = User.objects.create_user(

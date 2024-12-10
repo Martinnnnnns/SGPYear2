@@ -1,28 +1,16 @@
-from django.test import TestCase, Client
+from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
-from datetime import datetime, timedelta
-from tutorials.models import User, TutorAvailability
+from datetime import timedelta
+from tutorials.models import TutorAvailability
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
 
-class TestScheduleSessions(TestCase):
+class TestScheduleSessions(RoleSetupTest, StudentMixin, TutorMixin):
     def setUp(self):
         self.client = Client()
-        self.tutor = User.objects.create_user(
-            username='@tutor1',
-            first_name='Test',
-            last_name='Tutor',
-            email='tutor@test.com',
-            password='Password123',
-            role='tutor'
-        )
-        self.student = User.objects.create_user(
-            username='@student1',
-            first_name='Test',
-            last_name='Student',
-            email='student@test.com',
-            password='Password123',
-            role='student'
-        )
+        self.setup_tutor()
+        self.setup_student()
         self.tomorrow = timezone.now().date() + timedelta(days=1)
         self.url = reverse('schedule_sessions')
 
@@ -34,14 +22,14 @@ class TestScheduleSessions(TestCase):
 
     def test_student_cannot_access_page(self):
         """Test that students are redirected away from the scheduling page"""
-        self.client.login(username='@student1', password='Password123')
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, '/')  
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
+        response = self.client.get(self.url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed("access_denied.html")  
 
     def test_add_availability_slot(self):
         """Test adding a single availability slot"""
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         data = {
             'date': self.tomorrow,
             'start_time': '10:00',
@@ -55,13 +43,13 @@ class TestScheduleSessions(TestCase):
         
         # Verify slot details
         slot = TutorAvailability.objects.first()
-        self.assertEqual(slot.tutor, self.tutor)
+        self.assertEqual(slot.tutor, self.tutor_user)
         self.assertEqual(slot.start_time.strftime('%H:%M'), '10:00')
         self.assertEqual(slot.end_time.strftime('%H:%M'), '11:00')
 
     def test_add_weekly_recurring_availability(self):
         """Test adding weekly recurring availability slots"""
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         next_week = self.tomorrow + timedelta(days=7)
         data = {
             'date': self.tomorrow,
@@ -76,7 +64,7 @@ class TestScheduleSessions(TestCase):
 
     def test_add_biweekly_recurring_availability(self):
         """Test adding biweekly recurring availability slots"""
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         four_weeks_later = self.tomorrow + timedelta(days=28)
         data = {
             'date': self.tomorrow,
@@ -91,7 +79,7 @@ class TestScheduleSessions(TestCase):
 
     def test_calendar_navigation(self):
         """Test navigating between different months in the calendar"""
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         next_month = timezone.now() + timedelta(days=32)
         response = self.client.get(f"{self.url}?month={next_month.month}&year={next_month.year}")
         self.assertEqual(response.status_code, 200)
@@ -99,7 +87,7 @@ class TestScheduleSessions(TestCase):
 
     def test_context_data(self):
         """Test that all required context data is present"""
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(self.url)
         self.assertIn('calendar', response.context)
         self.assertIn('month_name', response.context)

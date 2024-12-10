@@ -171,7 +171,7 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
                 lesson_datetime=lesson_request.start_datetime
             ).values_list('tutor', flat=True)
             free_tutors = User.objects.filter(
-                role='tutor'
+                roles_contain='tutor'
             ).exclude(id__in=busy_tutors)
             if free_tutors.exists():
                 tutor = free_tutors.first()
@@ -614,7 +614,7 @@ class ScheduleSessionsView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         })
         return context
 
-class DeleteAvailabilityView(LoginRequiredMixin, View, RoleRequiredMixin):
+class DeleteAvailabilityView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = [UserRoles.TUTOR]
 
     def get(self, request, *args, **kwargs):
@@ -626,7 +626,7 @@ class DeleteAvailabilityView(LoginRequiredMixin, View, RoleRequiredMixin):
         request.session['success_message'] = "Availability slot deleted successfully"
         return redirect('schedule_sessions')
 
-class DeleteAllAvailabilityView(LoginRequiredMixin, View, RoleRequiredMixin):
+class DeleteAllAvailabilityView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = [UserRoles.TUTOR]
     def get(self, request, *args, **kwargs):
         return redirect('schedule_sessions')
@@ -636,7 +636,7 @@ class DeleteAllAvailabilityView(LoginRequiredMixin, View, RoleRequiredMixin):
         request.session['success_message'] = "All availability slots deleted successfully"
         return redirect('schedule_sessions')
 
-class ConfirmDeleteAvailabilityView(LoginRequiredMixin, TemplateView, RoleRequiredMixin):
+class ConfirmDeleteAvailabilityView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     template_name = 'confirm_delete_availability.html'
     required_role = [UserRoles.TUTOR]
 
@@ -653,7 +653,7 @@ class ConfirmDeleteAvailabilityView(LoginRequiredMixin, TemplateView, RoleRequir
         messages.success(request, "Availability slot deleted successfully.")
         return redirect('schedule_sessions')
 
-class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, TemplateView, RoleRequiredMixin):
+class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     template_name = 'confirm_delete_all_availabilities.html'
     required_role = [UserRoles.TUTOR]
 
@@ -668,7 +668,7 @@ class ConfirmDeleteAllAvailabilitiesView(LoginRequiredMixin, TemplateView, RoleR
         messages.success(request, "All availability slots deleted successfully.")
         return redirect('schedule_sessions')
 
-class GenerateReportView(LoginRequiredMixin, View, RoleRequiredMixin):
+class GenerateReportView(LoginRequiredMixin, RoleRequiredMixin, View):
     """View for generating tutor reports."""
     required_role = [UserRoles.TUTOR]
 
@@ -720,7 +720,7 @@ class TutorStudentsListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
             lessons_as_student__tutor=self.request.user
         ).distinct()
 
-class StudentProfileDetailView(LoginRequiredMixin, DetailView, RoleRequiredMixin):
+class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
     template_name = 'student_profile_detail.html'
     required_role = [UserRoles.TUTOR]
     model = User

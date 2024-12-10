@@ -198,6 +198,22 @@ class LessonRequest(models.Model):
         if LessonRequest.objects.filter(user=self.user, start_datetime=self.start_datetime).exists():
             raise ValidationError("A lesson request for this time already exists.")
 
+    def is_future_datetime(self, datetime_value):
+        """Check if the datetime is in the future."""
+        return datetime_value > datetime.now()
+
+    def is_end_after_start(self, start_datetime, end_datetime):
+        """Check that the end time is after the start time."""
+        return end_datetime > start_datetime
+
+    def is_minimum_duration(self, start_datetime, end_datetime):
+        """Check that the duration is at least 30 minutes."""
+        return end_datetime - start_datetime >= timedelta(minutes=30)
+
+    def is_subject_language_matching(self, subject, language):
+        """Check that the subject belongs to the correct language."""
+        return subject.language == language
+
     def is_subject_language_matching(self, subject, language):
         """Check that the subject belongs to the correct language."""
         return subject.language == language
