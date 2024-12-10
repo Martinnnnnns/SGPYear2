@@ -1,43 +1,24 @@
 from django.urls import reverse
-from django.test import TestCase
-from tutorials.models import User  # Import your custom User model here
 from django.contrib.messages import get_messages
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import AdminMixin, StudentMixin
 
-
-class AdminViewProfileTests(TestCase):
+class AdminViewProfileTests(RoleSetupTest, StudentMixin, AdminMixin):
     
     def setUp(self):
-        # Create an admin user
-        self.admin_user = User.objects.create_user(
-            username='@admin',
-            password='adminpass',
-            email='admin@example.com',
-            first_name='Admin',
-            last_name='User',
-            role='admin'  
-        )
-
-        # Create a regular user
-        self.student_user = User.objects.create_user(
-            username='@student',
-            password='studentpass',
-            email='student@example.com',
-            first_name='Student',
-            last_name='User'
-        )
+        self.setup_admin()
+        self.setup_student()
 
     def test_admin_can_view_user_profile(self):
         """Test admin can view a user's profile."""
-        self.client.login(username='@admin', password='adminpass')  # Log in as admin
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
 
-        # URL for viewing the student's profile
         url = reverse('admin_view_profile', kwargs={'email': self.student_user.email})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'student_profile.html')
 
-        # Check that the profile information is rendered correctly
         self.assertContains(response, self.student_user.first_name)
         self.assertContains(response, self.student_user.last_name)
         self.assertContains(response, self.student_user.email)
@@ -45,9 +26,8 @@ class AdminViewProfileTests(TestCase):
 
     def test_non_admin_cannot_view_user_profile(self):
         """Test that a non-admin user cannot view a user's profile."""
-        self.client.login(username='@student', password='studentpass')  # Log in as a non-admin
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)  
 
-        # URL for viewing the admin's profile
         url = reverse('admin_view_profile', kwargs={'email': self.admin_user.email})
         response = self.client.get(url)
 

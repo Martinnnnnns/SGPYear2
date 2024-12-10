@@ -1,24 +1,19 @@
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from tutorials.models import Lesson, Invoice, Subject, ProgrammingLanguage, LessonRequest
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
 
 User = get_user_model()
 
-class StudentDashboardViewTest(TestCase):
+class StudentDashboardViewTest(RoleSetupTest, StudentMixin, TutorMixin):
     def setUp(self):
-        # Create a test user
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='password123',
-            email='testuser@example.com',
-            first_name='John',
-            last_name='Doe'
-        )
+        self.setup_student()
+        self.setup_tutor()
 
-        self.client.login(username='testuser', password='password123')
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         self.language = ProgrammingLanguage.objects.create(name="Python")
 
         self.subject = Subject.objects.create(
@@ -26,17 +21,16 @@ class StudentDashboardViewTest(TestCase):
             language=self.language
         )
 
-        # Create some lessons with valid relationships and default datetime
         self.lesson1 = Lesson.objects.create(
-            student=self.user,
-            tutor=self.user,  # Assuming the same user can be a tutor for test purposes
+            student=self.student_user,
+            tutor=self.tutor_user,  
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now()  # Providing a default datetime
         )
         self.lesson2 = Lesson.objects.create(
-            student=self.user,
-            tutor=self.user,
+            student=self.student_user,
+            tutor=self.tutor_user,
             language=self.language,
             lesson_datetime=timezone.now()  # Providing a default datetime
         )  # No subject (general lesson)
@@ -45,18 +39,18 @@ class StudentDashboardViewTest(TestCase):
         self.invoice1 = Invoice.objects.create(
             amount=100,
             date='2024-11-15',
-            student=self.user,
+            student=self.student_user,
             status='paid'
         )
         self.invoice2 = Invoice.objects.create(
             amount=150,
             date='2024-11-16',
-            student=self.user,
+            student=self.student_user,
             status='unpaid'
         )
 
         self.lesson_request = LessonRequest(
-            user=self.user,
+            user=self.student_user,
             start_datetime=timezone.now() ,
             end_datetime=timezone.now() + timezone.timedelta(minutes=45),
             language=self.language,

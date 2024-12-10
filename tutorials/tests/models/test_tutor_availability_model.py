@@ -1,45 +1,39 @@
-from django.test import TestCase
 from django.utils import timezone
-from datetime import datetime, timedelta
-from tutorials.models import User, TutorAvailability
+from datetime import timedelta
+from tutorials.models import TutorAvailability
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import TutorMixin
 
-class TestTutorAvailability(TestCase):
+class TestTutorAvailability(RoleSetupTest, TutorMixin):
     def setUp(self):
-        self.tutor = User.objects.create_user(
-            username='@tutor1',
-            first_name='Test',
-            last_name='Tutor',
-            email='tutor@test.com',
-            password='Password123',
-            role='tutor'
-        )
+        self.setup_tutor()
         self.tomorrow = timezone.now().date() + timedelta(days=1)
 
     def test_create_availability(self):
         availability = TutorAvailability.objects.create(
-            tutor=self.tutor,
+            tutor=self.tutor_user,
             date=self.tomorrow,
             start_time='10:00',
             end_time='11:00'
         )
         self.assertEqual(TutorAvailability.objects.count(), 1)
-        self.assertEqual(availability.tutor, self.tutor)
+        self.assertEqual(availability.tutor, self.tutor_user)
 
     def test_ordering(self):
         TutorAvailability.objects.create(
-            tutor=self.tutor,
+            tutor=self.tutor_user,
             date=self.tomorrow + timedelta(days=1),
             start_time='10:00',
             end_time='11:00'
         )
         TutorAvailability.objects.create(
-            tutor=self.tutor,
+            tutor=self.tutor_user,
             date=self.tomorrow,
             start_time='11:00',
             end_time='12:00'
         )
         TutorAvailability.objects.create(
-            tutor=self.tutor,
+            tutor=self.tutor_user,
             date=self.tomorrow,
             start_time='10:00',
             end_time='11:00'
@@ -54,7 +48,7 @@ class TestTutorAvailability(TestCase):
     def test_recurring_weekly_creation(self):
         next_week = self.tomorrow + timedelta(days=7)
         availability = TutorAvailability.objects.create(
-            tutor=self.tutor,
+            tutor=self.tutor_user,
             date=self.tomorrow,
             start_time='10:00',
             end_time='11:00',
@@ -67,7 +61,7 @@ class TestTutorAvailability(TestCase):
     def test_recurring_biweekly_creation(self):
         two_weeks_later = self.tomorrow + timedelta(days=14)
         availability = TutorAvailability.objects.create(
-            tutor=self.tutor,
+            tutor=self.tutor_user,
             date=self.tomorrow,
             start_time='10:00',
             end_time='11:00',

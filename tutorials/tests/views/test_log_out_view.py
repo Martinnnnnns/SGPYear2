@@ -3,21 +3,21 @@ from django.test import TestCase
 from django.urls import reverse
 from tutorials.models import User
 from tutorials.tests.helpers import LogInTester
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin
 
-class LogOutViewTestCase(TestCase, LogInTester):
+class LogOutViewTestCase(RoleSetupTest, StudentMixin, LogInTester):
     """Tests of the log out view."""
 
-    fixtures = ['tutorials/tests/fixtures/default_user.json']
-
     def setUp(self):
+        self.setup_student()
         self.url = reverse('log_out')
-        self.user = User.objects.get(username='@johndoe')
 
     def test_log_out_url(self):
         self.assertEqual(self.url,'/log_out/')
 
     def test_get_log_out(self):
-        self.client.login(username='@johndoe', password='Password123')
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         self.assertTrue(self._is_logged_in())
         response = self.client.get(self.url, follow=True)
         response_url = reverse('home')

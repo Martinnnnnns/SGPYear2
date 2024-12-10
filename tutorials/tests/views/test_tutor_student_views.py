@@ -1,42 +1,27 @@
-from django.test import TestCase, Client
+from django.test import Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from tutorials.models import Lesson, Subject, ProgrammingLanguage
+from tutorials.models import Lesson, Subject, ProgrammingLanguage, User
 from django.utils.timezone import now, timedelta
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
 
-class TutorStudentViewsTest(TestCase):
+class TutorStudentViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
     def setUp(self):
         self.client = Client()
-        User = get_user_model()
-        
-        self.tutor = User.objects.create_user(
-            username='@tutor_test',
-            password='Password123',
-            email='tutor@test.com',
-            first_name='Test',
-            last_name='Tutor',
-            role='tutor'
-        )
-        self.tutor.is_staff = True
-        self.tutor.save()
-        
-        self.student = User.objects.create_user(
-            username='@student_test',
-            password='Password123',
-            email='student@test.com',
-            first_name='Test',
-            last_name='Student',
-            role='student' 
-        )
-        
+        self.setup_student()
+        self.setup_tutor()
+  
         self.other_student = User.objects.create_user(
             username='@other_student',
             password='Password123',
             email='other@test.com',
             first_name='Other',
             last_name='Student',
-            role='student' 
         )
+        self.other_student.roles.set([self.student_role])
+        self.other_student.current_active_role = self.student_role
+        self.other_student.save()
         
         self.language = ProgrammingLanguage.objects.create(name='Python')
         
@@ -46,16 +31,16 @@ class TutorStudentViewsTest(TestCase):
         )
         
         self.future_lesson = Lesson.objects.create(
-            tutor=self.tutor,
-            student=self.student,
+            tutor=self.tutor_user,
+            student=self.student_user,
             subject=self.subject,
             language=self.language,
             lesson_datetime=now() + timedelta(days=1)
         )
         
         self.past_lesson = Lesson.objects.create(
-            tutor=self.tutor,
-            student=self.student,
+            tutor=self.tutor_user,
+            student=self.student_user,
             subject=self.subject,
             language=self.language,
             lesson_datetime=now() - timedelta(days=1)
@@ -71,7 +56,7 @@ class TutorStudentViewsTest(TestCase):
         self.assertEqual(response.url, expected_url)
 
     def test_tutor_students_list_view_as_tutor(self):
-        self.client.login(username='@tutor_test', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('tutor_students_list'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'tutor_students_list.html')
@@ -84,17 +69,17 @@ class TutorStudentViewsTest(TestCase):
         self.assertEqual(response.url, expected_url)
 
     def test_student_profile_detail_as_tutor(self):
-        self.client.login(username='@tutor_test', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(
-            reverse('student_profile_detail', kwargs={'student_id': self.student.id})
+            reverse('student_profile_detail', kwargs={'student_id': self.student_user.id})
         )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'student_profile_detail.html')
-        self.assertContains(response, self.student.email)
+        self.assertContains(response, self.student_user.email)
         self.assertContains(response, 'Python')
 
     def test_tutor_cannot_view_non_student_profile(self):
-        self.client.login(username='@tutor_test', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(
             reverse('student_profile_detail', kwargs={'student_id': self.other_student.id})
         )
@@ -135,9 +120,9 @@ class TutorStudentViewsTest(TestCase):
         self.assertEqual(response.url, '/access_denied')
 
     def test_upcoming_and_past_lessons_displayed(self):
-        self.client.login(username='@tutor_test', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(
-            reverse('student_profile_detail', kwargs={'student_id': self.student.id})
+            reverse('student_profile_detail', kwargs={'student_id': self.student_user.id})
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Upcoming Lessons')

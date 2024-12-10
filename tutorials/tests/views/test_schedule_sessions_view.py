@@ -1,32 +1,21 @@
-from django.test import TestCase
 from django.urls import reverse
 from tutorials.models import User
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
 
-class ScheduleSessionsViewTests(TestCase):
+class ScheduleSessionsViewTests(RoleSetupTest, TutorMixin, StudentMixin):
     def setUp(self):
 
         self.url = reverse('schedule_sessions')
-        # Create a tutor user
-        self.tutor_user = User.objects.create_user(
-            username='@tutor_user',
-            password='testpassword123',
-            email='tutor_user@example.com',
-            role='tutor'
-        )
-        # Create a student user
-        self.student_user = User.objects.create_user(
-            username='@student_user',
-            password='testpassword123',
-            email='student_user@example.com',
-            role='student'
-        )
+        self.setup_tutor()
+        self.setup_student()
 
     def test_schedule_sessions_url(self):
         self.assertEqual(self.url, reverse('schedule_sessions'))
 
     def test_tutor_access_schedule_sessions(self):
         """Test that a tutor can access the schedule sessions page."""
-        self.client.login(username='@tutor_user', password='testpassword123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('schedule_sessions'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'schedule_sessions.html')

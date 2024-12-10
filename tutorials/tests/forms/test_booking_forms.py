@@ -15,7 +15,6 @@ from tutorials.forms import CancellationRequestForm, ChangeRequestForm
 User = get_user_model()
 class BookingFormsTest(TestCase):
     def setUp(self):
-        # Create Programming Language and Subject
         self.language = ProgrammingLanguage.objects.create(name="Python")
         self.subject = Subject.objects.create(name="Mathematics", language=self.language)
 

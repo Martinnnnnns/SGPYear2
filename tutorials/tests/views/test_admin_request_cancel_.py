@@ -1,4 +1,3 @@
-from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from tutorials.models import (
@@ -12,49 +11,37 @@ from tutorials.models import (
 from django.utils import timezone
 from datetime import timedelta
 
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import AdminMixin, StudentMixin, TutorMixin
+
 User = get_user_model()
 
 
-class AdminReviewRequestsViewTest(TestCase):
+class AdminReviewRequestsViewTest(RoleSetupTest, AdminMixin, StudentMixin, TutorMixin):
     def setUp(self):
-        self.client = Client()
-        self.admin_user = User.objects.create_user(
-            username='admin_user',
-            password='adminpass',
-            email='admin_user@example.com',
-            role='admin'
-        )
-        self.student = User.objects.create_user(
-            username='student_user',
-            password='studentpass',
-            email='student_user@example.com',
-            role='student'
-        )
-        self.tutor = User.objects.create_user(
-            username='tutor_user',
-            password='tutorpass',
-            email='tutor_user@example.com',
-            role='tutor'
-        )
+        self.setup_admin()
+        self.setup_tutor()
+        self.setup_student()
+
         self.language = ProgrammingLanguage.objects.create(name='Ruby')
         self.subject = Subject.objects.create(name='Rails', language=self.language)
         self.lesson = Lesson.objects.create(
-            student=self.student,
-            tutor=self.tutor,
+            student=self.student_user,
+            tutor=self.tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=timezone.now() + timedelta(days=5),
             status=Lesson.STATUS_SCHEDULED
         )
         self.cancellation_request = CancellationRequest.objects.create(
-            user=self.student,
+            user=self.student_user,
             request_type=CancellationRequest.REQUEST_SINGLE,
             reason='Not needed anymore',
             status=CancellationRequest.STATUS_PENDING
         )
         self.cancellation_request.lessons.add(self.lesson)
         self.change_request = ChangeRequest.objects.create(
-            user=self.student,
+            user=self.student_user,
             new_datetime=timezone.now() + timedelta(days=6),
             reason='Need to reschedule',
             status=ChangeRequest.STATUS_PENDING
@@ -66,12 +53,12 @@ class AdminReviewRequestsViewTest(TestCase):
         response = self.client.get(reverse('admin_review_requests'))
         self.assertRedirects(response, '/log_in/?next=/admin-review/')
         # Login as non-admin
-        self.client.login(username='student_user', password='studentpass')
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('admin_review_requests'))
         self.assertEqual(response.status_code, 302)  # Assuming 403 Forbidden for unauthorized access
 
     def test_admin_can_view_pending_requests(self):
-        self.client.login(username='admin_user', password='adminpass')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('admin_review_requests'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Pending Cancellation Requests')
@@ -80,7 +67,7 @@ class AdminReviewRequestsViewTest(TestCase):
         self.assertContains(response, self.change_request.reason)
 
     def test_admin_approves_cancellation_request(self):
-        self.client.login(username='admin_user', password='adminpass')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('admin_review_requests')
         data = {
             'request_id': self.cancellation_request.id,
@@ -100,7 +87,7 @@ class AdminReviewRequestsViewTest(TestCase):
         self.assertEqual(self.cancellation_request.admin_comment, 'Approved for cancellation.')
 
     def test_admin_rejects_cancellation_request(self):
-        self.client.login(username='admin_user', password='adminpass')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('admin_review_requests')
         data = {
             'request_id': self.cancellation_request.id,
@@ -122,7 +109,7 @@ class AdminReviewRequestsViewTest(TestCase):
     def test_admin_approves_change_request_with_availability(self):
         # Set tutor availability
         TutorAvailability.objects.create(
-            tutor=self.tutor,
+            tutor=self.tutor_user,
             date=self.change_request.new_datetime.date(),
             start_time=(self.change_request.new_datetime - timedelta(hours=1)).time(),
             end_time=(self.change_request.new_datetime + timedelta(hours=1)).time()
@@ -148,7 +135,7 @@ class AdminReviewRequestsViewTest(TestCase):
         self.assertEqual(self.change_request.admin_comment, 'Change request approved.')
 
     def test_admin_rejects_change_request(self):
-        self.client.login(username='admin_user', password='adminpass')
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('admin_review_requests')
         data = {
             'request_id': self.change_request.id,

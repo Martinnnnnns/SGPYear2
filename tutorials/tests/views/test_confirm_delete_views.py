@@ -1,22 +1,16 @@
-from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 from tutorials.models import User, TutorAvailability
 from django.contrib.messages import get_messages
 
-class TestConfirmDeleteViews(TestCase):
-    def setUp(self):
-        self.client = Client()
-        
-        self.tutor = User.objects.create_user(
-            username='@tutor1',
-            first_name='Test',
-            last_name='Tutor',
-            email='tutor@test.com',
-            password='Password123',
-            role='tutor'
-        )
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
+
+class TestConfirmDeleteViews(RoleSetupTest, StudentMixin, TutorMixin):
+    def setUp(self):        
+        self.setup_tutor()
+        self.setup_student()
         
         self.other_tutor = User.objects.create_user(
             username='@tutor2',
@@ -24,21 +18,15 @@ class TestConfirmDeleteViews(TestCase):
             last_name='Tutor',
             email='other@test.com',
             password='Password123',
-            role='tutor'
         )
 
-        self.student = User.objects.create_user(
-            username='@student1',
-            first_name='Test',
-            last_name='Student',
-            email='student@test.com',
-            password='Password123',
-            role='student'
-        )
+        self.other_tutor.roles.set([self.tutor_role])
+        self.other_tutor.current_active_role = self.tutor_role
+        self.other_tutor.save()
 
         self.tomorrow = timezone.now().date() + timedelta(days=1)
         self.test_slot = TutorAvailability.objects.create(
-            tutor=self.tutor,
+            tutor=self.tutor_user,
             date=self.tomorrow,
             start_time='10:00',
             end_time='11:00'
@@ -69,7 +57,7 @@ class TestConfirmDeleteViews(TestCase):
 
     def test_confirm_delete_post_request(self):
         """Test that POST request deletes the slot"""
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('confirm_delete_availability', args=[self.test_slot.id])
         response = self.client.post(url)
         messages = list(get_messages(response.wsgi_request))
@@ -82,7 +70,7 @@ class TestConfirmDeleteViews(TestCase):
 
     def test_cannot_delete_other_tutor_slot(self):
         """Test that tutor cannot delete another tutor's slot"""
-        self.client.login(username='@tutor2', password='Password123')
+        self.client.login(username=self.other_tutor.username, password=RoleSetupTest.PASSWORD)
         url = reverse('confirm_delete_availability', args=[self.test_slot.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
@@ -107,7 +95,7 @@ class TestConfirmDeleteViews(TestCase):
         """Test response when no slots exist to delete"""
         TutorAvailability.objects.all().delete()
         
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('confirm_delete_all_availabilities')
         response = self.client.get(url)
         messages = list(get_messages(response.wsgi_request))
@@ -126,7 +114,7 @@ class TestConfirmDeleteViews(TestCase):
             end_time='13:00'
         )
         
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('confirm_delete_all_availabilities')
         response = self.client.post(url)
         

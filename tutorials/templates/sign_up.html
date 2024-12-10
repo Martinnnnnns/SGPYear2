@@ -1,4 +1,9 @@
 {% extends 'base_content.html' %}
+
+{% block extra_imports %}
+{% load crispy_forms_tags %}
+{% endblock %}
+
 {% block content %}
 <div class="container">
   <div class="row">
@@ -6,7 +11,7 @@
       <h1>Sign up</h1>
       <form action="{% url 'sign_up' %}" method="post">
         {% csrf_token %}
-        {% include 'partials/bootstrap_form.html' with form=form %}
+        {{ form | crispy }}  <!-- Render the form using the crispy filter -->
         <input type="submit" value="Sign up" class="btn btn-primary">
       </form>
     </div>

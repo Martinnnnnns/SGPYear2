@@ -4,9 +4,10 @@ from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from .models import CancellationRequest, ChangeRequest, Lesson, User, ProgrammingLanguage, Subject, LessonRequest, TutorAvailability
+from .models import CancellationRequest, ChangeRequest, Lesson, User, ProgrammingLanguage, Subject, LessonRequest, TutorAvailability, Role
 from datetime import datetime, timedelta
 from django.db import models
+from tutorials.constants import UserRoles
 
 class LogInForm(forms.Form):
     """Form enabling registered users to log in."""
@@ -138,9 +139,7 @@ class AdminAddBookingForm(forms.ModelForm):
 
 class UserForm(forms.ModelForm):
     """Form to update user profiles."""
-    
     class Meta:
-        """Form options."""
         model = User
         fields = ['first_name', 'last_name', 'username', 'email', 'role']
         
@@ -225,31 +224,48 @@ class PasswordForm(NewPasswordMixin):
 
 class SignUpForm(NewPasswordMixin, forms.ModelForm):
     """Form enabling unregistered users to sign up."""
-    
-    class Meta:
-        """Form options."""
-        model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'role']
 
-    def save(self):
+    roles = forms.ModelMultipleChoiceField(
+        queryset=Role.objects.exclude(name=UserRoles.ADMIN),  #Exclude "admin" from selectable roles
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        required=True,
+        help_text="Select one or more roles for the user."
+    )
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'username', 'email', "roles"]
+
+    def clean_roles(self):
+        """Ensure at least one role is selected."""
+        roles = self.cleaned_data.get('roles')
+        if not roles:
+            raise self.add_error("You must select at least one role.")
+        return roles
+
+
+    def save(self, commit=True):
         """Create a new user."""
-        super().save(commit=False)
         user = User.objects.create_user(
             self.cleaned_data.get('username'),
             first_name=self.cleaned_data.get('first_name'),
             last_name=self.cleaned_data.get('last_name'),
             email=self.cleaned_data.get('email'),
             password=self.cleaned_data.get('new_password'),
-            role=self.cleaned_data.get('role'),
         )
+
+        roles = self.cleaned_data.get('roles')
+        user.roles.set(roles)
+
+        if commit:
+            user.save()
+
         return user
-    
 
 class LessonRequestForm(forms.Form):
     """Form for student lesson requests."""
     date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
 
-    #Time fields for start and end times with manual 30-minute intervals
     TIME_CHOICES = [
         (f"{hour:02}:{minute:02}", f"{hour:02}:{minute:02}")
         for hour in range(24)
@@ -275,7 +291,9 @@ class LessonRequestForm(forms.Form):
         start_datetime = datetime.combine(lesson_date, start_time.time())
         end_datetime = datetime.combine(lesson_date, end_time.time())
 
-        #Add start and end datetime to cleaned_data
+        if start_datetime >= end_datetime:
+            raise ValidationError("End time must be after start time.")
+
         cleaned_data['start_datetime'] = start_datetime
         cleaned_data['end_datetime'] = end_datetime
         return cleaned_data
@@ -511,6 +529,45 @@ class ChangeBookingForm(forms.Form):
         required=False,
         label="Reason for Change"
     )
+
+    class Meta:
+        model = ChangeRequest
+        fields = ('request_type', 'lessons', 'new_datetime', 'reason')
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if self.user.current_active_role.name == UserRoles.TUTOR:
+            self.fields['lessons'].queryset = Lesson.objects.filter(
+                tutor=self.user,
+                status=Lesson.STATUS_SCHEDULED
+            )
+        elif self.user.current_active_role.name == UserRoles.STUDENT:
+            self.fields['lessons'].queryset = Lesson.objects.filter(
+                student=self.user,
+                status=Lesson.STATUS_SCHEDULED
+            )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        request_type = cleaned_data.get('request_type')
+        lessons = cleaned_data.get('lessons')
+        new_datetime = cleaned_data.get('new_datetime')
+
+        if request_type == self.REQUEST_SINGLE and not lessons:
+            raise forms.ValidationError('Please select at least one lesson to change.')
+
+        if request_type == self.REQUEST_ALL:
+            if self.user.current_active_role.name == UserRoles.TUTOR:
+                cleaned_data['lessons'] = Lesson.objects.filter(
+                    tutor=self.user,
+                    status=Lesson.STATUS_SCHEDULED
+                )
+            elif self.user.current_active_role.name == UserRoles.STUDENT:
+                cleaned_data['lessons'] = Lesson.objects.filter(
+                    student=self.user,
+                    status=Lesson.STATUS_SCHEDULED
+                )
 
     def clean_new_datetime(self):
         new_datetime = self.cleaned_data.get('new_datetime')

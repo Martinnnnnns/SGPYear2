@@ -1,5 +1,9 @@
 {% extends 'base_content.html' %}
 
+{% block extra_imports %}
+{% load crispy_forms_tags %}
+{% endblock %}
+
 {% block content %}
 <div class="container mt-3">
   <div class="row">
@@ -7,7 +11,8 @@
       <h1>Edit profile</h1>
       <form action="{% url 'profile' %}" method="post">
         {% csrf_token %}
-        {% include 'partials/bootstrap_form.html' with form=form %}
+        {%comment %}{% include 'partials/bootstrap_form.html' with form=form %}{%endcomment %}
+        {{form | crispy}}
         <input type="submit" value="Update" class="btn btn-primary">
       </form>
     </div>

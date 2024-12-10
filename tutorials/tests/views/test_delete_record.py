@@ -1,36 +1,21 @@
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.test import TestCase
-from tutorials.models import User  # Import your custom User model here
 from tutorials.models import Lesson  # Adjust this import to where your Lesson model is defined
 from django.contrib.messages import get_messages
 from tutorials.models import ProgrammingLanguage, Subject
-from django.utils import timezone
 
-class DeleteBookingViewTests(TestCase):
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import AdminMixin, StudentMixin
+
+class DeleteBookingViewTests(RoleSetupTest, AdminMixin, StudentMixin):
     
     def setUp(self):
-        # Create a superuser (admin)
-        self.admin_user = User.objects.create_user(
-            username='@admin',
-            password='adminpass',
-            email='admin@example.com',
-            role='admin'
-        )
-        
-        # Create a regular student user with unique email
-        self.student_user = User.objects.create_user(
-            username='@student',
-            password='studentpass',
-            email='student@example.com'
-        )
+        self.setup_admin()
+        self.setup_student()
 
-        # Create a programming language object
         self.language = ProgrammingLanguage.objects.create(name='Python') 
-        
-        # Create a subject object
         self.subject = Subject.objects.create(name='Automation', language=self.language) 
 
-        # Create a lesson object for the test
         self.lesson = Lesson.objects.create(
             tutor=self.admin_user,  
             student=self.student_user, 
@@ -40,17 +25,10 @@ class DeleteBookingViewTests(TestCase):
             status=Lesson.STATUS_SCHEDULED
         )
 
-    def post(self, request, booking_id):
-        booking_to_delete = get_object_or_404(Lesson, id=booking_id)
-        booking_to_delete.delete()
-        messages.success(request, "Booking was deleted successfully.")
-        return redirect(reverse('admin_list', kwargs={'list_type': 'bookings'}))
-
     def test_get_delete_booking_view_as_admin(self):
         """Test admin can access the booking deletion page."""
-        self.client.login(username='@admin', password='adminpass')  # Log in as admin
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         
-        # The URL to the delete booking page
         url = reverse('delete_booking', kwargs={'booking_id': self.lesson.id})
         response = self.client.get(url)
         
@@ -60,9 +38,7 @@ class DeleteBookingViewTests(TestCase):
 
     def test_get_delete_booking_view_as_non_admin(self):
         """Test non-admin user is redirected when trying to access the delete booking page."""
-        self.client.login(username='@student', password='studentpass')  # Log in as a regular student
-        
-        # The URL to the delete booking page
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)        
         url = reverse('delete_booking', kwargs={'booking_id': self.lesson.id})
         response = self.client.get(url)
         
@@ -71,12 +47,8 @@ class DeleteBookingViewTests(TestCase):
     
     def test_post_delete_booking_view_as_admin(self):
             """Test admin can delete a booking via POST."""
-            self.client.login(username='@admin', password='adminpass')  # Log in as admin
-            
-            # The URL to delete the booking
+            self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
             url = reverse('delete_booking', kwargs={'booking_id': self.lesson.id})
-            
-            # POST request to delete the booking
             response = self.client.post(url)
             
             try:
@@ -89,22 +61,15 @@ class DeleteBookingViewTests(TestCase):
     
     def test_post_delete_booking_view_as_non_admin(self):
         """Test non-admin user cannot delete a booking."""
-        self.client.login(username='@student', password='studentpass')  # Log in as non-admin user
-        
-        # The URL to delete the booking
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('delete_booking', kwargs={'booking_id': self.lesson.id})
-        
-        # POST request to try to delete the booking
         response = self.client.post(url)
-        
         self.assertRedirects(response, reverse('access_denied'))
-        
-        # Ensure the booking still exists
         self.lesson.refresh_from_db()
         self.assertIsNotNone(self.lesson)
 
 
-class DeleteUserViewTests(TestCase):
+class DeleteUserViewTests(RoleSetupTest, ):
     
     def setUp(self):
         # Create a superuser (admin)

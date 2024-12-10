@@ -140,7 +140,7 @@ class UserModelTestCase(TestCase):
 
     def test_mini_gravatar(self):
         actual_gravatar_url = self.user.mini_gravatar()
-        expected_gravatar_url = self._gravatar_url(size=60)
+        expected_gravatar_url = self._gravatar_url(size=40)
         self.assertEqual(actual_gravatar_url, expected_gravatar_url)
 
     def _gravatar_url(self, size):

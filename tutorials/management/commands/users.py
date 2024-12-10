@@ -1,20 +1,22 @@
 import os
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from tutorials.models import User
+from tutorials.models import User, Role
+from tutorials.constants import UserRoles
 
 class Command(BaseCommand):
     help = 'Create text files for each user role and save their details'
 
     def handle(self, *args, **options):
-        roles =  [i[0] for i in User.ROLE_CHOICES]
+        roles =  [UserRoles.STUDENT, UserRoles.TUTOR, UserRoles.ADMIN]
         output_dir = os.path.join(settings.BASE_DIR, 'user_roles')
 
         os.makedirs(output_dir, exist_ok=True)
         for role in roles:
             file_path = os.path.join(output_dir, f'{role}.txt')
             
-            users = User.objects.filter(role=role)
+            current_role = Role.objects.get(name=role)
+            users = User.objects.filter(roles=current_role)
             
             with open(file_path, 'w') as f:
                 if users.exists():

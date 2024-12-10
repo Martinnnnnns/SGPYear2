@@ -1,12 +1,11 @@
-from django.test import TestCase
 from django.urls import reverse
-from tutorials.models import User
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import AdminMixin
 
-class AdminDashboardTestCase(TestCase):
-    
+class AdminDashboardTestCase(RoleSetupTest, AdminMixin):
     def setUp(self):
+        self.setup_admin()
         self.url = reverse('dashboard')
-        self.admin_user = User.objects.create_user(email="bobby@gmail.com", first_name="bob", last_name="bobby", username='@admin', password='Password123', role='admin')
 
     def test_dashboard_url(self):
         """Test the dashboard URL resolves correctly."""
@@ -14,15 +13,15 @@ class AdminDashboardTestCase(TestCase):
 
     def test_dashboard_view_renders(self):
         """Test the dashboard renders the correct template successfully."""
-        self.client.login(username='@admin', password='Password123')
-        response = self.client.get(self.url)
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+        response = self.client.get(self.url, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'admin_dashboard.html')
 
     def test_dashboard_links(self):
         """Test the buttons link to the correct views."""
-        self.client.login(username='@admin', password='Password123')
-        response = self.client.get(self.url)
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+        response = self.client.get(self.url, follow=True)
         html = response.content.decode('utf-8')
 
         student_list_url = reverse('admin_student_list')
@@ -34,8 +33,8 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn(f'href="{bookings_list_url}"', html)
         
     def test_dashboard_contains_buttons(self):
-        self.client.login(username='@admin', password='Password123')
-        response = self.client.get(self.url)
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+        response = self.client.get(self.url, follow=True)
         self.assertContains(response, 'Students')
         self.assertContains(response, 'Tutors')
         self.assertContains(response, 'Bookings')
