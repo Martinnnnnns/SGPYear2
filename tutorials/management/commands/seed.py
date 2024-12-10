@@ -130,7 +130,7 @@ programming_topics = {
 class Command(BaseCommand):
     """Build automation command to seed the database."""
 
-    USER_COUNT = 30 #300
+    USER_COUNT = 300
     DEFAULT_PASSWORD = 'Password123'
     help = 'Seeds the database with sample data'
 
@@ -265,7 +265,7 @@ class Command(BaseCommand):
         """Create random lessons."""
         start_time = datetime(2024, 1, 1)
         end_time = datetime(2025, 12, 31)
-        for i in range(100): # 500
+        for i in range(500): 
             tutor_role, student_role = Role.objects.get(name="tutor"), Role.objects.get(name="student") 
             tutor = choice(User.objects.filter(roles=tutor_role))
             student = choice(User.objects.filter(roles=student_role).exclude(id=tutor.id))

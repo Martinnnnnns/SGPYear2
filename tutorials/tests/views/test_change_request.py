@@ -1,7 +1,6 @@
 # tutorials/tests/test_views.py
 
 from django.urls import reverse
-from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import get_user_model
@@ -37,7 +36,7 @@ class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
             password="Password123",
             email="othertutor@example.com",
         )
-        self.other_tutor_user.roles.set(self.tutor_role)
+        self.other_tutor_user.roles.set([self.tutor_role])
 
         # Create Lessons
         self.scheduled_lesson = Lesson.objects.create(

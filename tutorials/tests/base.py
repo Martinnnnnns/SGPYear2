@@ -4,7 +4,7 @@ from tutorials.constants import UserRoles
 
 class RoleSetupTest(TestCase):
     """Base test to create roles for the whole class once."""
-    PASSWORD = "Password123"  # Shared password for all test users
+    PASSWORD = "Password123"  #Shared password for all test users
     
     @classmethod
     def setUpTestData(cls):
