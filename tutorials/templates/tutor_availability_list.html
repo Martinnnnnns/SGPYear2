@@ -1,0 +1,48 @@
+{% extends 'base_content.html' %}
+
+{% block title %}
+Tutor Availability List
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h1 class="display-4 text-center">Tutor Availability</h1>
+  <p class="text-center text-muted">View the current availability of tutors based on their scheduled lessons.</p>
+
+  <table class="table table-bordered mt-4">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Scheduled Lessons</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tutor in tutors %}
+      <tr>
+        <td>{{ tutor.get_full_name }}</td>
+        <td>{{ tutor.email }}</td>
+        <td>{{ tutor.scheduled_lessons }}</td>
+        <td>
+          <span class="badge"
+                style="background-color: {{ tutor.color }}; color: white;">
+            {% if tutor.color == "green" %}
+              Available
+            {% elif tutor.color == "yellow" %}
+              Moderately Booked
+            {% else %}
+              Fully Booked
+            {% endif %}
+          </span>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="text-center">No tutors available.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

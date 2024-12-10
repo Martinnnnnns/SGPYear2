@@ -1,0 +1,182 @@
+{% extends 'base_content.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-5 text-primary">Statistics</h1>
+    <div class="accordion" id="statisticsAccordion">
+        <!-- User Roles -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingRoles">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRoles" aria-expanded="true" aria-controls="collapseRoles">
+                    <i class="bi bi-person-lines-fill me-2"></i> User Roles Count
+                </button>
+            </h2>
+            <div id="collapseRoles" class="accordion-collapse collapse show" aria-labelledby="headingRoles" data-bs-parent="#statisticsAccordion">
+                <div class="accordion-body">
+                    <table class="table table-striped table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col" class="text-center">Role</th>
+                                <th scope="col" class="text-center">Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for role in user_counts_by_role %}
+                            <tr>
+                                <td class="text-center">{{ role.role }}</td>
+                                <td class="text-center">{{ role.count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Programming Languages & Subjects -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingLanguages">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLanguages" aria-expanded="false" aria-controls="collapseLanguages">
+                    <i class="bi bi-file-earmark-text-fill me-2"></i> Programming Languages & Subjects Details
+                </button>
+            </h2>
+            <div id="collapseLanguages" class="accordion-collapse collapse" aria-labelledby="headingLanguages" data-bs-parent="#statisticsAccordion">
+                <div class="accordion-body">
+                    <table class="table table-striped table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col" class="text-center">Programming Language</th>
+                                <th scope="col" class="text-center">Subject</th>
+                                <th scope="col" class="text-center">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in language_subject_statistics %}
+                            <tr>
+                                <td class="text-center">{{ entry.language }}</td>
+                                <td class="text-center">{{ entry.subject }}</td>
+                                <td class="text-center">{{ entry.description }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lesson Statistics -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingLessons">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLessons" aria-expanded="false" aria-controls="collapseLessons">
+                    <i class="bi bi-bar-chart-line-fill me-2"></i> Lesson Statistics
+                </button>
+            </h2>
+            <div id="collapseLessons" class="accordion-collapse collapse" aria-labelledby="headingLessons" data-bs-parent="#statisticsAccordion">
+                <div class="accordion-body">
+
+                    <!-- Total Lessons Card -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="card-title">Total Lessons</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3 class="card-text display-4">{{ total_lessons }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h2 class="mt-4 pb-3 font-weight-bold text-center text-primary">Busiest Tutors</h2>
+
+                    <table class="table table-striped table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Tutor</th>
+                                <th>Number of Lessons</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tutor in lessons_per_tutor %}
+                            <tr>
+                                <td>{{ tutor.tutor__first_name }}</td>
+                                <td>{{ tutor.lesson_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <h2 class="mt-4 pb-3 font-weight-bold text-center text-primary">Busiest Students</h2>
+
+                    <table class="table table-striped table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Student</th>
+                                <th>Number of Lessons</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in lessons_per_student %}
+                            <tr>
+                                <td>{{ student.student__first_name }}</td>
+                                <td>{{ student.lesson_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Programming Lng. and Subjects Stats -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingLangStats">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLangStats" aria-expanded="false" aria-controls="collapseLangStats">
+                    <i class="bi bi-file-earmark-bar-graph-fill me-2"></i> Programming Lng. and Subjects Stats
+                </button>
+            </h2>
+            <div id="collapseLangStats" class="accordion-collapse collapse" aria-labelledby="headingLangStats" data-bs-parent="#statisticsAccordion">
+                <div class="accordion-body">
+                    <!-- Most Popular Languages -->
+                    <h2 class="mt-4 pb-3 font-weight-bold text-center text-primary">Most Popular Languages</h2>
+                    <table class="table table-striped table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Language</th>
+                                <th>Number of Lessons</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for language in most_popular_languages %}
+                            <tr>
+                                <td>{{ language.language__name }}</td>
+                                <td>{{ language.language_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <!-- Most Popular Subjects -->
+                    <h2 class="mt-4 pb-3 font-weight-bold text-center text-primary">Most Popular Subjects</h2>
+                    <table class="table table-striped table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Subject</th>
+                                <th>Number of Lessons</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subject in most_popular_subjects %}
+                            <tr>
+                                <td>{{ subject.subject__name }}</td>
+                                <td>{{ subject.subject_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

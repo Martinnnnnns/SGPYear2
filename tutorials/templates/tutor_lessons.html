@@ -1,58 +1,67 @@
 {% extends "base_content.html" %}
-
-{% block title %}
-Manage Lessons
-{% endblock %}
-
+{% load static %}
 {% block content %}
-<div class="container mt-5">
-  <!-- Page Title -->
-  <div class="row mb-4">
-    <div class="col-12 text-center">
-      <h1 class="display-4 fw-bold">Manage Lessons</h1>
-      <p class="lead text-muted">Cancel or reschedule your lessons.</p>
-    </div>
-  </div>
 
-  <!-- Lessons Table -->
-  <div class="row mt-5">
-    <div class="col-12">
-      {% if lessons %}
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Student</th>
-            <th>Subject</th>
-            <th>Language</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for lesson in lessons %}
-          <tr>
-            <td>{{ forloop.counter }}</td>
-            <td>{{ lesson.student.full_name }}</td>
-            <td>{{ lesson.subject.name|default:"General" }}</td>
-            <td>{{ lesson.language.name }}</td>
-            <td>{{ lesson.lesson_datetime|date:"D, M d, Y H:i" }}</td>
-            <td>{{ lesson.get_status_display }}</td>
-            <td>
-              <!-- Cancel Button -->
-              <a href="{% url 'request_cancel_bookings' lesson.id %}" class="btn btn-sm btn-danger">Cancel</a>
-              <!-- Reschedule Button -->
-              <a href="{% url 'request_change_bookings' lesson.id %}" class="btn btn-sm btn-warning">Reschedule</a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <p class="text-center text-muted">No lessons to display.</p>
-      {% endif %}
+<div class="container mt-4">
+    <h1 class="text-center mb-5">Your Lessons Calendar</h1>
+
+    <div class="card">
+        <div class="d-flex justify-content-between align-items-center p-3 bg-white border-bottom">
+            <a href="?month={{ prev_month }}&year={{ prev_year }}" class="btn btn-outline-primary">Previous Month</a>
+            <h2 class="h3 mb-0">{{ month_name }} {{ year }}</h2>
+            <a href="?month={{ next_month }}&year={{ next_year }}" class="btn btn-outline-primary">Next Month</a>
+        </div>
+
+        <div class="p-3">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Mon</th>
+                        <th>Tue</th>
+                        <th>Wed</th>
+                        <th>Thu</th>
+                        <th>Fri</th>
+                        <th>Sat</th>
+                        <th>Sun</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for week in calendar %}
+                    <tr style="height: 120px;">
+                        {% for day in week %}
+                                    <td class="{% if day.day == 0 %}text-muted{% endif %}" style="height: 120px; width: 14.28%; vertical-align: top;">
+                                        {% if day.day != 0 %}
+                                            <div class="date-number font-weight-bold mb-2">
+                                                {{ day.day }}
+                                            </div>
+                                            {% for lesson in day.lessons %}
+                                            <div class="lesson-card p-2 mb-1 bg-light border rounded">
+                                                <span class="small">{{ lesson.lesson_datetime|date:"H:i" }}</span>
+                                                <span class="small">{{ lesson.subject.name|default:"General" }}</span>
+                                                <span class="small">{{ lesson.language.name }}</span>
+
+                                                <div class="mt-1">
+                                                    <a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-primary btn-sm">View</a>
+                                                    {% if not lesson.is_past %}
+                                                        <a href="" class="btn btn-warning btn-sm">Change</a>
+                                                        <a href="" class="btn btn-danger btn-sm">Cancel</a>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-  </div>
+
+    <div class="text-center mt-4">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
 </div>
+
 {% endblock %}

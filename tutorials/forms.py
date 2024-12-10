@@ -25,12 +25,145 @@ class LogInForm(forms.Form):
             user = authenticate(username=username, password=password)
         return user
 
+class AdminAddUserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', 'password']
+        widgets = {
+            'password': forms.PasswordInput(),
+        }
+
+    # You can also add custom validation here if necessary
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+
+        # Exclude the current instance when checking for unique emails
+        if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+            raise ValidationError('This email is already in use by another user.')
+
+        return email
+
+    def save(self, commit=True):
+        # If the password is being set, make sure it's hashed
+        user = super().save(commit=False)  # Don't save to DB just yet
+        password = self.cleaned_data.get('password')
+        if password:
+            user.set_password(password)  # This will hash the password
+        if commit:
+            user.save()  # Now save the user to the DB
+        return user
+
+
+class AdminAddBookingForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
+
+    def clean_student(self):
+        """Validate that the student email corresponds to an existing user."""
+        student_email = self.cleaned_data.get('student')
+        try:
+            student = User.objects.get(email=student_email)
+            if student.role != 'student':
+                raise ValidationError("The provided email does not belong to a student.")
+            return student
+        except User.DoesNotExist:
+            raise ValidationError("No user with this email exists.")
+
+    def clean_tutor(self):
+        """Validate that the tutor email corresponds to an existing user."""
+        tutor_email = self.cleaned_data.get('tutor')
+        try:
+            tutor = User.objects.get(email=tutor_email)
+            if tutor.role != 'tutor':
+                raise ValidationError("The provided email does not belong to a tutor.")
+            return tutor
+        except User.DoesNotExist:
+            raise ValidationError("No user with this email exists.")
+
+    def save(self, commit=True):
+        """Create a new Lesson object."""
+        lesson = super().save(commit=False)
+
+        # The student and tutor fields now hold `User` objects, thanks to `clean_student` and `clean_tutor`.
+        lesson.student = self.cleaned_data.get('student')
+        lesson.tutor = self.cleaned_data.get('tutor')
+
+        if commit:
+            lesson.save()
+        return lesson
+
+
+class AdminAddBookingForm(forms.ModelForm):
+    class Meta:
+        model = Lesson
+        fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
+
+    student = forms.ModelChoiceField(
+        queryset=User.objects.filter(role='student'),  # Only show users with role 'student'
+        required=True,
+        label="Student"
+    )
+    tutor = forms.ModelChoiceField(
+        queryset=User.objects.filter(role='tutor'),  # Only show users with role 'tutor'
+        required=True,
+        label="Tutor"
+    )
+
+    def clean_student(self):
+        """Validate that the student corresponds to an existing user."""
+        student = self.cleaned_data.get('student')
+        if student and student.role != 'student':
+            raise ValidationError("The selected user is not a student.")
+        return student
+
+    def clean_tutor(self):
+        """Validate that the tutor corresponds to an existing user."""
+        tutor = self.cleaned_data.get('tutor')
+        if tutor and tutor.role != 'tutor':
+            raise ValidationError("The selected user is not a tutor.")
+        return tutor
+
+    def save(self, commit=True):
+        """Create a new Lesson object."""
+        lesson = super().save(commit=False)
+
+        # Set the student and tutor from the cleaned data (which are now User instances)
+        lesson.student = self.cleaned_data.get('student')
+        lesson.tutor = self.cleaned_data.get('tutor')
+
+        if commit:
+            lesson.save()
+        return lesson
+
 
 class UserForm(forms.ModelForm):
     """Form to update user profiles."""
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email']
+        fields = ['first_name', 'last_name', 'username', 'email', 'role']
+        
+class UpdateForm(forms.ModelForm):
+    class Meta:
+        """Form options."""
+        model = User
+        fields = ['first_name', 'last_name', 'username', 'email', 'role', 'password']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Clear any pre-populated data for the password field
+        self.initial['password'] = ''  # Set the initial value explicitly
+        self.fields['password'].widget = forms.PasswordInput()  # Ensure it's rendered as a password input
+
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+
+        # Exclude the current instance when checking for unique emails
+        if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+            raise ValidationError('This email is already in use by another user.')
+
+        return email
 
 class NewPasswordMixin(forms.Form):
     """Form mixing for new_password and password_confirmation fields."""
@@ -254,18 +387,14 @@ class TutorAvailabilityForm(forms.ModelForm):
                         break
 
         return cleaned_data
+    
+    
 class CancellationRequestForm(forms.ModelForm):
-    request_type = forms.ChoiceField(
-        choices=CancellationRequest.REQUEST_TYPE_CHOICES,
-        widget=forms.RadioSelect,
-        required=True,
-        label="Cancellation Type"
-    )
+    """form for the cancellation request"""
     lessons = forms.ModelMultipleChoiceField(
         queryset=Lesson.objects.none(),
-        required=False,
         widget=forms.CheckboxSelectMultiple,
-        label="Select Lessons to Cancel"
+        label="Select Lesson"
     )
     reason = forms.CharField(
         widget=forms.Textarea(attrs={'rows': 3}),
@@ -275,28 +404,45 @@ class CancellationRequestForm(forms.ModelForm):
 
     class Meta:
         model = CancellationRequest
-        fields = ['request_type', 'lessons', 'reason']
+        fields = ['lessons', 'reason']
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user')  
+        user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
+        valid_statuses = [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
         self.fields['lessons'].queryset = Lesson.objects.filter(
             models.Q(student=user) | models.Q(tutor=user),
-            status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+            status__in=valid_statuses
         )
-        self.fields['lessons'].widget.attrs.update({'disabled': False})    
+        
+        
+        
         
 class ChangeRequestForm(forms.ModelForm):
+    """form for changing"""
+    REQUEST_SINGLE = 'single'
+    REQUEST_ALL = 'all'
+    REQUEST_TYPE_CHOICES = [
+        (REQUEST_SINGLE, 'Single Booking'),
+        (REQUEST_ALL, 'All Bookings'),
+    ]
+
+    request_type = forms.ChoiceField(
+        choices=REQUEST_TYPE_CHOICES,
+        widget=forms.RadioSelect,
+        required=True,
+        label="Change Type"
+    )
     lessons = forms.ModelMultipleChoiceField(
         queryset=Lesson.objects.none(),
+        required=False,
         widget=forms.CheckboxSelectMultiple,
-        required=True,
         label="Select Lessons to Change"
     )
     new_datetime = forms.DateTimeField(
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
         required=True,
-        label="New Date & Time"
+        help_text="Select a new date and time for the lesson."
     )
     reason = forms.CharField(
         widget=forms.Textarea(attrs={'rows': 3}),
@@ -306,15 +452,45 @@ class ChangeRequestForm(forms.ModelForm):
 
     class Meta:
         model = ChangeRequest
-        fields = ['lessons', 'new_datetime', 'reason']
+        fields = ['request_type', 'lessons', 'new_datetime', 'reason']
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user')  
+        self.user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
-        self.fields['lessons'].queryset = Lesson.objects.filter(
-            models.Q(student=user) | models.Q(tutor=user),
-            status=Lesson.STATUS_SCHEDULED
-        )
+        valid_status = [Lesson.STATUS_SCHEDULED]
+        if self.user.role == User.TUTOR:
+            self.fields['lessons'].queryset = Lesson.objects.filter(
+                tutor=self.user,
+                status__in=valid_status
+            )
+        elif self.user.role == User.STUDENT:
+            self.fields['lessons'].queryset = Lesson.objects.filter(
+                student=self.user,
+                status__in=valid_status
+            )
+
+    def clean_new_datetime(self):
+        new_datetime = self.cleaned_data.get('new_datetime')
+        if new_datetime and new_datetime < timezone.now():
+            raise forms.ValidationError("The new date and time must be in the future.")
+        return new_datetime
+
+    def clean(self):
+        cleaned_data = super().clean()
+        request_type = cleaned_data.get('request_type')
+        lessons = cleaned_data.get('lessons')
+
+        if request_type == self.REQUEST_SINGLE and not lessons:
+            raise forms.ValidationError("Please select at least one lesson to change.")
+
+        if request_type == self.REQUEST_ALL:
+            valid_lessons = self.fields['lessons'].queryset
+            if not valid_lessons.exists():
+                raise forms.ValidationError("No valid lessons found to change.")
+            cleaned_data['lessons'] = valid_lessons
+
+        return cleaned_data
+    
         
 class ChangeBookingDetailsForm(forms.Form):
     """Form for changing booking details."""
@@ -336,28 +512,22 @@ class ChangeBookingDetailsForm(forms.Form):
         return new_datetime
 
 
-class ChangeBookingForm(forms.ModelForm):
-    """ModelForm for handling change requests."""
-    REQUEST_SINGLE = 'single'
-    REQUEST_ALL = 'all'
-    REQUEST_TYPE_CHOICES = [
-        (REQUEST_SINGLE, 'Single Booking'),
-        (REQUEST_ALL, 'All Bookings'),
-    ]
-
-    request_type = forms.ChoiceField(
-        choices=REQUEST_TYPE_CHOICES,
-        widget=forms.RadioSelect,
-        required=True
-    )
-    lessons = forms.ModelMultipleChoiceField(
-        queryset=Lesson.objects.none(),
-        required=False
-    )
+class ChangeBookingForm(forms.Form):
     new_datetime = forms.DateTimeField(
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        widget=forms.DateTimeInput(attrs={
+            'type': 'datetime-local',
+            'class': 'form-control'
+        }),
         required=True,
-        help_text="Select a new date and time for the lesson."
+        help_text="Select a new date and time for the lesson"
+    )
+    reason = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'class': 'form-control'
+        }),
+        required=False,
+        label="Reason for Change"
     )
 
     class Meta:
@@ -399,8 +569,8 @@ class ChangeBookingForm(forms.ModelForm):
                     status=Lesson.STATUS_SCHEDULED
                 )
 
+    def clean_new_datetime(self):
+        new_datetime = self.cleaned_data.get('new_datetime')
         if new_datetime and new_datetime < timezone.now():
             raise forms.ValidationError("The new date and time must be in the future.")
-
-        return cleaned_data    
-    
+        return new_datetime

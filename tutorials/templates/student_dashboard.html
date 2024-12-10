@@ -1,147 +1,94 @@
 {% extends 'base_content.html' %}
-
 {% block content %}
-<div class="container mt-5">
-  <!-- Welcome Message -->
-  <div class="row mb-3">
-    <div class="col-12 text-center">
-      <h1 class="mb-4">Welcome, {{ user.first_name }}!</h1>
-    </div>
-  </div>
 
-  <!-- Main Content: Lessons, Invoices, Lesson Requests -->
-  <div class="row">
-    <!-- Lessons Section -->
-    <div class="col-md">
-      <h2>Your Lessons</h2>
-      {% if lessons %}
-      <div class="table-responsive">
-        <table class="table table-striped table-hover">
-          <thead class="table-dark">
-            <tr>
-              <th>Subject</th>
-              <th>Language</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for lesson in lessons %}
-            <tr>
-              <td>
-                {% if lesson.subject %}
-                  {{ lesson.subject.name }}
-                {% else %}
-                  General
-                {% endif %}
-              </td>
-              <td>{{ lesson.language.name }}</td>
-              <td>{{ lesson.lesson_datetime|date:"F j, Y" }}</td>
-              <td>
-                <a href="{% url 'lesson_detail' lesson.id %}" class="btn btn-sm btn-primary">View</a>
-                <a href="{% url 'request_cancel_bookings' lesson.id %}" class="btn btn-sm btn-danger ms-1">Cancel</a>
-                <a href="{% url 'request_change_bookings' lesson.id %}" class="btn btn-sm btn-warning ms-1">Change</a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <p class="text-warning">No lessons scheduled.</p>
-      {% endif %}
+<div class="container-fluid mt-5">
+    <div class="row">
+        <div class="col-12 text-center">
+            <h1 class="display-4 fw-bold" style="color: #1a1a1a;">Welcome, {{ user.first_name }}!</h1>
+            <p class="text-muted">Manage your lessons, requests, and profile.</p>
+        </div>
     </div>
 
-    <!-- Invoices Section -->
-    <div class="col-md">
-      <h2>Your Invoices</h2>
-      {% if invoices %}
-      <div class="table-responsive">
-        <table class="table table-bordered">
-          <thead class="table-dark">
-            <tr>
-              <th>Invoice ID</th>
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for invoice in invoices %}
-            <tr>
-              <td>{{ invoice.id }}</td>
-              <td>{{ invoice.date|date:"N j, Y" }}</td>
-              <td>${{ invoice.amount }}</td>
-              <td>
-                {% if invoice.status == 'paid' %}
-                  <span class="badge bg-success">Paid</span>
-                {% else %}
-                  <span class="badge bg-danger">Unpaid</span>
-                {% endif %}
-              </td>
-              <td>
-                <a href="{% url 'download_invoice' invoice.id %}" class="btn btn-sm btn-primary">Download</a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <p class="text-warning">No invoices available.</p>
-      {% endif %}
+    <div class="row mt-4 justify-content-center">
+        <!-- First Row -->
+        <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'student_lesson_calendar' %}" class="text-decoration-none">
+                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                    <div class="card-body text-center p-4">
+                        <h5 class="card-title fw-bold text-primary mb-2">Calendar</h5>
+                        <p class="card-text text-muted">View your lesson schedule</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'request_lesson' %}" class="text-decoration-none">
+                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                    <div class="card-body text-center p-4">
+                        <h5 class="card-title fw-bold text-primary mb-2">Request Lesson</h5>
+                        <p class="card-text text-muted">Book a new tutoring session</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'student_invoices' %}" class="text-decoration-none">
+                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                    <div class="card-body text-center p-4">
+                        <h5 class="card-title fw-bold text-primary mb-2">Invoices</h5>
+                        <p class="card-text text-muted">View your payment history</p>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
-    <!-- Lesson Requests Section -->
-    <div class="col-md">
-      <h2>Lesson Requests</h2>
-      {% if lesson_requests %}
-      <div class="table-responsive">
-        <table class="table table-bordered">
-          <thead class="table-dark">
-            <tr>
-              <th>Date</th>
-              <th>Times</th>
-              <th>Language</th>
-              <th>Subject</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for lr in lesson_requests %}
-            <tr>
-              <td>{{ lr.start_datetime|date:"N j, Y" }}</td>
-              <td>
-                {{ lr.start_datetime|date:"h:i" }} - {{ lr.end_datetime|date:"h:i A" }}
-              </td>
-              <td>{{ lr.language }}</td>
-              <td>
-                {% if lr.subject.name %}
-                  {{ lr.subject.name }}
-                {% else %}
-                  General
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <p class="text-warning">No pending lesson requests.</p>
-      {% endif %}
+    <div class="row justify-content-center">
+        <!-- Second Row -->
+        <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'student_pending_requests' %}" class="text-decoration-none">
+                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                    <div class="card-body text-center p-4">
+                        <h5 class="card-title fw-bold text-primary mb-2">Pending Requests</h5>
+                        <p class="card-text text-muted">Check request status</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'student_profile' pk=user.id %}" class="text-decoration-none">
+                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                    <div class="card-body text-center p-4">
+                        <h5 class="card-title fw-bold text-primary mb-2">Profile</h5>
+                        <p class="card-text text-muted">View and edit your profile</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'student_support' %}" class="text-decoration-none">
+                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                    <div class="card-body text-center p-4">
+                        <h5 class="card-title fw-bold text-primary mb-2">Support</h5>
+                        <p class="card-text text-muted">Get help and assistance</p>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
-  </div>
 </div>
 
-
-  <!-- Quick Actions at the Bottom -->
-  <div class="row fixed-bottom bg-light py-3">
-    <div class="col-12 text-center">
-      <a href="{% url 'request_lesson' %}" class="btn btn-primary btn-lg m-2">Request Lesson</a>
-      <a href="{% url 'student_profile' %}" class="btn btn-primary btn-lg m-2">View Profile</a>
-      <a href="{% url 'student_support' %}" class="btn btn-primary btn-lg m-2">Contact Support</a>
-    </div>
-  </div>
-</div>
+<style>
+    .card {
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+</style>
 {% endblock %}

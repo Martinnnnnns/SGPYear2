@@ -1,0 +1,58 @@
+{% extends 'base_content.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="text-center">Your Invoices</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            {% if invoices %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Invoice ID</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in invoices %}
+                                <tr>
+                                    <td>{{ invoice.id }}</td>
+                                    <td>{{ invoice.date|date:"N j, Y" }}</td>
+                                    <td>${{ invoice.amount }}</td>
+                                    <td>
+                                        {% if invoice.status == 'paid' %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Unpaid</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'download_invoice' invoice.id %}" class="btn btn-sm btn-primary">Download</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">No invoices available.</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

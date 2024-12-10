@@ -9,7 +9,7 @@ class AdminDashboardTestCase(RoleSetupTest, AdminMixin):
         self.url = reverse('dashboard')
 
     def test_dashboard_url(self):
-        """Test that the dashboard URL resolves correctly."""
+        """Test the dashboard URL resolves correctly."""
         self.assertEqual(self.url, '/dashboard/')  
 
     def test_dashboard_view_renders(self):
@@ -20,7 +20,7 @@ class AdminDashboardTestCase(RoleSetupTest, AdminMixin):
         self.assertTemplateUsed(response, 'admin_dashboard.html')
 
     def test_dashboard_links(self):
-        """Test that the buttons link to the correct views."""
+        """Test the buttons link to the correct views."""
         self.client.login(username='@admin', password='Password123')
         response = self.client.get(self.url, follow=True)
         html = response.content.decode('utf-8')
@@ -39,5 +39,11 @@ class AdminDashboardTestCase(RoleSetupTest, AdminMixin):
         self.assertContains(response, 'Students')
         self.assertContains(response, 'Tutors')
         self.assertContains(response, 'Bookings')
+        
+    def test_tutor_availability_button(self):
+        """Test that the Tutor Availability button is present and links correctly."""
+        response = self.client.get(reverse("admin_dashboard"))
+        self.assertContains(response, "Tutor Availability")
+        self.assertContains(response, reverse("tutor_availability_list"))    
         
     

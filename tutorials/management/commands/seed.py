@@ -1,13 +1,12 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
-from tutorials.models import User, ProgrammingLanguage, Subject, Lesson, Role
+from tutorials.models import Invoice, TutorAvailability, User, ProgrammingLanguage, Subject, Lesson, Role
 
 import pytz
 from faker import Faker
 from random import randint, choices, choice
 from datetime import datetime, timedelta
-from tutorials.constants import UserRoles
 
 DEFAULT_ADMIN = {
     'username': '@johndoe',
@@ -144,6 +143,8 @@ class Command(BaseCommand):
         self.create_programming_languages()
         self.create_subjects()
         self.create_default_lessons()
+        self.assign_tutor_expertise() 
+        self.create_tutor_availability() 
         self.users = User.objects.all()
         self.create_lessons()
 
@@ -217,10 +218,6 @@ class Command(BaseCommand):
             is_staff=data.get('is_staff', False),
             is_superuser=data.get('is_superuser', False)
         )
-
-        #Assign the roles
-        user.roles.set(role_objects)
-        user.save()
     
     def create_programming_languages(self):
         """Populate programming language table."""
@@ -265,22 +262,56 @@ class Command(BaseCommand):
         """Create random lessons."""
         start_time = datetime(2024, 1, 1)
         end_time = datetime(2025, 12, 31)
-        for i in range(500): 
-            tutor_role, student_role = Role.objects.get(name="tutor"), Role.objects.get(name="student") 
-            tutor = choice(User.objects.filter(roles=tutor_role))
-            student = choice(User.objects.filter(roles=student_role).exclude(id=tutor.id))
+        for i in range(500):
+            tutor = choice(User.objects.filter(role="tutor"))
+            student = choice(User.objects.filter(role="student"))
             language = choice(ProgrammingLanguage.objects.all())
             subject = choice(Subject.objects.filter(language=language))
             random_date = random_datetime(start_time, end_time)
             lesson_datetime = timezone.make_aware(random_date)
+            
+            if subject.exists():
+                subject = choice(subject)
+                random_date = random_datetime(start_time, end_time)
+                lesson_datetime = timezone.make_aware(random_date)
 
-            Lesson.objects.create(
+
+            lesson = Lesson.objects.create(
                 student=student, 
                 tutor=tutor, 
                 language=language, 
                 subject=subject, 
                 lesson_datetime=lesson_datetime
             )
+            invoice =Invoice.objects.create(
+                student=student,
+                amount=lesson_cost,
+                status=choice(['paid', 'unpaid']) )
+            lesson.invoice= invoice
+            lesson.save()
+    def create_tutor_availability(self):
+        """Generate random availability slots for tutors across a 24-hour range."""
+        tutors = User.objects.filter(role='tutor')  
+        for tutor in tutors:
+            num_slots = randint(3, 10)  
+            for _ in range(num_slots):
+                date = self.faker.date_between(start_date='-30d', end_date='+30d') 
+                start_hour = randint(0, 23)  
+                start_minute = choice([0, 15, 30, 45])  
+                start_time = time(start_hour, start_minute)
+
+                max_end_hour = min(23, start_hour + randint(1, 3))  
+                end_minute = start_minute if max_end_hour > start_hour else 59
+                end_time = time(max_end_hour, end_minute)
+
+                TutorAvailability.objects.get_or_create(
+                    tutor=tutor,
+                    date=date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    recurrence='none'  
+                )
+        print("Tutor availability slots seeded.")                    
 
 def create_username(first_name, last_name):
     return '@' + first_name.lower() + last_name.lower()
@@ -293,3 +324,19 @@ def random_datetime(start_time, end_time):
     delta = end_time - start_time
     random_seconds = randint(0, int(delta.total_seconds()))
     return start_time + timedelta(seconds=random_seconds)
+
+def create_invoices(self):
+        """Generate invoices for students."""
+        students = User.objects.filter(role=User.STUDENT)
+        lessons = Lesson.objects.filter(invoice__isnull=True)
+        lesson_cost=10
+
+        for lesson in lessons:
+            
+            invoice = Invoice.objects.create(
+                student=lesson.student,
+                amount=lesson_cost,
+                status=choice(['paid', 'unpaid'])
+            )
+            lesson.invoice = invoice
+            lesson.save() 

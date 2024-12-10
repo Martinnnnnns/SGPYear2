@@ -19,6 +19,16 @@ class Role(models.Model):
     def __str__(self):
         return self.name
 
+class ProgrammingLanguage(models.Model):
+    """Model for programming languages that we offer lessons in."""
+    name = models.CharField(max_length=100, unique=True, blank=False)
+
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        ordering = ['name']
+        
 class User(AbstractUser):
     """Custom User model with support for multiple roles and an active role."""
 
@@ -41,6 +51,14 @@ class User(AbstractUser):
         on_delete=models.SET_NULL,
         related_name='user_current_role',
         help_text="The currently active role for this user."
+    )
+    expertise_language = models.ForeignKey(
+        ProgrammingLanguage,
+        on_delete=models.SET_NULL,  
+        null=True,
+        blank=True,
+        related_name='tutors',
+        help_text="Programming language expertise for tutors"
     )
 
     class Meta:
@@ -73,15 +91,21 @@ class User(AbstractUser):
         return f"{full_name} ({roles}) - Active Role: {active_role_name}"
 
     
-class ProgrammingLanguage(models.Model):
-    """Model for programming languages that we offer lessons in."""
-    name = models.CharField(max_length=100, unique=True, blank=False)
-
-    def __str__(self):
-        return self.name
-    
-    class Meta:
-        ordering = ['name']
+class Invoice(models.Model):
+    """
+    Represents an invoice for a student.
+    """
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
+    date = models.DateField(auto_now_add=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(
+        max_length=10,
+        choices=[
+            ('paid', 'Paid'),
+            ('unpaid', 'Unpaid'),
+        ]
+    )        
+        
 
 class Subject(models.Model):
     """Model for topics that a lesson in a given programming langauge can be about."""
@@ -119,6 +143,13 @@ class Lesson(models.Model):
         choices=STATUS_CHOICES,
         default=STATUS_SCHEDULED,
     )
+    invoice = models.OneToOneField(
+        Invoice, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='lesson'
+    )
     def __str__(self):
         subject_str = self.subject.name if self.subject else "General"
         return f"{self.language.name} Lesson ({subject_str}) at {self.lesson_datetime} between tutor {self.tutor.full_name()} and student {self.student.full_name()}"
@@ -140,24 +171,7 @@ class Lesson(models.Model):
     class Meta:
         ordering = ["tutor", "student", "language", 'subject']
 
-                
-class Invoice(models.Model):
-    """
-    Represents an invoice for a student.
-    """
-    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
-    date = models.DateField(auto_now_add=True)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(
-        max_length=10,
-        choices=[
-            ('paid', 'Paid'),
-            ('unpaid', 'Unpaid'),
-        ]
-    )
-
-    def __str__(self):
-        return f"Invoice {self.id} for {self.student.username} - {self.status}"
+            
 
 class LessonRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lesson_request')
@@ -241,21 +255,56 @@ class TutorAvailability(models.Model):
         ordering = ['date', 'start_time']
         verbose_name_plural = "Tutor availabilities"
         
+        
+        
+        
 class CancellationRequest(models.Model):
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_DENIED = 'denied'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_DENIED, 'Denied'),
+    ]
     REQUEST_ALL = 'all'
     REQUEST_SINGLE = 'single'
     REQUEST_TYPE_CHOICES = [
         (REQUEST_ALL, 'All Bookings'),
         (REQUEST_SINGLE, 'Single Booking'),
     ]
+
+  
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cancellation_requests')
     request_type = models.CharField(max_length=10, choices=REQUEST_TYPE_CHOICES)
     lessons = models.ManyToManyField(Lesson, blank=True)
     reason = models.TextField(blank=True, null=True)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING
+    )
+    admin_comment = models.TextField(blank=True, null=True)  
+
     created_at = models.DateTimeField(auto_now_add=True)
-    is_processed = models.BooleanField(default=False)
+    def process_approval(self):
+        """Approve the request and update lessons."""
+        self.status = self.STATUS_APPROVED
+        for lesson in self.lessons.all():
+            lesson.status = Lesson.STATUS_CANCELED
+            lesson.save()
+        self.save()
+
+    def process_rejection(self):
+        """Reject the request without updating lessons."""
+        self.status = self.STATUS_DENIED
+        self.save()
+
+
     def __str__(self):
-        return f"Cancellation Request by {self.user.username} - {self.get_request_type_display()}"
+        return f"Cancellation Request by {self.user.username} - {self.get_request_type_display()} - {self.get_status_display()}"
+
     class Meta:
         ordering = ['-created_at']
 
@@ -268,17 +317,48 @@ class ChangeRequest(models.Model):
         (STATUS_APPROVED, 'Approved'),
         (STATUS_DENIED, 'Denied'),
     ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='change_requests')
     lessons = models.ManyToManyField('Lesson')
     new_datetime = models.DateTimeField()
     reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    admin_comment = models.TextField(blank=True, null=True)  
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default=STATUS_PENDING
     )
+
+    def is_within_tutor_availability(self):
+        """Check if the requested new datetime aligns with the tutor's availability."""
+        for lesson in self.lessons.all():
+            tutor_availability = TutorAvailability.objects.filter(
+                tutor=lesson.tutor,
+                date=self.new_datetime.date(),
+                start_time__lte=self.new_datetime.time(),
+                end_time__gte=self.new_datetime.time()
+            )
+            if not tutor_availability.exists():
+                return False
+        return True
+    def process_approval(self):
+        """Approve the request and update lesson datetimes."""
+        self.status = self.STATUS_APPROVED
+        for lesson in self.lessons.all():
+            lesson.lesson_datetime = self.new_datetime
+            lesson.status = Lesson.STATUS_RESCHEDULED
+            lesson.save()
+        self.save()
+
+    def process_rejection(self):
+        """Reject the request without updating lessons."""
+        self.status = self.STATUS_DENIED
+        self.save()
+
+
     def __str__(self):
         return f"Change Request by {self.user.username} - New Time: {self.new_datetime} - Status: {self.get_status_display()}"
+
     class Meta:
-        ordering = ['-created_at']        
+        ordering = ['-created_at']
