@@ -548,24 +548,6 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
                 except (LessonRequest.DoesNotExist, User.DoesNotExist):
                     unmatched_requests.append(lesson_request)
 
-            free_tutors = User.objects.filter(
-                roles_contain='tutor'
-            ).exclude(id__in=busy_tutors)
-            if free_tutors.exists():
-                tutor = free_tutors.first()
-                lesson = Lesson.objects.create(
-                    student=lesson_request.user,
-                    tutor=tutor,
-                    lesson_datetime=lesson_request.start_datetime,
-                    language=lesson_request.language,
-                    subject=lesson_request.subject,
-                    status=Lesson.STATUS_SCHEDULED, 
-                )
-                lesson_request.status = 'allocated'
-                lesson_request.save()
-                matched_lessons.append(lesson)
-            else:
-                unmatched_requests.append(lesson_request)
         return render(request, 'trigger_matching.html', {
             'matched_lessons': matched_lessons,
             'unmatched_requests': unmatched_requests,
