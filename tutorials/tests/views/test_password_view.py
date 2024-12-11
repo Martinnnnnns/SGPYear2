@@ -1,4 +1,3 @@
-"""Tests for the password view."""
 from django.contrib.auth.hashers import check_password
 from django.urls import reverse
 from tutorials.forms import PasswordForm
