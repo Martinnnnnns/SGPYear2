@@ -814,8 +814,8 @@ class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     required_role = ['tutor']
     def get_queryset(self):
         search_query = self.request.GET.get('search', '')
-        students_queryset = User.STUDENT.objects.filter(
-            role='student',
+        students_queryset = User.objects.filter(
+            roles__name=UserRoles.STUDENT,
             lessons_as_student__tutor=self.request.user
         ).distinct().order_by('last_name', 'first_name')
         if search_query:
