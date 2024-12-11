@@ -141,13 +141,13 @@ class UserForm(forms.ModelForm):
     """Form to update user profiles."""
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'role']
+        fields = ['first_name', 'last_name', 'username', 'email']
         
 class UpdateForm(forms.ModelForm):
     class Meta:
         """Form options."""
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'role', 'password']
+        fields = ['first_name', 'last_name', 'username', 'email', 'password']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
