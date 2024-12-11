@@ -465,12 +465,15 @@ class AdminStatsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        user_counts_by_role = User.objects.values('current_active_role').annotate(count=Count('id')).order_by('-count')
+        user_counts_by_role = (
+            Role.objects.annotate(
+                count=Count('users')
+            ).values('name', 'count').order_by('-count')
+        )
         
         subjects = Subject.objects.select_related('language').all()
         language_subject_statistics = []
 
-        # Creates a dictionary for each subject
         for subject in subjects:
             language_subject_statistics.append({
                 'language': subject.language.name,
@@ -478,16 +481,33 @@ class AdminStatsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
                 'description': subject.description or 'No description available',
             })
             
-            total_lessons = Lesson.objects.count()
+        total_lessons = Lesson.objects.count()
 
-        # SQL queries for table data
-        lessons_per_tutor = Lesson.objects.values('tutor__first_name').annotate(lesson_count=Count('id')).order_by('-lesson_count')[:10]
-        lessons_per_student = Lesson.objects.values('student__first_name').annotate(lesson_count=Count('id')).order_by('-lesson_count')[:10]
+        lessons_per_tutor = Lesson.objects.values(
+            'tutor__first_name'
+        ).annotate(
+            lesson_count=Count('id')
+        ).order_by('-lesson_count')[:10]
+        
+        lessons_per_student = Lesson.objects.values(
+            'student__first_name'
+        ).annotate(
+            lesson_count=Count('id')
+        ).order_by('-lesson_count')[:10]
 
-        most_popular_languages = Lesson.objects.values('language__name').annotate(language_count=Count('id')).order_by('-language_count')
-        most_popular_subjects = Lesson.objects.values('subject__name').annotate(subject_count=Count('id')).order_by('-subject_count')
+        most_popular_languages = Lesson.objects.values(
+            'language__name'
+        ).annotate(
+            language_count=Count('id')
+        ).order_by('-language_count')
+        
+        most_popular_subjects = Lesson.objects.values(
+            'subject__name'
+        ).annotate(
+            subject_count=Count('id')
+        ).order_by('-subject_count')
 
-        context = {
+        context.update({
             'total_lessons': total_lessons,
             'lessons_per_tutor': lessons_per_tutor,
             'lessons_per_student': lessons_per_student,
@@ -495,7 +515,7 @@ class AdminStatsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
             'most_popular_subjects': most_popular_subjects,
             'user_counts_by_role': user_counts_by_role,
             'language_subject_statistics': language_subject_statistics,
-        }
+        })
         
         return context
     
