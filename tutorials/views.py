@@ -536,7 +536,7 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
             ).values_list('tutor', flat=True)
             
             available_tutors = User.objects.filter(
-                role='tutor', expertise_language=lesson_request.language
+                roles__name=UserRoles.TUTOR, expertise_language=lesson_request.language
             ).exclude(id__in=busy_tutors).filter(
                  availability_slots__date=lesson_request.start_datetime.date(),
             availability_slots__start_time__lte=lesson_request.start_datetime.time(),
