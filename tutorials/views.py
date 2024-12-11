@@ -696,9 +696,11 @@ class InvoicePDFView(LoginRequiredMixin, View):
     def get(self, request, invoice_id):
         try:
             invoice = Invoice.objects.get(id=invoice_id)
-            if request.user.role == 'student' and invoice.student != request.user:
+            user_role = request.user.current_active_role.name
+
+            if user_role == 'student' and invoice.student != request.user:
                 return HttpResponse("Unauthorized: You can only access your own invoices.", status=403)
-            if request.user.role == 'admin':
+            if user_role == 'admin':
                 pass
         except Invoice.DoesNotExist:
             return HttpResponse("Invoice not found.", status=404)
@@ -709,7 +711,7 @@ class InvoicePDFView(LoginRequiredMixin, View):
         self.generate_invoice_pdf(response, invoice)
 
         return response
-    
+
     def generate_invoice_pdf(self, response, invoice):
         """Helper function to generate a styled PDF."""
         p = canvas.Canvas(response, pagesize=letter)
@@ -720,17 +722,45 @@ class InvoicePDFView(LoginRequiredMixin, View):
 
         p.setFont("Helvetica", 12)
         p.drawString(50, height - 100, f"Date: {invoice.date}")
-        p.drawString(50, height - 120, f"Student: {invoice.student.full_name()}")  # Call the method
+        p.drawString(50, height - 120, f"Student: {invoice.student.full_name()}")
 
         status_color = colors.green if invoice.status == 'paid' else colors.red
         p.setFillColor(status_color)
         p.drawString(50, height - 140, f"Status: {invoice.get_status_display()}")
-        p.setFillColor(colors.black)  
-       
+        p.setFillColor(colors.black)
+
+        lessons = Lesson.objects.filter(invoice=invoice)
+
+        lesson_data = [
+            ["Tutor", "Time", "Programming Language"]
+        ]
+        for lesson in lessons:
+            lesson_data.append([
+                lesson.tutor.full_name(),
+                lesson.lesson_datetime.strftime('%Y-%m-%d %H:%M'),
+                lesson.language.name
+            ])
+
+        lesson_table = Table(lesson_data, colWidths=[200, 150, 150])
+        lesson_style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ])
+        lesson_table.setStyle(lesson_style)
+
+        lesson_table.wrapOn(p, width, height)
+        lesson_table.drawOn(p, 50, height - 400)
+
+        # Add total amount information
         data = [
-            ['Description', 'Amount'],
-            ['Lesson Fee', f"${invoice.amount:.2f}"],
-            ['Total', f"${invoice.amount:.2f}"]
+            ["Description", "Amount"],
+            ["Lesson Fee", f"${invoice.amount:.2f}"],
+            ["Total", f"${invoice.amount:.2f}"]
         ]
         table = Table(data, colWidths=[300, 200])
 
@@ -738,7 +768,7 @@ class InvoicePDFView(LoginRequiredMixin, View):
             ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 14),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
             ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
@@ -747,7 +777,8 @@ class InvoicePDFView(LoginRequiredMixin, View):
         table.setStyle(style)
 
         table.wrapOn(p, width, height)
-        table.drawOn(p, 50, height - 300)
+        table.drawOn(p, 50, height - 600)
+
         p.setFont("Helvetica", 10)
         p.drawString(50, 50, "Thank you for using our services!")
 
