@@ -1,12 +1,13 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
+from tutorials.constants import UserRoles
 from tutorials.models import Invoice, TutorAvailability, User, ProgrammingLanguage, Subject, Lesson, Role
 
 import pytz
 from faker import Faker
 from random import randint, choices, choice
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
 DEFAULT_ADMIN = {
     'username': '@johndoe',
@@ -262,6 +263,7 @@ class Command(BaseCommand):
         """Create random lessons."""
         start_time = datetime(2024, 1, 1)
         end_time = datetime(2025, 12, 31)
+        lesson_cost = 10
         for i in range(500):
             tutor = choice(User.objects.filter(role="tutor"))
             student = choice(User.objects.filter(role="student"))
@@ -289,6 +291,7 @@ class Command(BaseCommand):
                 status=choice(['paid', 'unpaid']) )
             lesson.invoice= invoice
             lesson.save()
+            
     def create_tutor_availability(self):
         """Generate random availability slots for tutors across a 24-hour range."""
         tutors = User.objects.filter(role='tutor')  
@@ -326,17 +329,18 @@ def random_datetime(start_time, end_time):
     return start_time + timedelta(seconds=random_seconds)
 
 def create_invoices(self):
-        """Generate invoices for students."""
-        students = User.objects.filter(role=User.STUDENT)
-        lessons = Lesson.objects.filter(invoice__isnull=True)
-        lesson_cost=10
+    """Generate invoices for students."""
+    student_role = Role.objects.get(name=UserRoles.STUDENT)
+    students = User.objects.filter(roles=student_role)
+    lessons = Lesson.objects.filter(invoice__isnull=True)
+    lesson_cost=10
 
-        for lesson in lessons:
-            
-            invoice = Invoice.objects.create(
-                student=lesson.student,
-                amount=lesson_cost,
-                status=choice(['paid', 'unpaid'])
-            )
-            lesson.invoice = invoice
-            lesson.save() 
+    for lesson in lessons:
+        
+        invoice = Invoice.objects.create(
+            student=lesson.student,
+            amount=lesson_cost,
+            status=choice(['paid', 'unpaid'])
+        )
+        lesson.invoice = invoice
+        lesson.save() 

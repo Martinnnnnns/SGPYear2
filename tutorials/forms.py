@@ -100,12 +100,12 @@ class AdminAddBookingForm(forms.ModelForm):
         fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
 
     student = forms.ModelChoiceField(
-        queryset=User.objects.filter(role='student'),  # Only show users with role 'student'
+        queryset=User.objects.filter(roles__name=UserRoles.STUDENT),
         required=True,
         label="Student"
     )
     tutor = forms.ModelChoiceField(
-        queryset=User.objects.filter(role='tutor'),  # Only show users with role 'tutor'
+        queryset=User.objects.filter(roles__name=UserRoles.TUTOR),  # Only show users with role 'tutor'
         required=True,
         label="Tutor"
     )
@@ -113,14 +113,14 @@ class AdminAddBookingForm(forms.ModelForm):
     def clean_student(self):
         """Validate that the student corresponds to an existing user."""
         student = self.cleaned_data.get('student')
-        if student and student.role != 'student':
+        if student and UserRoles.STUDENT not in [i.name for i in student.roles.all()]:
             raise ValidationError("The selected user is not a student.")
         return student
 
     def clean_tutor(self):
         """Validate that the tutor corresponds to an existing user."""
         tutor = self.cleaned_data.get('tutor')
-        if tutor and tutor.role != 'tutor':
+        if tutor and UserRoles.TUTOR not in [i.name for i in tutor.roles.all()]:
             raise ValidationError("The selected user is not a tutor.")
         return tutor
 

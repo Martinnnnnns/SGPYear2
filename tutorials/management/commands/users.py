@@ -15,8 +15,7 @@ class Command(BaseCommand):
         for role in roles:
             file_path = os.path.join(output_dir, f'{role}.txt')
             
-            current_role = Role.objects.get(name=role)
-            users = User.objects.filter(roles=current_role)
+            users = User.objects.filter(roles__name=role)
             
             with open(file_path, 'w') as f:
                 if users.exists():
