@@ -92,9 +92,7 @@ class User(AbstractUser):
 
     
 class Invoice(models.Model):
-    """
-    Represents an invoice for a student.
-    """
+    """Represents an invoice for a student."""
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
     date = models.DateField(auto_now_add=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -105,6 +103,9 @@ class Invoice(models.Model):
             ('unpaid', 'Unpaid'),
         ]
     )        
+
+    def __str__(self):
+        return f"Invoice {self.id} for {self.student.username} - {self.status}"
         
 
 class Subject(models.Model):
@@ -214,7 +215,7 @@ class LessonRequest(models.Model):
 
     def is_future_datetime(self, datetime_value):
         """Check if the datetime is in the future."""
-        return datetime_value > datetime.now()
+        return datetime_value > timezone.now()
 
     def is_end_after_start(self, start_datetime, end_datetime):
         """Check that the end time is after the start time."""
