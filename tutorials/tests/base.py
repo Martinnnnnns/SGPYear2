@@ -14,5 +14,4 @@ class RoleSetupTest(TestCase):
         cls.student_role = Role.objects.create(name=UserRoles.STUDENT)
 
     def setUp(self):
-        #Any additional setup shared across all subclasses can go here
         pass

@@ -38,7 +38,6 @@ class AdminAddUserForm(forms.ModelForm):
         user = super().save(commit=False)  
         password = self.cleaned_data.get('password')
         
-        # Hash the password
         if password:
             user.set_password(password)  
         if commit:
@@ -53,11 +52,9 @@ class AdminAddBookingForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Get the Role objects for student and tutor
         student_role = Role.objects.get(name=UserRoles.STUDENT)
         tutor_role = Role.objects.get(name=UserRoles.TUTOR)
         
-        # Filter users by their current_active_role using the Role objects
         self.fields['student'] = forms.ModelChoiceField(
             queryset=User.objects.filter(current_active_role=student_role),
             required=True,
