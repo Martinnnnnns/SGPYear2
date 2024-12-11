@@ -8,7 +8,11 @@
         <div class="card-body">
             <p><strong>Subject:</strong> {{ lesson.subject }}</p>
             <p><strong>Language:</strong> {{ lesson.language }}</p>
-            <p><strong>Tutor:</strong> {{ lesson.tutor.full_name }}</p>
+            {% if request.user.current_active_role.name == 'tutor' %}
+                <p><strong>Student:</strong> {{ lesson.student.full_name }}</p>
+            {% else %}
+                <p><strong>Tutor:</strong> {{ lesson.tutor.full_name }}</p>
+            {% endif %}
             <p><strong>Time:</strong> {{ lesson.lesson_datetime }}</p>
         </div>
     </div>
