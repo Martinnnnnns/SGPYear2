@@ -403,19 +403,23 @@ class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
     required_role = ['admin']
 
     def get(self, request, list_type):
-        if request.user.role != 'admin':
+        admin_role = Role.objects.get(name=UserRoles.ADMIN)
+        if request.user.current_active_role != admin_role:
             return render(request, 'home.html')
 
-        # Sets the HTML header fields depending on the list type
         if list_type == 'students':
-            objects = User.objects.filter(current_active_role=Role.objects.get(name=UserRoles.STUDENT))
+            objects = User.objects.filter(
+                roles__name=UserRoles.STUDENT
+            ).distinct()
             page_heading = "Students"
             add_button_text = "Add Student"
             table_headers = ["Username", "Name", "Email"]
             table_fields = ['username', 'first_name', 'email']
 
         elif list_type == 'tutors':
-            objects = User.objects.filter(current_active_role=Role.objects.get(name=UserRoles.TUTOR))
+            objects = User.objects.filter(
+                roles__name=UserRoles.TUTOR
+            ).distinct()
             page_heading = "Tutors"
             add_button_text = "Add Tutor"
             table_headers = ["Username", "Name", "Email"]
@@ -448,7 +452,7 @@ class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
             'table_headers': table_headers,
             'table_fields': table_fields,
             'rows': rows,
-            'list_type' : list_type
+            'list_type': list_type
         }
 
         return render(request, 'admin_list.html', context)
@@ -562,13 +566,18 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
         })
         
 class TutorAvailabilityListView(LoginRequiredMixin, ListView):
-    """View for Admins to see how much are the tutors booked with thier distinct colors."""
+    """View for Admins to see how much are the tutors booked with their distinct colors."""
     template_name = "tutor_availability_list.html"
     context_object_name = "tutors"
 
     def get_queryset(self):
-        queryset = User.objects.filter(role="tutor").annotate(
-            scheduled_lessons=Count("lessons_as_tutor", filter=Q(lessons_as_tutor__status=Lesson.STATUS_SCHEDULED))
+        queryset = User.objects.filter(
+            roles__name=UserRoles.TUTOR
+        ).distinct().annotate(
+            scheduled_lessons=Count(
+                "lessons_as_tutor",
+                filter=Q(lessons_as_tutor__status=Lesson.STATUS_SCHEDULED)
+            )
         )
 
         for tutor in queryset:
@@ -1297,7 +1306,6 @@ class PreviousStudentsListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
 
 class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
     template_name = 'student_profile_detail.html'
-    required_role = [UserRoles.TUTOR]
     model = User
     context_object_name = 'student'
     pk_url_kwarg = 'student_id'
@@ -1305,11 +1313,13 @@ class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView
 
     def get_object(self, queryset=None):
         student = get_object_or_404(User, id=self.kwargs['student_id'])
-        # Check if the tutor has access to this student
-        if self.request.user.role == 'tutor':
+        tutor_role = Role.objects.get(name=UserRoles.TUTOR)
+        admin_role = Role.objects.get(name=UserRoles.ADMIN)
+        
+        if self.request.user.current_active_role == tutor_role:
             if not Lesson.objects.filter(tutor=self.request.user, student=student).exists():
                 raise Http404("Student not found")
-        else:
+        elif self.request.user.current_active_role == admin_role:
             if not Lesson.objects.filter(student=student).exists():
                 raise Http404("Student not found")      
         return student
@@ -1317,9 +1327,10 @@ class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         student = self.object
+        tutor_role = Role.objects.get(name=UserRoles.TUTOR)
+        admin_role = Role.objects.get(name=UserRoles.ADMIN)
         
-        if self.request.user.role == 'admin':
-            # Admins can see all lessons for the student, regardless of the tutor.
+        if self.request.user.current_active_role == admin_role:
             context['upcoming_lessons'] = Lesson.objects.filter(
                 student=student,
                 lesson_datetime__gt=now()
@@ -1330,8 +1341,7 @@ class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView
                 lesson_datetime__lte=now()
             ).order_by('-lesson_datetime')
 
-        elif self.request.user.role == 'tutor':
-            # Tutors can only see their own lessons with the student.
+        elif self.request.user.current_active_role == tutor_role:
             context['upcoming_lessons'] = Lesson.objects.filter(
                 tutor=self.request.user,
                 student=student,
@@ -1348,6 +1358,7 @@ class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView
         context['programming_languages'] = all_lessons.values_list('language__name', flat=True).distinct()
         
         return context
+   
 
 class StudentLessonCalendarView(LoginRequiredMixin, RoleRequiredMixin, View):
     template_name = 'student_calendar.html'
