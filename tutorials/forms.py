@@ -407,7 +407,7 @@ class ChangeRequestForm(forms.ModelForm):
         self.user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
         valid_status = [Lesson.STATUS_SCHEDULED]
-        if self.user.role == User.TUTOR:
+        if UserRoles.TUTOR not in [item.name for item in self.user.roles.all()]:
             self.fields['lessons'].queryset = Lesson.objects.filter(
                 tutor=self.user,
                 status__in=valid_status

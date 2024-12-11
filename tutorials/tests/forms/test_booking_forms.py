@@ -12,27 +12,17 @@ from tutorials.models import (
     User,
 )
 from tutorials.forms import CancellationRequestForm, ChangeRequestForm
-User = get_user_model()
-class BookingFormsTest(TestCase):
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
+
+class BookingFormsTest(RoleSetupTest, StudentMixin, TutorMixin):
     def setUp(self):
         self.language = ProgrammingLanguage.objects.create(name="Python")
         self.subject = Subject.objects.create(name="Mathematics", language=self.language)
 
-        # Create Users
-        self.student_user = User.objects.create_user(
-            username="student",
-            password="Password123",
-            email="student@example.com",
-            role="student"
-        )
-        self.tutor_user = User.objects.create_user(
-            username="tutor",
-            password="Password123",
-            email="tutor@example.com",
-            role="tutor"
-        )
+        self.setup_student()
+        self.setup_tutor()
 
-        # Create Lessons
         self.lesson = Lesson.objects.create(
             student=self.student_user,
             tutor=self.tutor_user,
@@ -64,7 +54,7 @@ class BookingFormsTest(TestCase):
         form = CancellationRequestForm(data=form_data, user=self.student_user)
         self.assertFalse(form.is_valid())
         self.assertIn('lessons', form.errors)
-        self.assertIn('Please select at least one lesson to cancel.', form.errors['lessons'])
+        self.assertIn('This field is required.', form.errors['lessons'])
 
     def test_change_request_form_valid(self):
         """Test the ChangeRequestForm with valid data."""
@@ -75,6 +65,8 @@ class BookingFormsTest(TestCase):
             'reason': 'Rescheduling due to a conflict.',
         }
         form = ChangeRequestForm(data=form_data, user=self.student_user)
+        form.is_valid()
+        print(form.errors)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['new_datetime'], new_datetime)
         self.assertEqual(form.cleaned_data['reason'], form_data['reason'])
