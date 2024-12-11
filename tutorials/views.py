@@ -24,7 +24,7 @@ import calendar
 from tutorials.helpers import login_prohibited
 from django.core.paginator import Paginator
 from django.db.models import Count, Avg
-from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm, UpdateForm, AdminAddUserForm, AdminAddBookingForm
+from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm, AdminUpdateUserForm, AdminAddUserForm, AdminAddBookingForm
 from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, Subject, ProgrammingLanguage
 from django.db.models import Q, F
 from reportlab.lib import colors
@@ -209,6 +209,7 @@ class TutorLessonsView(LoginRequiredMixin, RoleRequiredMixin, View):
 
 """ <---- Admin Views ----> """
 class AdminViewProfile(LoginRequiredMixin, RoleRequiredMixin, View):
+    """Displays the profile for a user when the admin list button is clicked"""
     required_role = ['admin']
     template_name = 'student_profile.html'
 
@@ -218,6 +219,7 @@ class AdminViewProfile(LoginRequiredMixin, RoleRequiredMixin, View):
         return render(request, 'student_profile.html', {'user': userToFetch})
 
 class AddRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """Handles a user or booking being added"""
     required_role = ['admin']
 
     def get(self, request, role):
@@ -241,11 +243,10 @@ class AddRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
             
             if role != 'booking': 
                 new_record.set_password(form.cleaned_data['password'])
-                new_record.role = role  # Set the role to the one passed in the URL
+                new_record.current_active_role = Role.objects.get(name=role)  # Sets the role to the one passed in the URL
             
             new_record.save()
 
-            # Success message
             messages.success(request, f"{role.capitalize()} created successfully.")
             
             # Redirect to the appropriate list page
@@ -314,6 +315,7 @@ class AdminReviewRequestsView(LoginRequiredMixin, RoleRequiredMixin, TemplateVie
         return redirect("admin_review_requests")
     
 class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """For the admin to remove the booking from the database"""
     required_role = ['admin']
     template_name = 'delete_booking.html'
 
@@ -328,8 +330,9 @@ class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
         booking_to_delete = get_object_or_404(Lesson, id=booking_id)
         booking_to_delete.delete()
 
+        # Confirm that the booking has been deleted
         try:
-            booking_to_delete.refresh_from_db()  # Trying to access the object after deletion
+            booking_to_delete.refresh_from_db()  
         except Lesson.DoesNotExist:
             print("Booking successfully deleted!")
 
@@ -337,36 +340,36 @@ class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
         return redirect(reverse('admin_list', kwargs={'list_type': 'bookings'}))
 
 
-class DeleteRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
+class DeleteUserView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """For the admin to delete a user from the database"""
     required_role = ['admin']
-    template_name = 'delete_record.html'
+    template_name = 'delete_user.html'
     
     def get(self, request, email):
         """Renders the confirmation page."""
         user_to_delete = get_object_or_404(User, email=email)
         
         # Render the confirmation template
-        return render(request, 'delete_record.html', {
+        return render(request, 'delete_user.html', {
             'user': user_to_delete,
         })
 
     def post(self, request, email):
         """Deletes after the admin has confirmed."""
         user_to_delete = get_object_or_404(User, email=email)
-        
         user_to_delete.delete()
         
-        # Success message
         messages.success(request, f"The user {user_to_delete.email} was deleted successfully.")
         
         # Redirect back to the list of users (students, tutors, etc.)
         return redirect(reverse('admin_list', kwargs={'list_type': 'students'}))  
 
-class UpdateRecordView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
+class UpdateUserView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
+    """For the admin to update a user's details"""
     required_role = ['admin']
     model = User
-    template_name = 'update_record.html'
-    form_class = UpdateForm
+    template_name = 'update_user.html'
+    form_class = AdminUpdateUserForm
 
     def get_object(self):
         # Get the user being updated
@@ -379,6 +382,7 @@ class UpdateRecordView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        """Save the user if valid"""
         user = form.save(commit=False)
         if form.cleaned_data['password']:
             user.set_password(form.cleaned_data['password'])
@@ -395,21 +399,23 @@ class UpdateRecordView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
         
 
 class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """Loads the admin lists corresponding to the list type"""
     required_role = ['admin']
 
     def get(self, request, list_type):
         if request.user.role != 'admin':
             return render(request, 'home.html')
 
+        # Sets the HTML header fields depending on the list type
         if list_type == 'students':
-            objects = User.objects.filter(role=User.STUDENT)
+            objects = User.objects.filter(current_active_role=Role.objects.get(name=UserRoles.STUDENT))
             page_heading = "Students"
             add_button_text = "Add Student"
             table_headers = ["Username", "Name", "Email"]
             table_fields = ['username', 'first_name', 'email']
 
         elif list_type == 'tutors':
-            objects = User.objects.filter(role=User.TUTOR)
+            objects = User.objects.filter(current_active_role=Role.objects.get(name=UserRoles.TUTOR))
             page_heading = "Tutors"
             add_button_text = "Add Tutor"
             table_headers = ["Username", "Name", "Email"]
@@ -425,6 +431,7 @@ class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
         else:
             return render(request, '404.html')  
 
+        # Handles pagination
         paginator = Paginator(objects, 20)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
@@ -447,13 +454,14 @@ class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
         return render(request, 'admin_list.html', context)
 
 class AdminStatsView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
+    """Loads the statistics for the admin to view"""
     template_name = 'admin_stats.html'
     required_role = ['admin']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        user_counts_by_role = User.objects.values('role').annotate(count=Count('id')).order_by('-count')
+        user_counts_by_role = User.objects.values('current_active_role').annotate(count=Count('id')).order_by('-count')
         
         subjects = Subject.objects.select_related('language').all()
         language_subject_statistics = []

@@ -16,13 +16,13 @@ class AdminAddBookingFormTests(TestCase):
             username="student",
             password="Password123",
             email="student@example.com",
-            role="student"
+            current_active_role="student"
         )
         self.tutor = User.objects.create_user(
             username="tutor",
             password="Password123",
             email="tutor@example.com",
-            role="tutor"
+            current_active_role="tutor"
         )
 
         self.language = ProgrammingLanguage.objects.create(name="Python")

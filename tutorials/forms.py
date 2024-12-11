@@ -26,6 +26,7 @@ class LogInForm(forms.Form):
         return user
 
 class AdminAddUserForm(forms.ModelForm):
+    """Form for admin to add user"""
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name', 'last_name', 'password']
@@ -33,102 +34,52 @@ class AdminAddUserForm(forms.ModelForm):
             'password': forms.PasswordInput(),
         }
 
-    # You can also add custom validation here if necessary
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-
-        # Exclude the current instance when checking for unique emails
-        if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
-            raise ValidationError('This email is already in use by another user.')
-
-        return email
-
     def save(self, commit=True):
-        # If the password is being set, make sure it's hashed
-        user = super().save(commit=False)  # Don't save to DB just yet
+        user = super().save(commit=False)  
         password = self.cleaned_data.get('password')
+        
+        # Hash the password
         if password:
-            user.set_password(password)  # This will hash the password
+            user.set_password(password)  
         if commit:
-            user.save()  # Now save the user to the DB
+            user.save()  
         return user
 
-
 class AdminAddBookingForm(forms.ModelForm):
-    class Meta:
-        model = Lesson
-        fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
-
-    def clean_student(self):
-        """Validate that the student email corresponds to an existing user."""
-        student_email = self.cleaned_data.get('student')
-        try:
-            student = User.objects.get(email=student_email)
-            if student.role != 'student':
-                raise ValidationError("The provided email does not belong to a student.")
-            return student
-        except User.DoesNotExist:
-            raise ValidationError("No user with this email exists.")
-
-    def clean_tutor(self):
-        """Validate that the tutor email corresponds to an existing user."""
-        tutor_email = self.cleaned_data.get('tutor')
-        try:
-            tutor = User.objects.get(email=tutor_email)
-            if tutor.role != 'tutor':
-                raise ValidationError("The provided email does not belong to a tutor.")
-            return tutor
-        except User.DoesNotExist:
-            raise ValidationError("No user with this email exists.")
-
-    def save(self, commit=True):
-        """Create a new Lesson object."""
-        lesson = super().save(commit=False)
-
-        # The student and tutor fields now hold `User` objects, thanks to `clean_student` and `clean_tutor`.
-        lesson.student = self.cleaned_data.get('student')
-        lesson.tutor = self.cleaned_data.get('tutor')
-
-        if commit:
-            lesson.save()
-        return lesson
-
-
-class AdminAddBookingForm(forms.ModelForm):
+    """Form for admin to add a booking"""
     class Meta:
         model = Lesson
         fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
 
     student = forms.ModelChoiceField(
-        queryset=User.objects.filter(roles__name=UserRoles.STUDENT),
+        queryset=User.objects.filter(current_active_role=UserRoles.STUDENT), 
         required=True,
         label="Student"
     )
     tutor = forms.ModelChoiceField(
-        queryset=User.objects.filter(roles__name=UserRoles.TUTOR),  # Only show users with role 'tutor'
+        queryset=User.objects.filter(current_active_role=UserRoles.TUTOR),
         required=True,
         label="Tutor"
     )
 
     def clean_student(self):
-        """Validate that the student corresponds to an existing user."""
+        """Confirm the student is valid"""
         student = self.cleaned_data.get('student')
-        if student and UserRoles.STUDENT not in [i.name for i in student.roles.all()]:
+        if student and student.current_active_role != 'student':
             raise ValidationError("The selected user is not a student.")
         return student
 
     def clean_tutor(self):
-        """Validate that the tutor corresponds to an existing user."""
+        """Confirm the tutor is valid"""
         tutor = self.cleaned_data.get('tutor')
-        if tutor and UserRoles.TUTOR not in [i.name for i in tutor.roles.all()]:
+        if tutor and tutor.current_active_role != 'tutor':
             raise ValidationError("The selected user is not a tutor.")
         return tutor
 
     def save(self, commit=True):
-        """Create a new Lesson object."""
+        """Save the lesson object"""
         lesson = super().save(commit=False)
 
-        # Set the student and tutor from the cleaned data (which are now User instances)
         lesson.student = self.cleaned_data.get('student')
         lesson.tutor = self.cleaned_data.get('tutor')
 
@@ -143,23 +94,21 @@ class UserForm(forms.ModelForm):
         model = User
         fields = ['first_name', 'last_name', 'username', 'email', 'role']
         
-class UpdateForm(forms.ModelForm):
+class AdminUpdateUserForm(forms.ModelForm):
+    """Form for admin to update a user"""
     class Meta:
-        """Form options."""
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'role', 'password']
+        fields = ['first_name', 'last_name', 'username', 'email', 'current_active_role', 'password']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Clear any pre-populated data for the password field
-        self.initial['password'] = ''  # Set the initial value explicitly
-        self.fields['password'].widget = forms.PasswordInput()  # Ensure it's rendered as a password input
-
+        self.initial['password'] = '' 
+        self.fields['password'].widget = forms.PasswordInput() 
 
     def clean_email(self):
+        """Checks the email is valid, excluding the email they previously had"""
         email = self.cleaned_data.get('email')
 
-        # Exclude the current instance when checking for unique emails
         if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
             raise ValidationError('This email is already in use by another user.')
 

@@ -19,7 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from tutorials import views
-from tutorials.views import AdminListView, DeleteRecordView, DeleteBookingView, AddRecordView, AdminViewProfile, UpdateRecordView
+from tutorials.views import AdminListView, DeleteUserView, DeleteBookingView, AddRecordView, AdminViewProfile, UpdateRecordView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -54,9 +54,9 @@ urlpatterns = [
     path('confirm_delete_all/', views.ConfirmDeleteAllAvailabilitiesView.as_view(), name='confirm_delete_all_availabilities'),
     path('tutor_page/delete_all_availability/', views.DeleteAllAvailabilityView.as_view(), name='delete_all_availability'),
     path('tutor/lessons/', views.TutorLessonsView.as_view(), name='tutor_lessons'),
-    path('update_record/<str:email>', views.UpdateRecordView.as_view(), name='update_record'),
+    path('update_user/<str:email>', views.UpdateUserView.as_view(), name='update_user'),
     path('<int:booking_id>/delete/', DeleteBookingView.as_view(), name='delete_booking'),
-    path('<str:email>/delete/', DeleteRecordView.as_view(), name='delete_record'),
+    path('<str:email>/delete/', DeleteUserView.as_view(), name='delete_user'),
     path('<str:role>/add_record/', AddRecordView.as_view(), name='add_record'),
     path('admin_view_profile/<str:email>', AdminViewProfile.as_view(), name='admin_view_profile'),
     path('tutor/students/', views.TutorStudentsListView.as_view(), name='tutor_students_list'),
