@@ -237,8 +237,8 @@ class LessonRequestForm(forms.Form):
 
         start_time = datetime.strptime(start_time_str, '%H:%M')
         end_time = datetime.strptime(end_time_str, '%H:%M')
-        start_datetime = datetime.combine(lesson_date, start_time.time())
-        end_datetime = datetime.combine(lesson_date, end_time.time())
+        start_datetime = timezone.make_aware(datetime.combine(lesson_date, start_time.time()))
+        end_datetime = timezone.make_aware(datetime.combine(lesson_date, end_time.time()))
 
         if start_datetime >= end_datetime:
             raise ValidationError("End time must be after start time.")
