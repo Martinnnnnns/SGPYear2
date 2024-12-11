@@ -61,7 +61,7 @@ class AdminAddUserFormTests(TestCase):
         self.assertIn('email', form.errors, "Email uniqueness error should be present.")
         self.assertEqual(
             form.errors['email'][0],
-            'This email is already in use by another user.',
+            'User with this Email already exists.',
             "The error message for duplicate email should match."
         )
 

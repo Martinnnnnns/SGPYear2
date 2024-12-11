@@ -1,4 +1,3 @@
-from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
 
@@ -7,9 +6,7 @@ from tutorials.models import (
     Lesson,
     ProgrammingLanguage,
     Subject,
-    CancellationRequest,
-    ChangeRequest,
-    User,
+    CancellationRequest
 )
 from tutorials.forms import CancellationRequestForm, ChangeRequestForm
 from tutorials.tests.base import RoleSetupTest
@@ -65,8 +62,6 @@ class BookingFormsTest(RoleSetupTest, StudentMixin, TutorMixin):
             'reason': 'Rescheduling due to a conflict.',
         }
         form = ChangeRequestForm(data=form_data, user=self.student_user)
-        form.is_valid()
-        print(form.errors)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['new_datetime'], new_datetime)
         self.assertEqual(form.cleaned_data['reason'], form_data['reason'])
