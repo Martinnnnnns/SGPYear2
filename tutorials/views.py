@@ -334,7 +334,7 @@ class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
         try:
             booking_to_delete.refresh_from_db()  
         except Lesson.DoesNotExist:
-            print("Booking successfully deleted!")
+            pass
 
         messages.success(request, f"Booking was deleted successfully.")
         return redirect(reverse('admin_list', kwargs={'list_type': 'bookings'}))

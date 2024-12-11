@@ -25,9 +25,6 @@ class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
         self.setup_student()
         self.setup_tutor()
 
-        self.setup_student()
-        self.setup_tutor()
-
         self.other_tutor_user = User.objects.create_user(
             username="other_tutor",
             password="Password123",

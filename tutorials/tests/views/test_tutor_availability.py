@@ -1,5 +1,4 @@
 from django.urls import reverse
-from django.contrib.auth import get_user_model
 from tutorials.constants import UserRoles
 from tutorials.models import Lesson, ProgrammingLanguage, Subject, User
 from django.utils.timezone import now
