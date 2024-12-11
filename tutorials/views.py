@@ -562,7 +562,7 @@ class TriggerMatchingView(LoginRequiredMixin, RoleRequiredMixin, View):
 
                 try:
                     lesson_request = LessonRequest.objects.get(id=lesson_request_id)
-                    tutor = User.objects.get(id=tutor_id, role='tutor')
+                    tutor = User.objects.get(id=tutor_id, roles__name=UserRoles.TUTOR)
 
                     lesson = Lesson.objects.create(
                         student=lesson_request.user,
