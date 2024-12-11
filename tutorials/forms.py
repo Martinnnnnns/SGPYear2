@@ -51,17 +51,23 @@ class AdminAddBookingForm(forms.ModelForm):
         model = Lesson
         fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
 
-    student = forms.ModelChoiceField(
-        queryset=User.objects.filter(current_active_role=UserRoles.STUDENT), 
-        required=True,
-        label="Student"
-    )
-    tutor = forms.ModelChoiceField(
-        queryset=User.objects.filter(current_active_role=UserRoles.TUTOR),
-        required=True,
-        label="Tutor"
-    )
-
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Get the Role objects for student and tutor
+        student_role = Role.objects.get(name=UserRoles.STUDENT)
+        tutor_role = Role.objects.get(name=UserRoles.TUTOR)
+        
+        # Filter users by their current_active_role using the Role objects
+        self.fields['student'] = forms.ModelChoiceField(
+            queryset=User.objects.filter(current_active_role=student_role),
+            required=True,
+            label="Student"
+        )
+        self.fields['tutor'] = forms.ModelChoiceField(
+            queryset=User.objects.filter(current_active_role=tutor_role),
+            required=True,
+            label="Tutor"
+        )
     def clean_student(self):
         """Confirm the student is valid"""
         student = self.cleaned_data.get('student')
