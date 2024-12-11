@@ -51,31 +51,28 @@ class AdminAddBookingForm(forms.ModelForm):
         fields = ['student', 'tutor', 'language', 'subject', 'lesson_datetime', 'status']
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        student_role = Role.objects.get(name=UserRoles.STUDENT)
-        tutor_role = Role.objects.get(name=UserRoles.TUTOR)
-        
+        super().__init__(*args, **kwargs)        
         self.fields['student'] = forms.ModelChoiceField(
-            queryset=User.objects.filter(current_active_role=student_role),
+            queryset=User.objects.filter(roles__name=UserRoles.STUDENT),
             required=True,
             label="Student"
         )
         self.fields['tutor'] = forms.ModelChoiceField(
-            queryset=User.objects.filter(current_active_role=tutor_role),
+            queryset=User.objects.filter(roles__name=UserRoles.TUTOR),
             required=True,
             label="Tutor"
         )
     def clean_student(self):
         """Confirm the student is valid"""
         student = self.cleaned_data.get('student')
-        if student and student.current_active_role != 'student':
+        if UserRoles.STUDENT not in [item.name for item in student.roles.all()]:
             raise ValidationError("The selected user is not a student.")
         return student
 
     def clean_tutor(self):
         """Confirm the tutor is valid"""
         tutor = self.cleaned_data.get('tutor')
-        if tutor and tutor.current_active_role != 'tutor':
+        if UserRoles.TUTOR not in [item.name for item in tutor.roles.all()]:
             raise ValidationError("The selected user is not a tutor.")
         return tutor
 

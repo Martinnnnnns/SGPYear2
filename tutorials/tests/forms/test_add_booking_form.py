@@ -7,23 +7,15 @@ from datetime import datetime
 from django.utils import timezone
 from datetime import timedelta
 
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import StudentMixin, TutorMixin
 
-class AdminAddBookingFormTests(TestCase):
+
+class AdminAddBookingFormTests(RoleSetupTest, StudentMixin, TutorMixin):
 
     def setUp(self):
-        # Create an existing user to test email uniqueness validation
-        self.student = User.objects.create_user(
-            username="student",
-            password="Password123",
-            email="student@example.com",
-            current_active_role="student"
-        )
-        self.tutor = User.objects.create_user(
-            username="tutor",
-            password="Password123",
-            email="tutor@example.com",
-            current_active_role="tutor"
-        )
+        self.setup_student()
+        self.setup_tutor()
 
         self.language = ProgrammingLanguage.objects.create(name="Python")
         self.subject = Subject.objects.create(name="Mathematics", language=self.language)
@@ -31,8 +23,8 @@ class AdminAddBookingFormTests(TestCase):
     def test_valid_form_data(self):
         """Test the form with valid data."""
         form_data = {
-            'student': self.student,
-            'tutor': self.tutor,
+            'student': self.student_user,
+            'tutor': self.tutor_user,
             'language': self.language,
             'subject': self.subject,
             'lesson_datetime': timezone.now() + timedelta(days=1),
