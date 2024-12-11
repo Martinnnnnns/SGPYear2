@@ -130,7 +130,7 @@ programming_topics = {
 class Command(BaseCommand):
     """Build automation command to seed the database."""
 
-    USER_COUNT = 300
+    USER_COUNT = 500
     DEFAULT_PASSWORD = 'Password123'
     help = 'Seeds the database with sample data'
 
@@ -282,7 +282,7 @@ class Command(BaseCommand):
         start_time = datetime(2024, 1, 1)
         end_time = datetime(2025, 12, 31)
         lesson_cost = 10
-        for i in range(500):
+        for i in range(1500):
             tutor = choice(User.objects.filter(roles__name=UserRoles.TUTOR))
             student = choice(User.objects.filter(roles__name=UserRoles.STUDENT).exclude(id=tutor.id))
             language = choice(ProgrammingLanguage.objects.all())
