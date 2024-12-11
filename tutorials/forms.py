@@ -92,7 +92,7 @@ class UserForm(forms.ModelForm):
     """Form to update user profiles."""
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'role']
+        fields = ['first_name', 'last_name', 'username', 'email']
         
 class AdminUpdateUserForm(forms.ModelForm):
     """Form for admin to update a user"""

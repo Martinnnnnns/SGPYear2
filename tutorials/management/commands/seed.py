@@ -139,15 +139,22 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.create_roles()
-        print("Sucessfully created roles")
+        print("Roles done")
         self.create_users()
+        print("Users done")
         self.create_programming_languages()
+        print("Programming languages done")
         self.create_subjects()
+        print("Subjectys done")
         self.create_default_lessons()
+        print("Default Lessons done")
         self.assign_tutor_expertise() 
+        print("Expertise done")
         self.create_tutor_availability() 
+        print("Tutor avilaility done")
         self.users = User.objects.all()
         self.create_lessons()
+        print("Lessons done")
 
     def create_users(self):
         self.generate_user_fixtures()
@@ -190,7 +197,6 @@ class Command(BaseCommand):
         })
        
     def try_create_user(self, data):
-        print(data)
         try:
             self.create_user(data)
         except Exception as e:
@@ -208,8 +214,7 @@ class Command(BaseCommand):
                 role_objects.append(role_obj)
             except ObjectDoesNotExist:
                 raise ValueError(f"Role '{role_name}' does not exist in the database.")
-        print(role_objects)
-        # Create the user and assign roles
+
         user = User.objects.create_user(
             username=data['username'],
             email=data['email'],
@@ -219,6 +224,19 @@ class Command(BaseCommand):
             is_staff=data.get('is_staff', False),
             is_superuser=data.get('is_superuser', False)
         )
+
+        user.roles.set(role_objects)
+        user.save()
+
+    def assign_tutor_expertise(self):
+        """Assign one programming language for each tutor"""
+        tutors = User.objects.filter(roles__name = UserRoles.TUTOR)
+        languages= list(ProgrammingLanguage.objects.all())
+
+        for tutor in tutors:
+            expertise_language = choice(languages)
+            tutor.expertise_language = expertise_language
+            tutor.save()    
     
     def create_programming_languages(self):
         """Populate programming language table."""
@@ -265,19 +283,13 @@ class Command(BaseCommand):
         end_time = datetime(2025, 12, 31)
         lesson_cost = 10
         for i in range(500):
-            tutor = choice(User.objects.filter(role="tutor"))
-            student = choice(User.objects.filter(role="student"))
+            tutor = choice(User.objects.filter(roles__name=UserRoles.TUTOR))
+            student = choice(User.objects.filter(roles__name=UserRoles.STUDENT).exclude(id=tutor.id))
             language = choice(ProgrammingLanguage.objects.all())
             subject = choice(Subject.objects.filter(language=language))
             random_date = random_datetime(start_time, end_time)
             lesson_datetime = timezone.make_aware(random_date)
             
-            if subject.exists():
-                subject = choice(subject)
-                random_date = random_datetime(start_time, end_time)
-                lesson_datetime = timezone.make_aware(random_date)
-
-
             lesson = Lesson.objects.create(
                 student=student, 
                 tutor=tutor, 
@@ -294,7 +306,7 @@ class Command(BaseCommand):
             
     def create_tutor_availability(self):
         """Generate random availability slots for tutors across a 24-hour range."""
-        tutors = User.objects.filter(role='tutor')  
+        tutors = User.objects.filter(roles__name=UserRoles.TUTOR)  
         for tutor in tutors:
             num_slots = randint(3, 10)  
             for _ in range(num_slots):
@@ -330,13 +342,11 @@ def random_datetime(start_time, end_time):
 
 def create_invoices(self):
     """Generate invoices for students."""
-    student_role = Role.objects.get(name=UserRoles.STUDENT)
-    students = User.objects.filter(roles=student_role)
+    students = User.objects.filter(roles__name=UserRoles.STUDENT)
     lessons = Lesson.objects.filter(invoice__isnull=True)
     lesson_cost=10
 
     for lesson in lessons:
-        
         invoice = Invoice.objects.create(
             student=lesson.student,
             amount=lesson_cost,
