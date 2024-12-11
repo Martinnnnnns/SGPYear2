@@ -39,9 +39,10 @@ class TestConfirmDeleteViews(RoleSetupTest, StudentMixin, TutorMixin):
         self.assertEqual(response.status_code, 302)
         expected_url = f"/log_in/?next={url}"
         self.assertEqual(response.url, expected_url)
+
     def test_student_cannot_delete_slot(self):
         """Test that student cannot delete slots"""
-        self.client.login(username='@student1', password='Password123')
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('confirm_delete_availability', args=[self.test_slot.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
@@ -49,9 +50,9 @@ class TestConfirmDeleteViews(RoleSetupTest, StudentMixin, TutorMixin):
 
     def test_tutor_can_access_delete_confirmation(self):
         """Test that tutor can access delete confirmation page"""
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('confirm_delete_availability', args=[self.test_slot.id])
-        response = self.client.get(url)
+        response = self.client.get(url, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'confirm_delete_availability.html')
 
@@ -77,7 +78,7 @@ class TestConfirmDeleteViews(RoleSetupTest, StudentMixin, TutorMixin):
 
     def test_tutor_can_access_delete_all_confirmation(self):
         """Test that tutor can access delete all confirmation page"""
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('confirm_delete_all_availabilities')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -85,7 +86,7 @@ class TestConfirmDeleteViews(RoleSetupTest, StudentMixin, TutorMixin):
 
     def test_invalid_role_delete_all(self):
         """Test that invalid role cannot access delete all confirmation"""
-        self.client.login(username='@student1', password='Password123')
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('confirm_delete_all_availabilities')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
@@ -119,19 +120,19 @@ class TestConfirmDeleteViews(RoleSetupTest, StudentMixin, TutorMixin):
         response = self.client.post(url)
         
         self.assertTrue(TutorAvailability.objects.filter(id=other_slot.id).exists())
-        self.assertEqual(TutorAvailability.objects.filter(tutor=self.tutor).count(), 0)
+        self.assertEqual(TutorAvailability.objects.filter(tutor=self.tutor_user).count(), 0)
 
     def test_confirm_delete_all_post_request(self):
         """Test that POST request deletes all slots"""
         # Create additional slots
         TutorAvailability.objects.create(
-            tutor=self.tutor,
+            tutor=self.tutor_user,
             date=self.tomorrow + timedelta(days=1),
             start_time='14:00',
             end_time='15:00'
         )
         
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('confirm_delete_all_availabilities')
         response = self.client.post(url)
         messages = list(get_messages(response.wsgi_request))
@@ -140,11 +141,11 @@ class TestConfirmDeleteViews(RoleSetupTest, StudentMixin, TutorMixin):
         self.assertRedirects(response, reverse('schedule_sessions'))
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "All availability slots deleted successfully.")
-        self.assertEqual(TutorAvailability.objects.filter(tutor=self.tutor).count(), 0)
+        self.assertEqual(TutorAvailability.objects.filter(tutor=self.tutor_user).count(), 0)
 
     def test_confirm_delete_invalid_slot_id(self):
         """Test attempting to delete non-existent slot"""
-        self.client.login(username='@tutor1', password='Password123')
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('confirm_delete_availability', args=[99999])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
