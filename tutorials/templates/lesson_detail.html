@@ -1,11 +1,25 @@
-{% extends 'base_content.html' %}
-
+{% extends 'base_content.html' %} 
 {% block content %}
+
 <div class="container mt-5">
-  <h1>Lesson Details</h1>
-  <p><strong>Subject:</strong> {{ lesson.subject}}</p>
-  <p><strong>Language:</strong> {{ lesson.language }}</p>
-  <p><strong>Tutor:</strong> {{ lesson.tutor.full_name }}</p>
-  <p><strong>Time:</strong> {{ lesson.lesson_datetime }}</p>
+    <h1>Lesson Details</h1>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <p><strong>Subject:</strong> {{ lesson.subject }}</p>
+            <p><strong>Language:</strong> {{ lesson.language }}</p>
+            <p><strong>Tutor:</strong> {{ lesson.tutor.full_name }}</p>
+            <p><strong>Time:</strong> {{ lesson.lesson_datetime }}</p>
+        </div>
+    </div>
+
+    <div class="text-center">
+        {% if request.user.current_active_role.name == 'tutor' %}
+            <a href="{% url 'tutor_lessons' %}" class="btn btn-primary">Back to Calendar</a>
+        {% else %}
+            <a href="{% url 'student_lesson_calendar' %}" class="btn btn-primary">Back to Calendar</a>
+        {% endif %}
+    </div>
 </div>
+
 {% endblock %}

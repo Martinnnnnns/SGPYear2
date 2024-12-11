@@ -756,15 +756,24 @@ class InvoicePDFView(LoginRequiredMixin, View):
     
     
 
+from tutorials.constants import UserRoles
+
 class LessonDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
     """A view to get the Lesson Details"""
     model = Lesson
     template_name = 'lesson_detail.html'
     context_object_name = 'lesson'
-    required_role = 'student'
+    required_role = [UserRoles.STUDENT, UserRoles.TUTOR]
 
     def get_object(self):
-        return get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
+        lesson = get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
+        if self.request.user != lesson.student and self.request.user != lesson.tutor:
+            raise Http404("Lesson not found")
+        return lesson
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
     
 class StudentListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     """A view for the toutor to see his Students."""
