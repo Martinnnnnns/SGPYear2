@@ -1,57 +1,44 @@
-from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from tutorials.models import Lesson, ProgrammingLanguage, Subject
+from tutorials.constants import UserRoles
+from tutorials.models import Lesson, ProgrammingLanguage, Subject, User
 from django.utils.timezone import now
 from datetime import timedelta
 
-User = get_user_model()
+from tutorials.tests.base import RoleSetupTest
+from tutorials.tests.mixins import AdminMixin, StudentMixin, TutorMixin
 
 
-class TutorAvailabilityListViewTests(TestCase):
+class TutorAvailabilityListViewTests(RoleSetupTest, AdminMixin, TutorMixin, StudentMixin):
     def setUp(self):
-        # Create programming language and subject
         self.language = ProgrammingLanguage.objects.create(name="Python")
         self.subject = Subject.objects.create(name="Mathematics", language=self.language)
 
-        # Create admin user
-        self.admin_user = User.objects.create_user(
-            username="admin",
-            password="password",
-            role="admin",
-            email="jhbh@email.com"
-        )
-        
-        # Create tutors
-        self.tutor_1 = User.objects.create_user(
-            username="tutor1",
-            password="password",
-            role="tutor",            
-            email="jhsbh@email.com"
-
-            
-        )
+        self.setup_admin()
+        self.setup_tutor()
+        self.setup_student()
         self.tutor_2 = User.objects.create_user(
             username="tutor2",
-            password="password",
-            role="tutor",           
+            password="password",      
             email="jhbzh@email.com"
-
-
-            
         )
+        self.tutor_2.roles.set([self.tutor_role])
+        self.tutor_2.current_active_role = self.tutor_role
+        self.tutor_2.save()
+
         self.tutor_3 = User.objects.create_user(
             username="tutor3",
             password="password",
-            role="tutor",           
             email="jhvbh@email.com"
 
         )
+        self.tutor_3.roles.set([self.tutor_role])
+        self.tutor_3.current_active_role = self.tutor_role
+        self.tutor_3.save()
 
-        # Create lessons
         Lesson.objects.create(
             student=self.admin_user,
-            tutor=self.tutor_1,
+            tutor=self.tutor_user,
             language=self.language,
             subject=self.subject,
             lesson_datetime=now() + timedelta(days=1),
@@ -74,8 +61,7 @@ class TutorAvailabilityListViewTests(TestCase):
             status=Lesson.STATUS_SCHEDULED,
         )
 
-        # Log in as admin
-        self.client.login(username="admin", password="password")
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
 
     def test_tutor_availability_list_view_status_code(self):
         """Test that the view returns a 200 status code."""
@@ -92,17 +78,14 @@ class TutorAvailabilityListViewTests(TestCase):
         self.assertTemplateUsed(response, "partials/menu.html")
         self.assertTemplateUsed(response, "partials/messages.html")
         
-
     def test_tutor_availability_list_view_tutor_count(self):
         """Test that all tutors are included in the response context."""
         response = self.client.get(reverse("tutor_availability_list"))
         self.assertEqual(len(response.context["tutors"]), 3)
 
-    
-
     def test_tutor_availability_list_view_no_tutors(self):
         """Test that the view handles cases with no tutors gracefully."""
-        User.objects.filter(role="tutor").delete()
+        User.objects.filter(roles__name=UserRoles.TUTOR).delete()
         response = self.client.get(reverse("tutor_availability_list"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "No tutors available")
@@ -110,11 +93,6 @@ class TutorAvailabilityListViewTests(TestCase):
     def test_tutor_availability_list_view_permission_denied(self):
         """Test that non-admin users cannot access the view."""
         self.client.logout()
-        student_user = User.objects.create_user(
-            username="student",
-            password="password",
-            role="student"
-        )
-        self.client.login(username="student", password="password")
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse("tutor_availability_list"))
-        self.assertEqual(response.status_code, 200)  # Forbidden
+        self.assertEqual(response.status_code, 200) 
