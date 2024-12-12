@@ -243,8 +243,13 @@ class AddRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
             
             if role != 'booking': 
                 new_record.set_password(form.cleaned_data['password'])
-                new_record.current_active_role = Role.objects.get(name=role)  # Sets the role to the one passed in the URL
-            
+                role_instance = Role.objects.get(name=role)
+                new_record.roles.set([role_instance])
+                new_record.current_active_role = role_instance
+                
+                #self.admin_user.roles.set([Role.objects.get(name=UserRoles.ADMIN)])
+                #self.admin_user.current_active_role = self.admin_user.roles.first()  # Set active role
+                             
             new_record.save()
 
             messages.success(request, f"{role.capitalize()} created successfully.")

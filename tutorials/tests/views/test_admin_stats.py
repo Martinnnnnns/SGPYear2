@@ -2,6 +2,8 @@ from django.urls import reverse
 from tutorials.models import Lesson, Subject, ProgrammingLanguage
 from tutorials.tests.base import RoleSetupTest
 from tutorials.tests.mixins import AdminMixin, StudentMixin, TutorMixin
+from django.utils import timezone
+from datetime import datetime
 
 class AdminStatsViewTests(RoleSetupTest, AdminMixin, StudentMixin, TutorMixin):
 
@@ -20,7 +22,7 @@ class AdminStatsViewTests(RoleSetupTest, AdminMixin, StudentMixin, TutorMixin):
                 tutor=self.tutor_user,
                 language=self.language,
                 subject=self.subject1,
-                lesson_datetime="2024-12-01 10:00"
+                lesson_datetime = timezone.make_aware(datetime.strptime("2024-12-01 10:00:00", "%Y-%m-%d %H:%M:%S"))
             )
 
     def test_admin_can_access_stats(self):

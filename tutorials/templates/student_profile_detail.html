@@ -119,7 +119,7 @@
     </div>
     
     <div class="mt-4 mb-5">
-        {% if request.user.role == 'admin' %}
+        {% if request.user.current_active_role.name == 'admin' %}
             <a href="{% url 'admin_list' 'students' %}" class="btn btn-secondary">Back to Students</a>
         {% else %}
             {% if request.GET.source == 'current' %}
