@@ -34,7 +34,6 @@ class TutorPageTestCase(RoleSetupTest, StudentMixin, TutorMixin):
         self.assertTrue(response.url.startswith('/log_in/'))
 
     def tearDown(self):
-        # Remove test users to clean up after the test
         User.objects.all().delete()
 
 

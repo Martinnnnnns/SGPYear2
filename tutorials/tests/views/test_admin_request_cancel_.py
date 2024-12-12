@@ -49,13 +49,11 @@ class AdminReviewRequestsViewTest(RoleSetupTest, AdminMixin, StudentMixin, Tutor
         self.change_request.lessons.add(self.lesson)
 
     def test_admin_access_required(self):
-        # Attempt to access without logging in
         response = self.client.get(reverse('admin_review_requests'))
         self.assertRedirects(response, '/log_in/?next=/admin-review/')
-        # Login as non-admin
         self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(reverse('admin_review_requests'))
-        self.assertEqual(response.status_code, 302)  # Assuming 403 Forbidden for unauthorized access
+        self.assertEqual(response.status_code, 302)  
 
     def test_admin_can_view_pending_requests(self):
         self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
@@ -78,7 +76,6 @@ class AdminReviewRequestsViewTest(RoleSetupTest, AdminMixin, StudentMixin, Tutor
         response = self.client.post(url, data, follow=True)
         self.assertContains(response, "Cancellation request approved successfully.")
 
-        # Refresh from DB
         self.cancellation_request.refresh_from_db()
         self.lesson.refresh_from_db()
 
@@ -98,16 +95,14 @@ class AdminReviewRequestsViewTest(RoleSetupTest, AdminMixin, StudentMixin, Tutor
         response = self.client.post(url, data, follow=True)
         self.assertContains(response, "Cancellation request rejected successfully.")
 
-        # Refresh from DB
         self.cancellation_request.refresh_from_db()
         self.lesson.refresh_from_db()
 
         self.assertEqual(self.cancellation_request.status, CancellationRequest.STATUS_DENIED)
-        self.assertEqual(self.lesson.status, Lesson.STATUS_SCHEDULED)  # Status should remain unchanged
+        self.assertEqual(self.lesson.status, Lesson.STATUS_SCHEDULED) 
         self.assertEqual(self.cancellation_request.admin_comment, 'Cancellation not approved.')
 
     def test_admin_approves_change_request_with_availability(self):
-        # Set tutor availability
         TutorAvailability.objects.create(
             tutor=self.tutor_user,
             date=self.change_request.new_datetime.date(),
@@ -125,7 +120,6 @@ class AdminReviewRequestsViewTest(RoleSetupTest, AdminMixin, StudentMixin, Tutor
         response = self.client.post(url, data, follow=True)
         self.assertContains(response, "Change request approved successfully.")
 
-        # Refresh from DB
         self.change_request.refresh_from_db()
         self.lesson.refresh_from_db()
 
@@ -146,11 +140,10 @@ class AdminReviewRequestsViewTest(RoleSetupTest, AdminMixin, StudentMixin, Tutor
         response = self.client.post(url, data, follow=True)
         self.assertContains(response, "Change request rejected successfully.")
 
-        # Refresh from DB
         self.change_request.refresh_from_db()
         self.lesson.refresh_from_db()
 
         self.assertEqual(self.change_request.status, ChangeRequest.STATUS_DENIED)
-        self.assertEqual(self.lesson.lesson_datetime, self.lesson.lesson_datetime)  # No change
-        self.assertEqual(self.lesson.status, Lesson.STATUS_SCHEDULED)  # No change
+        self.assertEqual(self.lesson.lesson_datetime, self.lesson.lesson_datetime) 
+        self.assertEqual(self.lesson.status, Lesson.STATUS_SCHEDULED) 
         self.assertEqual(self.change_request.admin_comment, 'Change request denied.')

@@ -25,18 +25,17 @@ class AddUserViewTests(RoleSetupTest, StudentMixin, AdminMixin, TutorMixin):
         self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
 
         post_data = {
-            'username': '@newstudent',  # Updated username
+            'username': '@newstudent', 
             'email': 'student@example.com',
             'password': 'securepassword123',
             'first_name': 'Student',
             'last_name': 'Test'
         }
 
-        # URL to add user as student
         url = reverse('add_record', kwargs={'role': 'student'})
         response = self.client.post(url, post_data, follow=True)  
 
-        # Check if the student is in the database with the correct role
+        #Check database for student
         student = User.objects.filter(email='student@example.com').first()
         self.assertIsNotNone(student)
         self.assertEqual(student.current_active_role.name, 'student')  
@@ -47,18 +46,17 @@ class AddUserViewTests(RoleSetupTest, StudentMixin, AdminMixin, TutorMixin):
         self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
 
         post_data = {
-            'username': '@newtutor',  # Updated username
+            'username': '@newtutor',  
             'email': 'tutor@example.com',
             'password': 'securepassword123',
             'first_name': 'Tutor',
             'last_name': 'Test'
         }
 
-        # URL to add user as tutor
         url = reverse('add_record', kwargs={'role': 'tutor'})
         response = self.client.post(url, post_data, follow=True)  
 
-        # Check if the tutor is in the database with the correct role
+        #Check database for tutor
         tutor = User.objects.filter(email='tutor@example.com').first()
         self.assertIsNotNone(tutor)
         self.assertEqual(tutor.current_active_role.name, 'tutor')  
@@ -76,12 +74,9 @@ class AddUserViewTests(RoleSetupTest, StudentMixin, AdminMixin, TutorMixin):
             'status': Lesson.STATUS_SCHEDULED
         }
 
-        # URL to add user as tutor
         url = reverse('add_record', kwargs={'role': 'booking'})
         response = self.client.post(url, post_data, follow=True)  
 
-        # Check if the tutor is in the database with the correct role
+        #Check database for booking
         lesson = Lesson.objects.filter(student=self.student_user, tutor=self.tutor_user)
-
-        # Check if a lesson exists
         self.assertIsNotNone(lesson)

@@ -14,25 +14,22 @@ class LoginProhibitedMixinTestCase(TestCase):
         """Test that the method returns the correct student dashboard URL when set."""
         expected_url = '/student_dashboard/'
         mixin = LoginProhibitedMixin()
-        mixin.redirect_when_logged_in_url = expected_url  # Set the student URL
+        mixin.redirect_when_logged_in_url = expected_url  
         
-        # Ensure the method returns the correct URL
         self.assertEqual(mixin.get_redirect_when_logged_in_url(), expected_url)
 
     def test_get_redirect_when_logged_in_url_returns_tutor_dashboard_url(self):
         """Test that the method returns the correct tutor dashboard URL when set."""
         expected_url = '/tutor_page/'
         mixin = LoginProhibitedMixin()
-        mixin.redirect_when_logged_in_url = expected_url  # Set the tutor URL
+        mixin.redirect_when_logged_in_url = expected_url  
         
-        # Ensure the method returns the correct URL
         self.assertEqual(mixin.get_redirect_when_logged_in_url(), expected_url)
 
     def test_get_redirect_when_logged_in_url_returns_admin_dashboard_url(self):
         """Test that the method returns the correct admin dashboard URL when set."""
         expected_url = '/admin_dashboard/'
         mixin = LoginProhibitedMixin()
-        mixin.redirect_when_logged_in_url = expected_url  # Set the admin URL
+        mixin.redirect_when_logged_in_url = expected_url  
         
-        # Ensure the method returns the correct URL
         self.assertEqual(mixin.get_redirect_when_logged_in_url(), expected_url)

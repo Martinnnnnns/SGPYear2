@@ -9,7 +9,7 @@ class AdminUpdateUserFormTests(TestCase):
 
     def setUp(self):
         """Set up test data."""
-        # Create a user to update
+        #User to update
         self.existing_user = User.objects.create_user(
             username='@existing_user',
             email='existing@example.com',
@@ -18,7 +18,7 @@ class AdminUpdateUserFormTests(TestCase):
             password='password123'
         )
 
-        # Create another user to test unique email validation
+        #Update data
         self.other_user = User.objects.create_user(
             username='@other_user',
             email='other@example.com',
@@ -34,15 +34,13 @@ class AdminUpdateUserFormTests(TestCase):
             'last_name': 'User',
             'username': '@existing_user_updated',
             'email': 'updated@example.com',
-            'role': 'student',  # Adjust as per your model
+            'role': 'student',  
             'password': 'newpassword123'
         }
         form = AdminUpdateUserForm(instance=self.existing_user, data=data)
 
-        # Ensure the form is valid
         self.assertTrue(form.is_valid(), "The form should be valid with unique email and valid data.")
 
-        # Save the form and check updates
         updated_user = form.save()
         self.assertEqual(updated_user.first_name, 'Updated')
         self.assertEqual(updated_user.email, 'updated@example.com')
@@ -72,16 +70,14 @@ class AdminUpdateUserFormTests(TestCase):
             'first_name': 'Updated',
             'last_name': 'User',
             'username': 'existing_user_updated',
-            'email': 'other@example.com',  # Duplicate email (existing_user's email)
+            'email': 'other@example.com',  
             'role': 'student',
             'password': 'newpassword123'
         }
         form = AdminUpdateUserForm(instance=self.existing_user, data=data)
 
-        # Ensure the form is invalid
         self.assertFalse(form.is_valid(), "The form should not be valid with a duplicate email.")
 
-        # Ensure the form has the correct error for the email field
         self.assertIn(
             'This email is already in use by another user.',
             form.errors['email'],
@@ -92,14 +88,12 @@ class AdminUpdateUserFormTests(TestCase):
         """Test that the password field is empty initially."""
         form = AdminUpdateUserForm(instance=self.existing_user)
 
-        # Check that the initial value for the password is an empty string
         self.assertEqual(form.initial['password'], '', "The password field should be empty initially.")
 
     def test_password_field_is_password_input_widget(self):
         """Test that the password field is rendered as a password input."""
         form = AdminUpdateUserForm(instance=self.existing_user)
 
-        # Check the widget type of the password field
         self.assertIsInstance(
             form.fields['password'].widget, 
             forms.PasswordInput, 

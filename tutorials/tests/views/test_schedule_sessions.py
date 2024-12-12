@@ -41,7 +41,6 @@ class TestScheduleSessions(RoleSetupTest, StudentMixin, TutorMixin):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(TutorAvailability.objects.count(), 1)
         
-        # Verify slot details
         slot = TutorAvailability.objects.first()
         self.assertEqual(slot.tutor, self.tutor_user)
         self.assertEqual(slot.start_time.strftime('%H:%M'), '10:00')

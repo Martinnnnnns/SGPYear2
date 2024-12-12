@@ -101,7 +101,7 @@ class SignUpViewTestCase(RoleSetupTest, LogInTester, StudentMixin, AdminMixin, T
         self.assertEqual(user.first_name, 'bob')
         self.assertEqual(user.last_name, 'bobby')
         self.assertEqual(user.email, 'bobby@gmail.com')
-        self.assertEqual(user.roles, [self.admin_role])  # Test role assignment
+        self.assertEqual(user.roles, [self.admin_role])  
         self.assertEqual(user.current_active_role, self.admin_role)
         is_password_correct = check_password('Password123', user.password)
         self.assertTrue(is_password_correct)
@@ -119,7 +119,7 @@ class SignUpViewTestCase(RoleSetupTest, LogInTester, StudentMixin, AdminMixin, T
         self.assertEqual(user.first_name, 'angela')
         self.assertEqual(user.last_name, 'fred')
         self.assertEqual(user.email, 'angela@gmail.com')
-        self.assertEqual(user.roles, [self.tutor_role])  # Test role assignment
+        self.assertEqual(user.roles, [self.tutor_role])  
         self.assertEqual(user.current_active_role, self.tutor_role)
         is_password_correct = check_password('Password123', user.password)
         self.assertTrue(is_password_correct)
@@ -137,7 +137,7 @@ class SignUpViewTestCase(RoleSetupTest, LogInTester, StudentMixin, AdminMixin, T
         self.assertEqual(user.first_name, 'liam')
         self.assertEqual(user.last_name, 'smith')
         self.assertEqual(user.email, 'liam@gmail.com')
-        self.assertEqual(user.roles, [self.student_role])  # Test role assignment
+        self.assertEqual(user.roles, [self.student_role]) 
         self.assertEqual(user.current_active_role, self.student_role)
         is_password_correct = check_password('Password123', user.password)
         self.assertTrue(is_password_correct)

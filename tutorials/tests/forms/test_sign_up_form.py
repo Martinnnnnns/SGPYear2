@@ -30,11 +30,11 @@ class SignUpFormTestCase(RoleSetupTest):
         self.assertIn('last_name', form.fields)
         self.assertIn('username', form.fields)
         self.assertIn('email', form.fields)
-        self.assertIn('roles', form.fields)  # Test for role field
+        self.assertIn('roles', form.fields)  
         email_field = form.fields['email']
         self.assertTrue(isinstance(email_field, forms.EmailField))
         role_field = form.fields['roles']
-        self.assertTrue(isinstance(role_field, forms.ModelMultipleChoiceField))  # Test role field type
+        self.assertTrue(isinstance(role_field, forms.ModelMultipleChoiceField)) 
         self.assertIn('new_password', form.fields)
         new_password_widget = form.fields['new_password'].widget
         self.assertTrue(isinstance(new_password_widget, forms.PasswordInput))

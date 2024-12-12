@@ -16,7 +16,7 @@ class RoleModelTest(TestCase):
     def test_role_name_unique(self):
         """Test that duplicate role names are not allowed."""
         Role.objects.create(name=self.role_name)
-        with self.assertRaises(Exception):  # Expecting a unique constraint error
+        with self.assertRaises(Exception):  
             Role.objects.create(name=self.role_name)
     
     def test_str_method(self):

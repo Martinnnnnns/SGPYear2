@@ -21,7 +21,6 @@ class UpdateUserTests(RoleSetupTest, AdminMixin, StudentMixin):
     def test_edit_user_view_post(self):
         """Test POST request for editing a user."""
         self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)  
-        # Valid data for testing successful update
         valid_data = {
             'username': '@updateduser',
             'email': 'updateduser@example.com',
@@ -43,7 +42,7 @@ class UpdateUserTests(RoleSetupTest, AdminMixin, StudentMixin):
         """Test POST request with invalid data."""
         self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)  
         invalid_data = {
-            'username': '',  # Empty username
+            'username': '',  
             'email': 'invaliduser@example.com',
             'first_name': 'Invalid',
             'last_name': 'User',

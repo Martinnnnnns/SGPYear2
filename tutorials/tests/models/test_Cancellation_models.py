@@ -82,8 +82,8 @@ class ChangeRequestModelTest(TestCase):
         self.assertIn(self.lesson, self.change_request.lessons.all())
 
     def test_process_approval(self):
-        # Mock tutor availability
-        new_datetime = self.change_request.new_datetime  # This is a datetime object
+        #Mock tutor availability
+        new_datetime = self.change_request.new_datetime  #This is a datetime object
         TutorAvailability.objects.create(
             tutor=self.tutor,
             date=new_datetime.date(),

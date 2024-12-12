@@ -51,7 +51,7 @@ class DeleteBookingViewTests(RoleSetupTest, AdminMixin, StudentMixin):
         response = self.client.post(url)
         
         try:
-            self.lesson.refresh_from_db()  # Exception if the booking was deleted
+            self.lesson.refresh_from_db()  
             self.fail("Lesson was not deleted successfully.")
         except Lesson.DoesNotExist:
             print("Lesson successfully deleted!")  
@@ -67,4 +67,5 @@ class DeleteBookingViewTests(RoleSetupTest, AdminMixin, StudentMixin):
         self.assertRedirects(response, reverse('access_denied'))
         self.lesson.refresh_from_db()
         self.assertIsNotNone(self.lesson)
+
 

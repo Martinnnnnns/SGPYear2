@@ -119,9 +119,9 @@ class ProfileViewTest(RoleSetupTest, StudentMixin, TutorMixin, AdminMixin):
         after_count = User.objects.count()
         
         self.assertEqual(after_count, before_count)
-        response_url = reverse('dashboard')  # Redirect URL for admin
+        response_url = reverse('dashboard')  
         self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
-        self.assertTemplateUsed(response, 'admin_dashboard.html')  # Change this to actual template
+        self.assertTemplateUsed(response, 'admin_dashboard.html')  
         messages_list = list(response.context['messages'])
         self.assertEqual(len(messages_list), 1)
         self.assertEqual(messages_list[0].level, messages.SUCCESS)
@@ -140,9 +140,9 @@ class ProfileViewTest(RoleSetupTest, StudentMixin, TutorMixin, AdminMixin):
         after_count = User.objects.count()
         
         self.assertEqual(after_count, before_count)
-        response_url = reverse('dashboard')  # Redirect URL for tutor
+        response_url = reverse('dashboard') 
         self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
-        self.assertTemplateUsed(response, 'tutor_page.html')  # Change this to actual template
+        self.assertTemplateUsed(response, 'tutor_page.html') 
         messages_list = list(response.context['messages'])
         self.assertEqual(len(messages_list), 1)
         self.assertEqual(messages_list[0].level, messages.SUCCESS)
@@ -161,9 +161,9 @@ class ProfileViewTest(RoleSetupTest, StudentMixin, TutorMixin, AdminMixin):
         after_count = User.objects.count()
         
         self.assertEqual(after_count, before_count)
-        response_url = reverse('dashboard')  # Redirect URL for student
+        response_url = reverse('dashboard') 
         self.assertRedirects(response, response_url, status_code=302, target_status_code=200)
-        self.assertTemplateUsed(response, 'student_dashboard.html')  # Change this to actual template
+        self.assertTemplateUsed(response, 'student_dashboard.html')  
         messages_list = list(response.context['messages'])
         self.assertEqual(len(messages_list), 1)
         self.assertEqual(messages_list[0].level, messages.SUCCESS)

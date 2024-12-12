@@ -10,13 +10,13 @@ class LessonTestCase(TestCase):
         self.flask = Subject.objects.create(name="Flask", language=self.python, description="Web development in Flask")
         self.general_subject = Subject.objects.create(name="General", language=self.python)
         
-        # Mock users
+        #Mock users
         self.student = User.objects.create_user(username="@student123", email="student.thuwa@mail.com", password="Password123", first_name="Billy", last_name="Bob")    
         self.tutor = User.objects.create_user(username="@tutor123", email="tutor.jones@mail.com", password="Password123", first_name="Joe", last_name="Jones")
 
     def test_lesson_creation_with_subject(self):
         """Test that a lesson can be created with a valid subject and a datetime."""
-        lesson_datetime = timezone.now()  # Set the datetime for the lesson
+        lesson_datetime = timezone.now()  
         lesson = Lesson.objects.create(
             student=self.student,
             tutor=self.tutor,
@@ -49,16 +49,15 @@ class LessonTestCase(TestCase):
         javascript = ProgrammingLanguage.objects.create(name="JavaScript")
         javascript_subject = Subject.objects.create(name="React", language=javascript)
 
-        # Creating a lesson with a subject that has a different language
+        #Creates a lesson with a mismatched subject-language
         lesson = Lesson(
             student=self.student,
             tutor=self.tutor,
             language=self.python,
             subject=javascript_subject,
-            lesson_datetime=timezone.now()  # Add lesson datetime to match the new field
+            lesson_datetime=timezone.now()  
         )
         
-        # Check that validation fails when subject language doesn't match lesson language
         with self.assertRaises(ValidationError):
             lesson.clean()
 
@@ -96,5 +95,5 @@ class LessonTestCase(TestCase):
             subject=self.flask,
             lesson_datetime=lesson_datetime
         )
-        # Check if the datetime is included in the string representation
+
         self.assertIn(str(lesson_datetime), str(lesson))

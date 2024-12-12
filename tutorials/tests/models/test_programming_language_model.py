@@ -23,6 +23,6 @@ class ProgrammingLanguageTestCase(TestCase):
         self.language.name = ''
         
         with self.assertRaises(ValidationError):
-            self.language.full_clean()  # This triggers model validation before saving
+            self.language.full_clean() 
             self.language.save()
         

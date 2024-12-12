@@ -31,7 +31,7 @@ class UserModelTest(TestCase):
     def test_current_active_role_invalid(self):
         """Test that a ValueError is raised if the current active role is not part of the assigned roles."""
         self.user.roles.add(self.role_student, self.role_tutor)
-        self.user.current_active_role = self.role_admin  # Not assigned to the user
+        self.user.current_active_role = self.role_admin 
         with self.assertRaises(ValueError):
             self.user.save()
 

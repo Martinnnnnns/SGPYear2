@@ -21,7 +21,7 @@ class LessonRequestFormTest(TestCase):
         form = LessonRequestForm(data)
         self.assertTrue(form.is_valid()) 
 
-        #Check the cleaned data includes correct datetime objects
+        #Check cleaned data includes correct datetime objects
         cleaned_data = form.cleaned_data
         self.assertEqual(cleaned_data['start_datetime'], datetime(2024, 12, 1, 9, 0))
         self.assertEqual(cleaned_data['end_datetime'], datetime(2024, 12, 1, 10, 0))
@@ -38,7 +38,7 @@ class LessonRequestFormTest(TestCase):
         form = LessonRequestForm(data)
         self.assertTrue(form.is_valid()) 
 
-        #Check the cleaned data includes correct datetime objects
+        #Check cleaned data includes correct datetime objects
         cleaned_data = form.cleaned_data
         self.assertEqual(cleaned_data['start_datetime'], datetime(2024, 12, 1, 9, 0))
         self.assertEqual(cleaned_data['end_datetime'], datetime(2024, 12, 1, 10, 0))

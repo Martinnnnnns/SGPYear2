@@ -34,8 +34,4 @@ class ScheduleSessionsViewTests(RoleSetupTest, TutorMixin, StudentMixin):
         self.assertTrue(response.url.startswith('/login/'))
         
     def tearDown(self):
-        # Remove test users to clean up after the test
-        """
-        self.tutor_user.delete()
-        self.student_user.delete()"""
         User.objects.all().delete()

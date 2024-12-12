@@ -18,7 +18,6 @@ User = get_user_model()
 
 class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
     def setUp(self):
-        # Create Language and Subject
         self.language = ProgrammingLanguage.objects.create(name="Python")
         self.subject = Subject.objects.create(name="Mathematics", language=self.language)
         
@@ -32,7 +31,6 @@ class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
         )
         self.other_tutor_user.roles.set([self.tutor_role])
 
-        # Create Lessons
         self.scheduled_lesson = Lesson.objects.create(
             student=self.student_user,
             tutor=self.tutor_user,
@@ -50,12 +48,10 @@ class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
             status=Lesson.STATUS_SCHEDULED
         )
 
-        # URLs
         self.cancel_url = reverse("request_cancel_bookings", kwargs={"lesson_id": self.scheduled_lesson.id})
         self.change_url = reverse("request_change_bookings", kwargs={"lesson_id": self.scheduled_lesson.id})
         self.dashboard_url = reverse("dashboard")
 
-        # Log in as student
         self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
 
     # ---- Change Request Tests ----
@@ -77,7 +73,7 @@ class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
         new_datetime = timezone.now() + timedelta(days=3)
         form_data = {
             "request_type": ChangeBookingForm.REQUEST_SINGLE,
-            "lessons": [],  # No lessons provided
+            "lessons": [],  
             "new_datetime": new_datetime.strftime('%Y-%m-%dT%H:%M'),
             "reason": "No lessons selected."
         }
@@ -125,7 +121,7 @@ class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
         """Test that cancellation fails when no lessons are provided."""
         form_data = {
             "request_type": ChangeBookingForm.REQUEST_SINGLE,
-            "lessons": [],  # No lessons provided
+            "lessons": [],
             "reason": "No lessons selected for cancellation."
         }
         response = self.client.post(self.cancel_url, form_data)

@@ -26,16 +26,15 @@ class StudentDashboardViewTest(RoleSetupTest, StudentMixin, TutorMixin):
             tutor=self.tutor_user,  
             language=self.language,
             subject=self.subject,
-            lesson_datetime=timezone.now()  # Providing a default datetime
+            lesson_datetime=timezone.now() 
         )
         self.lesson2 = Lesson.objects.create(
             student=self.student_user,
             tutor=self.tutor_user,
             language=self.language,
-            lesson_datetime=timezone.now()  # Providing a default datetime
-        )  # No subject (general lesson)
+            lesson_datetime=timezone.now() 
+        ) 
 
-        # Create some invoices
         self.invoice1 = Invoice.objects.create(
             amount=100,
             date='2024-11-15',
@@ -81,7 +80,6 @@ class StudentDashboardViewTest(RoleSetupTest, StudentMixin, TutorMixin):
         """Ensure lesson requests assigned to the user are displayed on the dashboard."""
         response = self.client.get(reverse('dashboard'))
         
-        # Check that lesson requests are displayed correctly
         self.assertEqual(response.context["lesson_requests"].count(), 0)
         self.assertContains(response, self.lesson_request.subject.name)
         self.assertContains(response, self.language.name)

@@ -45,7 +45,7 @@ class BookingFormsTest(RoleSetupTest, StudentMixin, TutorMixin):
         """Test the CancellationRequestForm with missing required data."""
         form_data = {
             'request_type': CancellationRequest.REQUEST_SINGLE,
-            'lessons': [],  # No lessons selected
+            'lessons': [],  
             'reason': '',
         }
         form = CancellationRequestForm(data=form_data, user=self.student_user)

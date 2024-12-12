@@ -22,7 +22,7 @@ class AdminListTestMixin(RoleSetupTest, AdminMixin):
     def test_view_renders(self):
         """Test the view renders successfully with the expected template."""
         if self.list_type is None:
-            return # Happens when it is testing the superclass with no list_type
+            return #Happens when it tests the superclass with no list_type
         url = reverse('admin_list', kwargs={'list_type': self.list_type})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -31,11 +31,11 @@ class AdminListTestMixin(RoleSetupTest, AdminMixin):
     def test_page_content(self):
         """Test page content is rendered correctly."""
         if self.list_type is None:
-            return # Happens when it is testing the superclass with no list_type
+            return #Happens when it tests the superclass with no list_type
         url = reverse('admin_list', kwargs={'list_type': self.list_type})
         response = self.client.get(url)
 
-        # Test that table headers match the list type
+        #Test table headers match list type
         if self.list_type == 'student':
             self.assertContains(response, "Username")
             self.assertContains(response, "Name")

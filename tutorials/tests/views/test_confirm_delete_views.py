@@ -124,7 +124,6 @@ class TestConfirmDeleteViews(RoleSetupTest, StudentMixin, TutorMixin):
 
     def test_confirm_delete_all_post_request(self):
         """Test that POST request deletes all slots"""
-        # Create additional slots
         TutorAvailability.objects.create(
             tutor=self.tutor_user,
             date=self.tomorrow + timedelta(days=1),

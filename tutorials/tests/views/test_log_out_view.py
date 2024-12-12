@@ -33,6 +33,4 @@ class LogOutViewTestCase(RoleSetupTest, StudentMixin, LogInTester):
         self.assertFalse(self._is_logged_in())
 
     def tearDown(self):
-        # Remove test users to clean up after the test
-        #self.user.delete()
         User.objects.all().delete()

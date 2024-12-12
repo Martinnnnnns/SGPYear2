@@ -6,7 +6,6 @@ from tutorials.models import User
 class AdminAddUserFormTests(TestCase):
 
     def setUp(self):
-        # Create an existing user to test email uniqueness validation
         self.existing_user = User.objects.create_user(
             username='@existinguser',
             email='existing@example.com',
@@ -51,7 +50,7 @@ class AdminAddUserFormTests(TestCase):
         """Test that the form raises an error for duplicate email."""
         form_data = {
             'username': '@anotheruser',
-            'email': 'existing@example.com',  # Duplicate email
+            'email': 'existing@example.com',  #Invalid duplicate email
             'first_name': 'Another',
             'last_name': 'User',
             'password': 'anotherpassword123'

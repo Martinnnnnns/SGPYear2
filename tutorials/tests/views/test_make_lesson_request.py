@@ -57,10 +57,10 @@ class LessonRequestViewTest(RoleSetupTest, StudentMixin):
         before_count = LessonRequest.objects.count()
         response = self.client.post(self.url, self.data, follow=True)
         after_count = LessonRequest.objects.count()
-        self.assertEqual(after_count, before_count) #expect no increase as this LessonRequest should not habe been made
+        self.assertEqual(after_count, before_count) #Expect no increase as this LessonRequest should not have been made
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "make_lesson_request.html") 
         self.assertIn("form", response.context)
         form = response.context['form']
         self.assertTrue(isinstance(form, LessonRequestForm))
-        self.assertTrue(form.is_bound) #but this time with a bounded form (prev inputted data)
+        self.assertTrue(form.is_bound) #This time with a bounded form (prev inputted data)
