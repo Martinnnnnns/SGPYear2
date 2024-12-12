@@ -186,7 +186,7 @@ class SignUpForm(NewPasswordMixin, forms.ModelForm):
     """Form enabling unregistered users to sign up."""
 
     roles = forms.ModelMultipleChoiceField(
-        queryset=Role.objects.exclude(name=UserRoles.ADMIN),  #Exclude "admin" from selectable roles
+        queryset=Role.objects.exclude(name=UserRoles.ADMIN),  
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
         required=True,
         help_text="Select one or more roles for the user."
@@ -324,7 +324,6 @@ class TutorAvailabilityForm(forms.ModelForm):
                     self.add_error('end_recurrence_date', "End date must be after start date")
 
             if self.tutor:
-                # Check for overlapping slots
                 current_date = date
                 while current_date <= (end_recurrence_date or date):
                     overlapping = TutorAvailability.objects.filter(

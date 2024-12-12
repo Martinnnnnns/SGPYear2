@@ -11,7 +11,7 @@
       <h1>Sign up</h1>
       <form action="{% url 'sign_up' %}" method="post">
         {% csrf_token %}
-        {{ form | crispy }}  <!-- Render the form using the crispy filter -->
+        {{ form | crispy }} 
         <input type="submit" value="Sign up" class="btn btn-primary">
       </form>
     </div>

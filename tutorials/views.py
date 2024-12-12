@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponseForbidden
 from django.contrib.auth import login, logout, get_user_model
-from datetime import datetime
 from itertools import count
 from django.utils.timezone import now
 from django.conf import settings
@@ -25,32 +24,24 @@ from tutorials.helpers import login_prohibited
 from django.core.paginator import Paginator
 from django.db.models import Count, Avg
 from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm, AdminUpdateUserForm, AdminAddUserForm, AdminAddBookingForm
-from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, Subject, ProgrammingLanguage
-from django.db.models import Q, F
+from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, Subject, ProgrammingLanguage , Role
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.pdfgen import canvas
-
-from tutorials.forms import CancellationRequestForm, ChangeBookingForm, LogInForm, PasswordForm, UserForm, SignUpForm, LessonRequestForm, TutorAvailabilityForm
-from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice, ProgrammingLanguage, Role
 from tutorials.constants import UserRoles
+from django.db.models import Count, Case, When, IntegerField,Q
 
 User = get_user_model()
 
-from tutorials.models import CancellationRequest, ChangeRequest, User, LessonRequest, TutorAvailability, Lesson, Invoice
-from django.db.models import Count, Case, When, IntegerField,Q
-
-
-
 class RoleRequiredMixin:
-    required_role = []  #Set this in views that use the mixin
+    required_role = []  
 
     def dispatch(self, request: HttpRequest, *args, **kwargs):
         if self.required_role and request.user.current_active_role.name not in self.required_role:
-            return redirect('access_denied')  # Redirect to an access denied page
+            return redirect('access_denied')  
         return super().dispatch(request, *args, **kwargs)
 
 class DashboardView(LoginRequiredMixin, View):
@@ -100,14 +91,10 @@ class SetActiveRoleView(LoginRequiredMixin, TemplateView):
     def get(self, request: HttpRequest, *args, **kwargs):
         """Handle GET requests."""
         roles = request.user.roles.all()
-
-        #Redirect if there is only one role
         if roles.count() == 1:
             request.user.current_active_role = roles.first()
             request.user.save()
             return HttpResponseRedirect(reverse("dashboard"))
-
-        # Show the template for role selection if multiple roles exist
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -243,13 +230,12 @@ class AddRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
             
             if role != 'booking': 
                 new_record.set_password(form.cleaned_data['password'])
-                new_record.current_active_role = Role.objects.get(name=role)  # Sets the role to the one passed in the URL
+                new_record.current_active_role = Role.objects.get(name=role)  
             
             new_record.save()
 
             messages.success(request, f"{role.capitalize()} created successfully.")
             
-            # Redirect to the appropriate list page
             if role == 'student':
                 return redirect('admin_list', list_type='students')
             elif role == 'tutor':
@@ -281,8 +267,8 @@ class AdminReviewRequestsView(LoginRequiredMixin, RoleRequiredMixin, TemplateVie
     def post(self, request, *args, **kwargs):
         """Handle approval or rejection of requests."""
         request_id = request.POST.get("request_id")
-        request_type = request.POST.get("request_type")  # 'cancellation' or 'change'
-        action = request.POST.get("action")  # 'approve' or 'reject'
+        request_type = request.POST.get("request_type")  
+        action = request.POST.get("action")  
         admin_comment = request.POST.get("admin_comment", "")
 
         if request_type == "cancellation":
@@ -308,7 +294,6 @@ class AdminReviewRequestsView(LoginRequiredMixin, RoleRequiredMixin, TemplateVie
                 request_obj.save()
                 messages.success(request, "Change request rejected successfully.")
 
-        # Save admin comment
         request_obj.admin_comment = admin_comment
         request_obj.save()
 
@@ -330,7 +315,6 @@ class DeleteBookingView(LoginRequiredMixin, RoleRequiredMixin, View):
         booking_to_delete = get_object_or_404(Lesson, id=booking_id)
         booking_to_delete.delete()
 
-        # Confirm that the booking has been deleted
         try:
             booking_to_delete.refresh_from_db()  
         except Lesson.DoesNotExist:
@@ -349,7 +333,6 @@ class DeleteUserView(LoginRequiredMixin, RoleRequiredMixin, View):
         """Renders the confirmation page."""
         user_to_delete = get_object_or_404(User, email=email)
         
-        # Render the confirmation template
         return render(request, 'delete_user.html', {
             'user': user_to_delete,
         })
@@ -361,7 +344,6 @@ class DeleteUserView(LoginRequiredMixin, RoleRequiredMixin, View):
         
         messages.success(request, f"The user {user_to_delete.email} was deleted successfully.")
         
-        # Redirect back to the list of users (students, tutors, etc.)
         return redirect(reverse('admin_list', kwargs={'list_type': 'students'}))  
 
 class UpdateUserView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
@@ -372,7 +354,6 @@ class UpdateUserView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
     form_class = AdminUpdateUserForm
 
     def get_object(self):
-        # Get the user being updated
         user_id = self.kwargs.get('email') 
         return get_object_or_404(User, email=user_id)
     
@@ -434,8 +415,6 @@ class AdminListView(LoginRequiredMixin, RoleRequiredMixin, View):
 
         else:
             return render(request, '404.html')  
-
-        # Handles pagination
         paginator = Paginator(objects, 20)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
@@ -756,7 +735,6 @@ class InvoicePDFView(LoginRequiredMixin, View):
         lesson_table.wrapOn(p, width, height)
         lesson_table.drawOn(p, 50, height - 400)
 
-        # Add total amount information
         data = [
             ["Description", "Amount"],
             ["Lesson Fee", f"${invoice.amount:.2f}"],
@@ -941,7 +919,7 @@ class LogInView(LoginProhibitedMixin, View):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.next = settings.REDIRECT_URL_WHEN_LOGGED_IN  # Initialises self.next for self.render further down
+        self.next = settings.REDIRECT_URL_WHEN_LOGGED_IN 
 
     def get(self, request):
         """Display log in template."""

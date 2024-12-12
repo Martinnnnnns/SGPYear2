@@ -2,7 +2,6 @@
 {% block content %}
 
 <div class="container-fluid mt-5">
-  <!-- Page Header -->
   <div class="row">
     <div class="col-12 text-center">
       <h1 class="display-4 fw-bold">Your Students</h1>
@@ -10,9 +9,8 @@
     </div>
   </div>
 
-  <!-- Student Type Cards -->
+  
   <div class="row mt-4 justify-content-center">
-    <!-- Current Students Card -->
     <div class="col-lg-5 col-md-6 mb-4">
       <a href="{% url 'current_students' %}" class="text-decoration-none">
         <div class="card shadow">
@@ -25,7 +23,6 @@
       </a>
     </div>
 
-    <!-- Previous Students Card -->
     <div class="col-lg-5 col-md-6 mb-4">
       <a href="{% url 'previous_students' %}" class="text-decoration-none">
         <div class="card shadow">
@@ -39,7 +36,6 @@
     </div>
   </div>
 
-  <!-- Back Button -->
   <div class="row mt-4">
     <div class="col-12 text-center">
       <a href="{% url 'dashboard' %}" class="btn btn-secondary px-4">Back to Tutor Page</a>
