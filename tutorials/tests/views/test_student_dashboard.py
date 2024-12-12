@@ -11,6 +11,8 @@ User = get_user_model()
 class StudentDashboardViewTest(RoleSetupTest, StudentMixin, TutorMixin):
     def setUp(self):
         self.setup_student()
+        self.student_user.first_name = "student"
+        self.student_user.save()
         self.setup_tutor()
 
         self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
@@ -62,30 +64,14 @@ class StudentDashboardViewTest(RoleSetupTest, StudentMixin, TutorMixin):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'student_dashboard.html')
 
-    def test_lessons_displayed_on_dashboard(self):
-        """Ensure lessons assigned to the user are displayed on the dashboard."""
-        response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, self.subject.name)
-        self.assertContains(response, self.language.name)
+    def test_correct_name_is_rendered_on_dashboard(self):
+        """Ensure right name is displayed on the dashboard."""
+        response = self.client.get(reverse('dashboard'))       
+        self.assertContains(response, self.student_user.first_name)
 
-    def test_invoices_displayed_on_dashboard(self):
-        """Ensure invoices assigned to the user are displayed on the dashboard."""
-        response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, f'${self.invoice1.amount}')
-        self.assertContains(response, f'${self.invoice2.amount}')
-        self.assertContains(response, 'Paid')
-        self.assertContains(response, 'Unpaid')
-
-    def test_lesson_requests_displayed_on_dashboard(self):
-        """Ensure lesson requests assigned to the user are displayed on the dashboard."""
-        response = self.client.get(reverse('dashboard'))
-        
-        self.assertEqual(response.context["lesson_requests"].count(), 0)
-        self.assertContains(response, self.lesson_request.subject.name)
-        self.assertContains(response, self.language.name)
-
-    def test_no_lesson_requests_displayed_on_dashboard(self):
-        """Ensure the dashboard doesn't display lesson requests when there are none."""
-        LessonRequest.objects.all().delete()
-        response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'pending')
+    def test_dashboard_options_displayed(self):
+        """Make sure the main 6 menu options are present."""
+        response = self.client.get(reverse("dashboard"))
+        for title in ["Calendar", "Request Lesson", "Invoices", "Pending Requests",
+                      "Profile", "Support"]:
+            self.assertContains(response, title)

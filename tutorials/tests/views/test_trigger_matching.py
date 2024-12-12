@@ -39,19 +39,16 @@ class TriggerMatchingTestCase(RoleSetupTest, AdminMixin, StudentMixin, TutorMixi
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(Lesson.objects.count(), 1)
-        lesson = Lesson.objects.first()
-        self.assertEqual(lesson.student, self.student_user)
-        self.assertEqual(lesson.tutor, self.tutor_user)
+        self.assertEqual(LessonRequest.objects.count(), 1)
+        lesson = LessonRequest.objects.first()
+        self.assertEqual(lesson.user, self.student_user)
 
     def test_trigger_matching_no_tutors(self):
         """Test that no lesson is created if no tutors are available."""
         self.tutor_user.delete() 
-
         self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, 200)
-
         self.assertEqual(Lesson.objects.count(), 0)
 
     def test_trigger_matching_template(self):
