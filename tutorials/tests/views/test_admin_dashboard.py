@@ -24,11 +24,6 @@ class AdminDashboardTestCase(RoleSetupTest, AdminMixin):
         response = self.client.get(self.url, follow=True)
         html = response.content.decode('utf-8')
 
-        '''
-        student_list_url = reverse('admin_student_list')
-        tutor_list_url = reverse('admin_tutor_list')
-        bookings_list_url = reverse('admin_bookings_list')
-        '''
         student_list_url = reverse('admin_list', kwargs={'list_type': 'students'})
         tutor_list_url = reverse('admin_list', kwargs={'list_type': 'tutors'})
         bookings_list_url = reverse('admin_list', kwargs={'list_type': 'bookings'})

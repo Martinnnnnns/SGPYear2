@@ -2,6 +2,8 @@ from django.urls import reverse
 from tutorials.models import Lesson, ProgrammingLanguage, Subject
 from tutorials.tests.base import RoleSetupTest
 from tutorials.tests.mixins import AdminMixin, StudentMixin, TutorMixin
+from django.utils import timezone
+from datetime import datetime
 
 class AdminListTestMixin(RoleSetupTest, AdminMixin):
     """Mixin for testing admin list views."""
@@ -87,7 +89,7 @@ class AdminBookingsListTestCase(AdminListTestMixin, StudentMixin, TutorMixin):
             tutor=self.tutor_user, 
             language=self.language,
             subject=self.subject,
-            lesson_datetime="2024-12-12 10:00:00",
+            lesson_datetime = timezone.make_aware(datetime.strptime("2024-12-12 10:00:00", "%Y-%m-%d %H:%M:%S"))
         )
 
 
