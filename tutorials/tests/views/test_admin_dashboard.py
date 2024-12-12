@@ -24,9 +24,14 @@ class AdminDashboardTestCase(RoleSetupTest, AdminMixin):
         response = self.client.get(self.url, follow=True)
         html = response.content.decode('utf-8')
 
+        '''
         student_list_url = reverse('admin_student_list')
         tutor_list_url = reverse('admin_tutor_list')
         bookings_list_url = reverse('admin_bookings_list')
+        '''
+        student_list_url = reverse('admin_list', kwargs={'list_type': 'students'})
+        tutor_list_url = reverse('admin_list', kwargs={'list_type': 'tutors'})
+        bookings_list_url = reverse('admin_list', kwargs={'list_type': 'bookings'})
 
         self.assertIn(f'href="{student_list_url}"', html)
         self.assertIn(f'href="{tutor_list_url}"', html)
@@ -41,7 +46,8 @@ class AdminDashboardTestCase(RoleSetupTest, AdminMixin):
         
     def test_tutor_availability_button(self):
         """Test that the Tutor Availability button is present and links correctly."""
-        response = self.client.get(reverse("admin_dashboard"))
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+        response = self.client.get(reverse('dashboard'))
         self.assertContains(response, "Tutor Availability")
         self.assertContains(response, reverse("tutor_availability_list"))    
         

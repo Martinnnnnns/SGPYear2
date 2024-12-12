@@ -5,7 +5,7 @@
 <div class="container mt-4 p-3">
   <div class="row">
     <div class="col-12">
-      <h1 class="text-center display-4"><span class="badge bg-primary">{{ page_heading }}</span></h1>
+      <h1 class="display-4 text-center">{{ page_heading }}</h1>
     </div>
   </div>
 
@@ -71,12 +71,13 @@
           {% endif %}
 
           {% if list_type == 'bookings' %}
-              <a href="{% url 'delete_booking' booking_id=row.id %}" class="btn text-danger me-1">
-                  <i class="bi bi-trash-fill" style="font-size: 1.5rem;"></i>
+              <a href="{% url 'delete_booking' booking_id=row.id %}" class="btn btn-sm btn-danger" title="Download Invoice">
+                  <i class="bi bi-trash-fill"></i> Delete 
               </a>
               {% if row.invoice %}
-              <a href="{% url 'download_invoice' row.invoice.id %}" class="btn btn-sm btn-primary" title="Download Invoice">
-                <i class="bi bi-file-earmark-text"></i> Download Invoice
+              <a href="{% url 'download_invoice' row.invoice.id %}" 
+                 class="btn btn-sm btn-primary ms-2" title="Download Invoice">
+                <i class="bi bi-file-earmark-text"></i> Download
               {% else %}  
               <span class="text-muted">No Invoice</span>
 

@@ -33,14 +33,13 @@ class AddUserViewTests(RoleSetupTest, StudentMixin, AdminMixin, TutorMixin):
         }
 
         # URL to add user as student
-        url = reverse('add_user', kwargs={'role': 'student'})
+        url = reverse('add_record', kwargs={'role': 'student'})
         response = self.client.post(url, post_data, follow=True)  
 
         # Check if the student is in the database with the correct role
         student = User.objects.filter(email='student@example.com').first()
         self.assertIsNotNone(student)
-        self.assertEqual(student.current_active_role, 'student')  
-
+        self.assertEqual(student.current_active_role.name, 'student')  
 
 
     def test_post_add_tutor_view(self):
@@ -56,13 +55,13 @@ class AddUserViewTests(RoleSetupTest, StudentMixin, AdminMixin, TutorMixin):
         }
 
         # URL to add user as tutor
-        url = reverse('add_user', kwargs={'role': 'tutor'})
+        url = reverse('add_record', kwargs={'role': 'tutor'})
         response = self.client.post(url, post_data, follow=True)  
 
         # Check if the tutor is in the database with the correct role
         tutor = User.objects.filter(email='tutor@example.com').first()
         self.assertIsNotNone(tutor)
-        self.assertEqual(tutor.current_active_role, 'tutor')  
+        self.assertEqual(tutor.current_active_role.name, 'tutor')  
     
     def test_post_add_booking_view(self):
         """Test creating a tutor via POST."""
@@ -78,7 +77,7 @@ class AddUserViewTests(RoleSetupTest, StudentMixin, AdminMixin, TutorMixin):
         }
 
         # URL to add user as tutor
-        url = reverse('add_user', kwargs={'role': 'booking'})
+        url = reverse('add_record', kwargs={'role': 'booking'})
         response = self.client.post(url, post_data, follow=True)  
 
         # Check if the tutor is in the database with the correct role
