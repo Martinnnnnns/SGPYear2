@@ -23,8 +23,9 @@ class LessonRequestFormTest(TestCase):
 
         #Check cleaned data includes correct datetime objects
         cleaned_data = form.cleaned_data
-        self.assertEqual(cleaned_data['start_datetime'], datetime(2024, 12, 1, 9, 0))
-        self.assertEqual(cleaned_data['end_datetime'], datetime(2024, 12, 1, 10, 0))
+        self.assertEqual(cleaned_data['start_datetime'], timezone.make_aware(datetime(2024, 12, 1, 9, 0), timezone=timezone.get_default_timezone()))
+        self.assertEqual(cleaned_data['end_datetime'], timezone.make_aware(datetime(2024, 12, 1, 10, 0), timezone=timezone.get_default_timezone()))
+
 
     def test_valid_data_without_subject(self):
         data = {
@@ -40,8 +41,8 @@ class LessonRequestFormTest(TestCase):
 
         #Check cleaned data includes correct datetime objects
         cleaned_data = form.cleaned_data
-        self.assertEqual(cleaned_data['start_datetime'], datetime(2024, 12, 1, 9, 0))
-        self.assertEqual(cleaned_data['end_datetime'], datetime(2024, 12, 1, 10, 0))
+        self.assertEqual(cleaned_data['start_datetime'], timezone.make_aware(datetime(2024, 12, 1, 9, 0), timezone=timezone.get_default_timezone()))
+        self.assertEqual(cleaned_data['end_datetime'], timezone.make_aware(datetime(2024, 12, 1, 10, 0), timezone=timezone.get_default_timezone()))
 
     def test_missing_required_fields(self):
         data = {

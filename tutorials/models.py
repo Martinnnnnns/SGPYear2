@@ -191,7 +191,10 @@ class LessonRequest(models.Model):
 
     def clean(self):
         if timezone.is_naive(self.start_datetime):
-            self.start_datetime = timezone.make_aware(self.start_datetime)
+            self.start_datetime = timezone.make_aware(self.start_datetime, timezone=timezone.utc)
+        
+        if timezone.is_naive(self.end_datetime):
+            self.end_datetime = timezone.make_aware(self.end_datetime, timezone=timezone.utc)
 
         if not self.is_future_datetime(self.start_datetime):
             raise ValidationError("Lesson must be on a future date and time.")

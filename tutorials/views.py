@@ -230,13 +230,8 @@ class AddRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
             
             if role != 'booking': 
                 new_record.set_password(form.cleaned_data['password'])
-                role_instance = Role.objects.get(name=role)
-                new_record.roles.set([role_instance])
-                new_record.current_active_role = role_instance
-                
-                #self.admin_user.roles.set([Role.objects.get(name=UserRoles.ADMIN)])
-                #self.admin_user.current_active_role = self.admin_user.roles.first()  # Set active role
-                            
+                new_record.current_active_role = Role.objects.get(name=role)  
+            
             new_record.save()
 
             messages.success(request, f"{role.capitalize()} created successfully.")
@@ -815,6 +810,7 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
     template_name = 'request_cancel_bookings.html'
     form_class = CancellationRequestForm
     required_role = ['student', 'tutor']
+
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
         self.lesson = get_object_or_404(
@@ -844,8 +840,6 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
-
-
 
 class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
     """A view to request changes to bookings."""

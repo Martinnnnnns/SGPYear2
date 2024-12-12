@@ -375,8 +375,6 @@ class CancellationRequestForm(forms.ModelForm):
         )
         
         
-        
-        
 class ChangeRequestForm(forms.ModelForm):
     """form for changing"""
     REQUEST_SINGLE = 'single'
@@ -417,12 +415,12 @@ class ChangeRequestForm(forms.ModelForm):
         self.user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
         valid_status = [Lesson.STATUS_SCHEDULED]
-        if UserRoles.TUTOR not in [item.name for item in self.user.roles.all()]:
+        if UserRoles.TUTOR in [item.name for item in self.user.roles.all()]:
             self.fields['lessons'].queryset = Lesson.objects.filter(
                 tutor=self.user,
                 status__in=valid_status
             )
-        elif self.user.role == User.STUDENT:
+        elif UserRoles.STUDENT in [item.name for item in self.user.roles.all()]:
             self.fields['lessons'].queryset = Lesson.objects.filter(
                 student=self.user,
                 status__in=valid_status
@@ -496,12 +494,12 @@ class ChangeBookingForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        if self.user.current_active_role.name == UserRoles.TUTOR:
+        if UserRoles.TUTOR in [item.name for item in self.user.roles.all()]:
             self.fields['lessons'].queryset = Lesson.objects.filter(
                 tutor=self.user,
                 status=Lesson.STATUS_SCHEDULED
             )
-        elif self.user.current_active_role.name == UserRoles.STUDENT:
+        elif UserRoles.STUDENT in [item.name for item in self.user.roles.all()]:
             self.fields['lessons'].queryset = Lesson.objects.filter(
                 student=self.user,
                 status=Lesson.STATUS_SCHEDULED
@@ -517,12 +515,12 @@ class ChangeBookingForm(forms.Form):
             raise forms.ValidationError('Please select at least one lesson to change.')
 
         if request_type == self.REQUEST_ALL:
-            if self.user.current_active_role.name == UserRoles.TUTOR:
+            if UserRoles.TUTOR in [item.name for item in self.user.roles.all()]:
                 cleaned_data['lessons'] = Lesson.objects.filter(
                     tutor=self.user,
                     status=Lesson.STATUS_SCHEDULED
                 )
-            elif self.user.current_active_role.name == UserRoles.STUDENT:
+            elif UserRoles.STUDENT in [item.name for item in self.user.roles.all()]:
                 cleaned_data['lessons'] = Lesson.objects.filter(
                     student=self.user,
                     status=Lesson.STATUS_SCHEDULED

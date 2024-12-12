@@ -57,13 +57,19 @@ class BookingFormsTest(RoleSetupTest, StudentMixin, TutorMixin):
         """Test the ChangeRequestForm with valid data."""
         new_datetime = timezone.now() + timedelta(days=2)
         form_data = {
+            'request_type': ChangeRequestForm.REQUEST_SINGLE,
             'lessons': [self.lesson.id],
             'new_datetime': new_datetime.strftime('%Y-%m-%dT%H:%M'),
             'reason': 'Rescheduling due to a conflict.',
         }
         form = ChangeRequestForm(data=form_data, user=self.student_user)
         self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data['new_datetime'], new_datetime)
+
+        #Normalize datetime for comparison
+        expected_datetime = new_datetime.replace(second=0, microsecond=0)
+        cleaned_datetime = form.cleaned_data['new_datetime'].replace(second=0, microsecond=0)
+
+        self.assertEqual(cleaned_datetime, expected_datetime)
         self.assertEqual(form.cleaned_data['reason'], form_data['reason'])
 
     def test_change_request_form_invalid_past_datetime(self):
