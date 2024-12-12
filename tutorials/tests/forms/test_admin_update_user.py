@@ -1,8 +1,9 @@
 from django.test import TestCase
 from django import forms  # Import forms here
 from tutorials.forms import AdminUpdateUserForm
-from tutorials.models import User
+from tutorials.models import User, Role
 from django.core.exceptions import ValidationError
+from tutorials.constants import UserRoles
 
 class AdminUpdateUserFormTests(TestCase):
 
@@ -45,6 +46,25 @@ class AdminUpdateUserFormTests(TestCase):
         updated_user = form.save()
         self.assertEqual(updated_user.first_name, 'Updated')
         self.assertEqual(updated_user.email, 'updated@example.com')
+    
+    def test_clean_add_current_active_role_to_roles(self):
+        """Tests the current_active_role is added to roles if not there."""
+        data = {
+            'first_name': 'Updated',
+            'last_name': 'User',
+            'username': '@existing_user_updated',
+            'email': 'updated@example.com',
+            'current_active_role': Role.objects.create(name=UserRoles.STUDENT),  
+            'password': 'newpassword123'
+        }
+        
+        form = AdminUpdateUserForm(instance=self.existing_user, data=data)
+        self.assertTrue(form.is_valid())
+
+        updated_user = form.save()
+
+        self.assertIn(Role.objects.get(name=UserRoles.STUDENT), updated_user.roles.all(), "The student role should be added to the user's roles.")
+
 
     def test_clean_email_duplicate(self):
         """Test the clean_email method with a duplicate email."""

@@ -114,6 +114,17 @@ class AdminUpdateUserForm(forms.ModelForm):
 
         return email
 
+    def clean(self):
+        """Ensure the current_active_role is in the roles field"""
+        cleaned_data = super().clean()
+        current_active_role = cleaned_data.get('current_active_role')
+        user = self.instance  
+
+        if current_active_role and current_active_role not in user.roles.all():
+            user.roles.add(current_active_role)
+            
+        return cleaned_data
+
 class NewPasswordMixin(forms.Form):
     """Form mixing for new_password and password_confirmation fields."""
 
