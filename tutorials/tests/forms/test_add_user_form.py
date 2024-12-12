@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from tutorials.forms import AdminAddUserForm
 from tutorials.models import User
 
+
 class AdminAddUserFormTests(TestCase):
 
     def setUp(self):
@@ -25,7 +26,7 @@ class AdminAddUserFormTests(TestCase):
         }
         form = AdminAddUserForm(data=form_data)
         self.assertTrue(form.is_valid(), "The form should be valid with correct data.")
-
+        
         user = form.save(commit=False)
         self.assertTrue(user.check_password('newpassword123'), "The password should be hashed.")
 
@@ -50,7 +51,7 @@ class AdminAddUserFormTests(TestCase):
         """Test that the form raises an error for duplicate email."""
         form_data = {
             'username': '@anotheruser',
-            'email': 'existing@example.com',  #Invalid duplicate email
+            'email': 'existing@example.com',  # Invalid duplicate email
             'first_name': 'Another',
             'last_name': 'User',
             'password': 'anotherpassword123'
@@ -78,6 +79,33 @@ class AdminAddUserFormTests(TestCase):
         
         user = form.save(commit=False)
         self.assertTrue(user.check_password('securepassword123'), "The saved password should be hashed.")
+    
+    def test_save_without_commit(self):
+        """Test saving the form with commit=False."""
+        form_data = {
+            'username': '@testuser',
+            'email': 'testuser@example.com',
+            'first_name': 'Test',
+            'last_name': 'User',
+            'password': 'testpassword123'
+        }
+        form = AdminAddUserForm(data=form_data)
+        self.assertTrue(form.is_valid())
+        
+        user = form.save(commit=False)
+        self.assertFalse(user.pk, "The user should not be saved to the database yet.")
+        self.assertTrue(user.check_password('testpassword123'), "The password should be hashed.")
 
-
-
+    def test_invalid_email_format(self):
+        """Test if an invalid email raises a validation error."""
+        form_data = {
+            'username': '@invaliduser',
+            'email': 'invalidemail.com',  # Invalid email format
+            'first_name': 'Invalid',
+            'last_name': 'User',
+            'password': 'validpassword123'
+        }
+        form = AdminAddUserForm(data=form_data)
+        self.assertFalse(form.is_valid(), "The form should be invalid with an invalid email.")
+        self.assertIn('email', form.errors, "Email error should be present.")
+    

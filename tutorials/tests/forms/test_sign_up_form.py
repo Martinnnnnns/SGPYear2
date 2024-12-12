@@ -47,6 +47,16 @@ class SignUpFormTestCase(RoleSetupTest):
         form = SignUpForm(data=self.form_input)
         self.assertFalse(form.is_valid())
 
+    def test_missing_role_renders_form_invalid(self):
+        self.form_input['roles'] = ''
+        form = SignUpForm(data=self.form_input)
+        self.assertFalse(form.is_valid())
+
+    def test_non_commit_returns_user(self):
+        form = SignUpForm(data=self.form_input)
+        form.is_valid() #Clean the data
+        self.assertIsInstance(form.save(commit=False), User)
+        
     def test_password_must_contain_uppercase_character(self):
         self.form_input['new_password'] = 'password123'
         self.form_input['password_confirmation'] = 'password123'
