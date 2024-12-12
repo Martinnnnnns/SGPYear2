@@ -190,7 +190,6 @@ class LessonRequest(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING)
 
     def clean(self):
-        # Convert naive datetime to aware datetime if needed
         if timezone.is_naive(self.start_datetime):
             self.start_datetime = timezone.make_aware(self.start_datetime)
 

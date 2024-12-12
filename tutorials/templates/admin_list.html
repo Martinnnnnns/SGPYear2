@@ -9,7 +9,6 @@
     </div>
   </div>
 
-  <!-- Add new entry buttons -->
   <div class="row mt-3 d-flex">
     <div class="col-auto ms-auto">
       {% if list_type == 'students' %}
@@ -32,7 +31,6 @@
     </div>
   </div>
 
-  <!-- Table for data -->
   <table class="table table-striped table-hover table-sm mt-3">
     <thead>
       <tr>
@@ -44,12 +42,10 @@
     <tbody>
       {% for row in page_obj %}
       <tr>
-        <!-- Data fields for each entry -->
         {% for field in table_fields %}
           <td>{{ row|get_item:field|capfirst }}</td>
         {% endfor %}
 
-        <!-- Buttons for each entry -->
         <td class="text-end">
           {% if list_type == 'students' or list_type == 'tutors' %}
               {% if list_type == 'students' %}
