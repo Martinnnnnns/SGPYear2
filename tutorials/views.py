@@ -581,9 +581,9 @@ class TutorAvailabilityListView(LoginRequiredMixin, ListView):
         )
 
         for tutor in queryset:
-            if tutor.scheduled_lessons < 5:
+            if tutor.scheduled_lessons < 25:
                 tutor.color = "green"
-            elif 5 <= tutor.scheduled_lessons < 10:
+            elif 25 <= tutor.scheduled_lessons < 40:
                 tutor.color = "yellow"
             else:
                 tutor.color = "red"
@@ -1331,7 +1331,7 @@ class CurrentStudentsListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
             lessons_as_student__tutor=self.request.user,
             lessons_as_student__lesson_datetime__gte=now(),
             lessons_as_student__status__in=[Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
-        ).distinct().order_by('last_name', 'first_name')
+        ).distinct().order_by('first_name', 'last_name')
     
 class PreviousStudentsListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     template_name = 'previous_students_list.html'
@@ -1350,7 +1350,7 @@ class PreviousStudentsListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
             lessons_as_student__lesson_datetime__lt=now()
         ).exclude(
             id__in=current_students
-        ).distinct().order_by('last_name', 'first_name')
+        ).distinct().order_by('first_name', 'last_name')
 
 class StudentProfileDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
     template_name = 'student_profile_detail.html'

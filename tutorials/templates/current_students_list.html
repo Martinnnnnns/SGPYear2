@@ -4,7 +4,7 @@
     <h1 class="mb-4">Current Students</h1>
 
     {% if students %}
-    {% regroup students by last_name|first|upper as student_groups %}
+    {% regroup students by first_name|first|upper as student_groups %}
     
     <div class="mb-4">
         {% for group in student_groups %}

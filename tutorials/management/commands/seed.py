@@ -49,22 +49,30 @@ DEFAULT_LESSONS = [
     {
         'language': 'Python',
         'subject_name': 'Web Development',
-        'days_from_now': -5,  
+        'days_from_now': -5, 
+        'hour': 10,
+        'minute': 0
     },
     {
         'language': 'JavaScript',
         'subject_name': 'React',
         'days_from_now': -20,
+        'hour': 14,
+        'minute': 30
     },
     {
         'language': 'Java',
         'subject_name': 'Spring Framework',
         'days_from_now': -365,
+        'hour': 16,
+        'minute': 0
     },
     {
         'language': 'Ruby',
         'subject_name': 'Rails',
         'days_from_now': 60,
+        'hour': 18,
+        'minute': 30
     }
 ]
 
@@ -274,14 +282,21 @@ class Command(BaseCommand):
                 language = ProgrammingLanguage.objects.get(name=lesson_data['language'])
                 subject = Subject.objects.get(name=lesson_data['subject_name'], language=language)
                 
-                lesson_date = timezone.now() + timedelta(days=lesson_data['days_from_now'])
+                base_date = timezone.now() + timedelta(days=lesson_data['days_from_now'])
+                
+                lesson_datetime = base_date.replace(
+                    hour=lesson_data['hour'],
+                    minute=lesson_data['minute'],
+                    second=0,
+                    microsecond=0
+                )
                 
                 Lesson.objects.get_or_create(
                     student=charlie,
                     tutor=jane,
                     language=language,
                     subject=subject,
-                    lesson_datetime=lesson_date
+                    lesson_datetime=lesson_datetime
                 )
         except Exception as e:
             print(f"Error creating default lessons: {e}")
@@ -319,9 +334,9 @@ class Command(BaseCommand):
         """Generate random availability slots for tutors across a 24-hour range."""
         tutors = User.objects.filter(roles__name=UserRoles.TUTOR)  
         for tutor in tutors:
-            num_slots = randint(3, 10)  
+            num_slots = randint(24, 30)  
             for _ in range(num_slots):
-                date = self.faker.date_between(start_date='-30d', end_date='+30d') 
+                date = self.faker.date_between(start_date='-45d', end_date='+180d') 
                 start_hour = randint(0, 23)  
                 start_minute = choice([0, 30])  
                 start_time = time(start_hour, start_minute)
