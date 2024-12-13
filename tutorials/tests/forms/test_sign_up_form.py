@@ -48,9 +48,10 @@ class SignUpFormTestCase(RoleSetupTest):
         self.assertFalse(form.is_valid())
 
     def test_missing_role_renders_form_invalid(self):
-        self.form_input['roles'] = ''
+        self.form_input['roles'] = [] 
         form = SignUpForm(data=self.form_input)
         self.assertFalse(form.is_valid())
+        self.assertIn('roles', form.errors) 
 
     def test_non_commit_returns_user(self):
         form = SignUpForm(data=self.form_input)
