@@ -6,7 +6,6 @@ from tutorials.forms import ChangeBookingForm
 
 class RequestChangeBookingsViewTestCase(TestCase):
     def setUp(self):
-        # Create users
         self.student = User.objects.create_user(
             username="student",
             password="password123",
@@ -16,7 +15,6 @@ class RequestChangeBookingsViewTestCase(TestCase):
         self.student.current_active_role = self.student.roles.first()
         self.student.save()
 
-        # Create a tutor user
         self.tutor = User.objects.create_user(
             username="tutor",
             password="password123",
@@ -26,11 +24,9 @@ class RequestChangeBookingsViewTestCase(TestCase):
         self.tutor.current_active_role = self.tutor.roles.first()
         self.tutor.save()
 
-        # Create programming language and subject
         self.language = ProgrammingLanguage.objects.create(name="Python")
         self.subject = Subject.objects.create(name="Intro to Python", language=self.language)
 
-        # Create a lesson
         self.lesson = Lesson.objects.create(
             student=self.student,
             tutor=self.tutor,
@@ -40,7 +36,6 @@ class RequestChangeBookingsViewTestCase(TestCase):
             status=Lesson.STATUS_SCHEDULED,
         )
 
-        # Define the URL
         self.url = reverse("request_change_bookings", kwargs={"lesson_id": self.lesson.id})
 
     def test_view_access_student(self):
@@ -94,9 +89,15 @@ class RequestChangeBookingsViewTestCase(TestCase):
         self.client.login(username=self.student.username, password="password123")
         data = {"new_datetime": ""}  
         response = self.client.post(self.url, data=data)
-        response.render()  
-        self.assertFormError(response, "form", "new_datetime", "This field is required.")
+        response.render()
+        
+        form = response.context["form"]
 
+        self.assertFalse(form.is_valid(), "The form should be invalid when required fields are empty.")
+
+        self.assertIn("new_datetime", form.errors, "'new_datetime' field error should be present.")
+        self.assertEqual(form.errors["new_datetime"][0], "This field is required.")
+            
     def test_context_data(self):
         """Test that the lesson is included in the context."""
         self.client.login(username="student", password="password123")
