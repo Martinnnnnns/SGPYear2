@@ -25,11 +25,10 @@ Tutor Availability List
         <td>{{ tutor.email }}</td>
         <td>{{ tutor.scheduled_lessons }}</td>
         <td>
-          <span class="badge"
-                style="background-color: {{ tutor.color }}; color: white;">
-            {% if tutor.color == "green" %}
+          <span class="badge {% if tutor.color == 'green' %}bg-success{% elif tutor.color == 'yellow' %}bg-warning{% else %}bg-danger{% endif %}">
+            {% if tutor.color == 'green' %}
               Available
-            {% elif tutor.color == "yellow" %}
+            {% elif tutor.color == 'yellow' %}
               Moderately Booked
             {% else %}
               Fully Booked
