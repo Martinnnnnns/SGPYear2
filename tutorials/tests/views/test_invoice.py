@@ -62,7 +62,7 @@ class InvoiceModelTest(TestCase):
         buffer = BytesIO()
         view = InvoicePDFView()
         view.generate_invoice_pdf(buffer, self.invoice)
-        buffer.seek(0)  # Move to the beginning of the buffer
+        buffer.seek(0)  
         reader = PdfReader(buffer)
         pdf_text = ""
         for page in reader.pages:
