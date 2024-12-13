@@ -1,9 +1,10 @@
-{% extends 'base_content.html' %} 
+{% extends 'base_content.html' %}
 {% block content %}
 
 <div class="container mt-4">
     <h2 class="mb-4">Request Lesson Cancellation</h2>
 
+    <!-- Lesson Details Card -->
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="mb-0">Current Lesson Details</h5>
@@ -29,31 +30,40 @@
         </div>
 
         <div class="card-body">
-            <form method ="post">
-            {% csrf_token %}
-            {% if form.errors %}
-            <div class="alert alert-danger">
-                {% for field in form %}
-                    {% for error in field.form.non_field_error %}
-                    <div>{{ error }}</div>
-                    {% endfor %}
-                {% endfor %}
-                <div>{{ error }}</div>
-                {% endfor %}
-            </div>
-            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
 
-            <div class="form-group mb-3">
-                Reason for Cancellation
-                <div class="mt-2">
-                    {{ form.reason }}
+                <div class="form-group mb-3">
+                    <label for="id_reason">Reason for Cancellation</label>
+                    <div class="mt-2">
+                        {{ form.reason }}
+                    </div>
                 </div>
-            </div>
 
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary">Submit Cancellation Request</button>
-                <a href="{% url 'student_lesson_calendar' %}" class="btn btn-secondary ms-2">Cancel</a>
-            </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Submit Cancellation Request</button>
+                    {% if request.user.role == 'student' %}
+                        <a href="{% url 'student_lesson_calendar' %}" class="btn btn-secondary ms-2">Cancel</a>
+                    {% elif request.user.role == 'tutor' %}
+                        <a href="{% url 'tutor_lessons' %}" class="btn btn-secondary ms-2">Cancel</a>
+                    {% endif %}
+                </div>
+            </form>
         </div>
     </div>
 </div>
