@@ -14,6 +14,9 @@ The project is called `code_tutors`.  It currently consists of a single app `tas
 ## Deployed version of the application
 The deployed version of the application can be found at [arifm1ah.pythonanywhere.com](arifm1ah.pythonanywhere.com).
 
+## The administrative interfaces can be found at:
+[arifm1ah.pythonanywhere.com/dashboard](arifm1ah.pythonanywhere.com/dashboard) -while logged in as a user with admin privileges such as @johndoe.
+
 ## Installation instructions
 To install the software and use it in your local development environment, you must first set up and activate a local development environment.  From the root of the project:
 
