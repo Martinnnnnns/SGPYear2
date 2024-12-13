@@ -820,7 +820,11 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
         )
         if request.user not in [self.lesson.student, self.lesson.tutor]:
             raise Http404("Lesson not found.")
-
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user  # Pass the authenticated user
+        return kwargs
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['lesson'] = self.lesson  
@@ -836,7 +840,7 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
         cancellation_request.save()
         cancellation_request.lessons.add(self.lesson)
         messages.success(self.request, "Your cancellation request has been submitted successfully.")
-        return redirect('student_lesson_calendar')
+        return redirect('dashboard')
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
@@ -844,7 +848,7 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
 class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView):
     """A view to request changes to bookings."""
     template_name = 'request_change_bookings.html'
-    form_class = ChangeBookingForm
+    form_class = ChangeBookingForm 
     required_role = ['student', 'tutor']
 
     def setup(self, request, *args, **kwargs):
@@ -862,6 +866,12 @@ class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
             'new_datetime': self.lesson.lesson_datetime,
         }
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user 
+        kwargs['lesson_id'] = self.kwargs.get('lesson_id') 
+        return kwargs
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['lesson'] = self.lesson
@@ -881,7 +891,7 @@ class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('student_lesson_calendar')
+        return reverse('dashboard')
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""

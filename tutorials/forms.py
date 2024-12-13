@@ -348,13 +348,10 @@ class TutorAvailabilityForm(forms.ModelForm):
         return cleaned_data
     
     
+
 class CancellationRequestForm(forms.ModelForm):
-    """form for the cancellation request"""
-    lessons = forms.ModelMultipleChoiceField(
-        queryset=Lesson.objects.none(),
-        widget=forms.CheckboxSelectMultiple,
-        label="Select Lesson"
-    )
+    """Form for the cancellation request."""
+   
     reason = forms.CharField(
         widget=forms.Textarea(attrs={'rows': 3}),
         required=False,
@@ -366,13 +363,15 @@ class CancellationRequestForm(forms.ModelForm):
         fields = ['lessons', 'reason']
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user')
+        self.user = kwargs.pop('user', None)  # Extract user, default to None if not passed
         super().__init__(*args, **kwargs)
-        valid_statuses = [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
-        self.fields['lessons'].queryset = Lesson.objects.filter(
-            models.Q(student=user) | models.Q(tutor=user),
-            status__in=valid_statuses
-        )
+
+        if self.user:
+            valid_statuses = [Lesson.STATUS_SCHEDULED, Lesson.STATUS_RESCHEDULED]
+            self.fields['lessons'].queryset = Lesson.objects.filter(
+                models.Q(student=self.user) | models.Q(tutor=self.user),
+                status__in=valid_statuses
+            )
         
         
 class ChangeRequestForm(forms.ModelForm):
@@ -436,16 +435,6 @@ class ChangeRequestForm(forms.ModelForm):
         cleaned_data = super().clean()
         request_type = cleaned_data.get('request_type')
         lessons = cleaned_data.get('lessons')
-
-        if request_type == self.REQUEST_SINGLE and not lessons:
-            raise forms.ValidationError("Please select at least one lesson to change.")
-
-        if request_type == self.REQUEST_ALL:
-            valid_lessons = self.fields['lessons'].queryset
-            if not valid_lessons.exists():
-                raise forms.ValidationError("No valid lessons found to change.")
-            cleaned_data['lessons'] = valid_lessons
-
         return cleaned_data
     
         
@@ -487,46 +476,26 @@ class ChangeBookingForm(forms.Form):
         label="Reason for Change"
     )
 
-    class Meta:
-        model = ChangeRequest
-        fields = ('request_type', 'lessons', 'new_datetime', 'reason')
-
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
+        self.user = kwargs.pop('user', None)  
+        self.lesson_id = kwargs.pop('lesson_id', None) 
         super().__init__(*args, **kwargs)
-        if UserRoles.TUTOR in [item.name for item in self.user.roles.all()]:
-            self.fields['lessons'].queryset = Lesson.objects.filter(
-                tutor=self.user,
-                status=Lesson.STATUS_SCHEDULED
-            )
-        elif UserRoles.STUDENT in [item.name for item in self.user.roles.all()]:
-            self.fields['lessons'].queryset = Lesson.objects.filter(
-                student=self.user,
-                status=Lesson.STATUS_SCHEDULED
-            )
 
-    def clean(self):
-        cleaned_data = super().clean()
-        request_type = cleaned_data.get('request_type')
-        lessons = cleaned_data.get('lessons')
-        new_datetime = cleaned_data.get('new_datetime')
+        if not self.lesson_id:
+            raise forms.ValidationError("Lesson ID is required.")
+        try:
+            self.lesson = Lesson.objects.get(id=self.lesson_id)
+        except Lesson.DoesNotExist:
+            raise forms.ValidationError(f"Lesson with ID {self.lesson_id} does not exist.")
 
-        if request_type == self.REQUEST_SINGLE and not lessons:
-            raise forms.ValidationError('Please select at least one lesson to change.')
-
-        if request_type == self.REQUEST_ALL:
-            if UserRoles.TUTOR in [item.name for item in self.user.roles.all()]:
-                cleaned_data['lessons'] = Lesson.objects.filter(
-                    tutor=self.user,
-                    status=Lesson.STATUS_SCHEDULED
-                )
-            elif UserRoles.STUDENT in [item.name for item in self.user.roles.all()]:
-                cleaned_data['lessons'] = Lesson.objects.filter(
-                    student=self.user,
-                    status=Lesson.STATUS_SCHEDULED
-                )
+        if self.user:
+            if UserRoles.TUTOR in [role.name for role in self.user.roles.all()] and self.lesson.tutor != self.user:
+                raise forms.ValidationError("You do not have permission to modify this lesson.")
+            elif UserRoles.STUDENT in [role.name for role in self.user.roles.all()] and self.lesson.student != self.user:
+                raise forms.ValidationError("You do not have permission to modify this lesson.")
 
     def clean_new_datetime(self):
+        """Ensure the new date and time is in the future."""
         new_datetime = self.cleaned_data.get('new_datetime')
         if new_datetime and new_datetime < timezone.now():
             raise forms.ValidationError("The new date and time must be in the future.")

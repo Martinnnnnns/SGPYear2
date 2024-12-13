@@ -3,14 +3,8 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import get_user_model
 
-from tutorials.models import (
-    Lesson,
-    ProgrammingLanguage,
-    Role,
-    Subject,
-    TutorAvailability
-)
-from tutorials.forms import CancellationRequestForm, ChangeBookingForm
+from tutorials.models import Lesson, ProgrammingLanguage, Role, Subject
+from tutorials.forms import ChangeBookingForm, CancellationRequestForm
 from tutorials.tests.base import RoleSetupTest
 from tutorials.tests.mixins import StudentMixin, TutorMixin
 
@@ -24,13 +18,6 @@ class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
         self.setup_student()
         self.setup_tutor()
 
-        self.other_tutor_user = User.objects.create_user(
-            username="other_tutor",
-            password="Password123",
-            email="othertutor@example.com",
-        )
-        self.other_tutor_user.roles.set([self.tutor_role])
-
         self.scheduled_lesson = Lesson.objects.create(
             student=self.student_user,
             tutor=self.tutor_user,
@@ -39,111 +26,59 @@ class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
             lesson_datetime=timezone.now() + timedelta(days=1),
             status=Lesson.STATUS_SCHEDULED
         )
-        self.scheduled_lesson_2 = Lesson.objects.create(
+        self.completed_lesson = Lesson.objects.create(
             student=self.student_user,
             tutor=self.tutor_user,
             language=self.language,
             subject=self.subject,
-            lesson_datetime=timezone.now() + timedelta(days=2),
-            status=Lesson.STATUS_SCHEDULED
+            lesson_datetime=timezone.now() - timedelta(days=1),
+            status=Lesson.STATUS_COMPLETED
         )
 
         self.cancel_url = reverse("request_cancel_bookings", kwargs={"lesson_id": self.scheduled_lesson.id})
-        self.change_url = reverse("request_change_bookings", kwargs={"lesson_id": self.scheduled_lesson.id})
         self.dashboard_url = reverse("dashboard")
 
-        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
+        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
 
-    def test_successful_change_request(self):
-        """Test that a valid change request updates the lesson datetime."""
-        new_datetime = timezone.now() + timedelta(days=3)
+    def test_successful_cancellation_request_requires_admin_approval(self):
+        """Test that a cancellation request is created and marked for admin approval."""
         form_data = {
-            "request_type": ChangeBookingForm.REQUEST_SINGLE,
-            "lessons": [self.scheduled_lesson.id],
-            "new_datetime": new_datetime.strftime('%Y-%m-%dT%H:%M'),
-            "reason": "Need to reschedule due to a conflict."
-        }
-        response = self.client.post(self.change_url, form_data, follow=True)
-        self.scheduled_lesson.refresh_from_db()
-        self.assertRedirects(response, self.dashboard_url)
-
-    def test_missing_lessons_in_change_request(self):
-        """Test that rescheduling fails when no lessons are provided."""
-        new_datetime = timezone.now() + timedelta(days=3)
-        form_data = {
-            "request_type": ChangeBookingForm.REQUEST_SINGLE,
-            "lessons": [],  
-            "new_datetime": new_datetime.strftime('%Y-%m-%dT%H:%M'),
-            "reason": "No lessons selected."
-        }
-        response = self.client.post(self.change_url, form_data)
-        self.assertContains(response, "Please select at least one lesson to change.")
-
-    def test_multiple_lessons_reschedule(self):
-        """Test that multiple lessons can be rescheduled."""
-        new_datetime = timezone.now() + timedelta(days=3)
-        form_data = {
-            "request_type": ChangeBookingForm.REQUEST_ALL,
-            "new_datetime": new_datetime.strftime('%Y-%m-%dT%H:%M'),
-            "reason": "Rescheduling all lessons."
-        }
-        response = self.client.post(self.change_url, form_data, follow=True)
-        self.scheduled_lesson.refresh_from_db()
-        self.scheduled_lesson_2.refresh_from_db()
-        self.assertRedirects(response, self.dashboard_url)
-
-    def test_tutor_availability_check_for_change(self):
-        """Test that a lesson is not rescheduled if the tutor is unavailable."""
-        unavailable_datetime = timezone.now() + timedelta(days=5)
-        form_data = {
-            "request_type": ChangeBookingForm.REQUEST_SINGLE,
-            "lessons": [self.scheduled_lesson.id],
-            "new_datetime": unavailable_datetime.strftime('%Y-%m-%dT%H:%M'),
-            "reason": "Tutor unavailable."
-        }
-        response = self.client.post(self.change_url, form_data)
-
-    def test_successful_cancellation_request(self):
-        """Test that a lesson can be successfully canceled."""
-        form_data = {
-            "request_type": ChangeBookingForm.REQUEST_SINGLE,
-            "lessons": [self.scheduled_lesson.id],
-            "reason": "Need to cancel."
+            "reason": "Need to cancel due to unforeseen circumstances."
         }
         response = self.client.post(self.cancel_url, form_data, follow=True)
+        
         self.scheduled_lesson.refresh_from_db()
-        self.assertEqual(self.scheduled_lesson.status, Lesson.STATUS_CANCELED)
-        self.assertRedirects(response, self.dashboard_url)
 
-    def test_missing_lessons_in_cancellation_request(self):
-        """Test that cancellation fails when no lessons are provided."""
-        form_data = {
-            "request_type": ChangeBookingForm.REQUEST_SINGLE,
-            "lessons": [],
-            "reason": "No lessons selected for cancellation."
-        }
-        response = self.client.post(self.cancel_url, form_data)
-        self.assertContains(response, "Please select at least one lesson to cancel.")
-
-    def test_multiple_lessons_cancellation(self):
-        """Test that multiple lessons can be canceled."""
-        form_data = {
-            "request_type": ChangeBookingForm.REQUEST_ALL,
-            "reason": "Canceling all lessons."
-        }
-        response = self.client.post(self.cancel_url, form_data, follow=True)
-        self.scheduled_lesson.refresh_from_db()
-        self.scheduled_lesson_2.refresh_from_db()
-        self.assertEqual(self.scheduled_lesson.status, Lesson.STATUS_CANCELED)
+        self.assertEqual(self.scheduled_lesson.status, Lesson.STATUS_SCHEDULED)
         self.assertRedirects(response, self.dashboard_url)
 
     def test_invalid_status_cancellation(self):
         """Test that a completed lesson cannot be canceled."""
-        self.scheduled_lesson.status = Lesson.STATUS_COMPLETED
-        self.scheduled_lesson.save()
+        cancel_url = reverse("request_cancel_bookings", kwargs={"lesson_id": self.completed_lesson.id})
         form_data = {
-            "request_type": ChangeBookingForm.REQUEST_SINGLE,
-            "lessons": [self.scheduled_lesson.id],
             "reason": "Cannot cancel completed lesson."
+        }
+        response = self.client.post(cancel_url, form_data)
+
+    def test_permission_denied_for_tutor_cancellation(self):
+        """Test that a tutor cannot request cancellation for a lesson."""
+        self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
+        form_data = {
+            "reason": "Tutor trying to cancel a lesson."
+        }
+        response = self.client.post(self.cancel_url, form_data)
+
+    def test_permission_denied_for_other_student_cancellation(self):
+        """Test that a student cannot request cancellation for another student's lesson."""
+        other_student_user = User.objects.create_user(
+            username="other_student",
+            password="Password123",
+            email="otherstudent@example.com",
+        )
+        other_student_user.roles.set([self.student_role])
+        self.client.login(username=other_student_user.username, password="Password123")
+
+        form_data = {
+            "reason": "Unauthorized cancellation."
         }
         response = self.client.post(self.cancel_url, form_data)

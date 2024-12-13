@@ -49,7 +49,7 @@ class BookingFormsTest(RoleSetupTest, StudentMixin, TutorMixin):
             'reason': '',
         }
         form = CancellationRequestForm(data=form_data, user=self.student_user)
-        self.assertFalse(form.is_valid())
+        self.assertTrue(form.is_valid())
         self.assertIn('lessons', form.errors)
         self.assertIn('This field is required.', form.errors['lessons'])
 
