@@ -14,4 +14,3 @@ class RoleSetupTest(TestCase):
         cls.student_role = Role.objects.create(name=UserRoles.STUDENT)
 
 
-
