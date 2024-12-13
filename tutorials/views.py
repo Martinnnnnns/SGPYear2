@@ -840,7 +840,7 @@ class RequestCancelBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
         cancellation_request.save()
         cancellation_request.lessons.add(self.lesson)
         messages.success(self.request, "Your cancellation request has been submitted successfully.")
-        return redirect('student_lesson_calendar')
+        return redirect('dashboard')
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
@@ -891,7 +891,7 @@ class RequestChangeBookingsView(LoginRequiredMixin, RoleRequiredMixin, FormView)
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('student_lesson_calendar')
+        return reverse('dashboard')
 
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""

@@ -435,16 +435,6 @@ class ChangeRequestForm(forms.ModelForm):
         cleaned_data = super().clean()
         request_type = cleaned_data.get('request_type')
         lessons = cleaned_data.get('lessons')
-
-        if request_type == self.REQUEST_SINGLE and not lessons:
-            raise forms.ValidationError("Please select at least one lesson to change.")
-
-        if request_type == self.REQUEST_ALL:
-            valid_lessons = self.fields['lessons'].queryset
-            if not valid_lessons.exists():
-                raise forms.ValidationError("No valid lessons found to change.")
-            cleaned_data['lessons'] = valid_lessons
-
         return cleaned_data
     
         
@@ -487,11 +477,10 @@ class ChangeBookingForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)  # Extract the user from kwargs
-        self.lesson_id = kwargs.pop('lesson_id', None)  # Extract the lesson ID from kwargs
+        self.user = kwargs.pop('user', None)  
+        self.lesson_id = kwargs.pop('lesson_id', None) 
         super().__init__(*args, **kwargs)
 
-        # Validate the lesson ID and fetch the lesson
         if not self.lesson_id:
             raise forms.ValidationError("Lesson ID is required.")
         try:

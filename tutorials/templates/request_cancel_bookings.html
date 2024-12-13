@@ -4,7 +4,6 @@
 <div class="container mt-4">
     <h2 class="mb-4">Request Lesson Cancellation</h2>
 
-    <!-- Lesson Details Card -->
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="mb-0">Current Lesson Details</h5>
@@ -57,14 +56,12 @@
 
                 <div class="mt-4">
                     <button type="submit" class="btn btn-primary">Submit Cancellation Request</button>
-                    {% if request.user.role == 'student' %}
-                        <a href="{% url 'student_lesson_calendar' %}" class="btn btn-secondary ms-2">Cancel</a>
-                    {% elif request.user.role == 'tutor' %}
-                        <a href="{% url 'tutor_lessons' %}" class="btn btn-secondary ms-2">Cancel</a>
-                    {% endif %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary ms-2">Return to Dashboard</a>
                 </div>
             </form>
+          
         </div>
+        
     </div>
 </div>
 
