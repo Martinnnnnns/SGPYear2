@@ -157,3 +157,13 @@ class UserModelTestCase(TestCase):
         result = str(self.user)
         expected = f"{self.user.first_name} {self.user.last_name} () - Active Role: Null"
         self.assertEqual(result, expected)
+
+    def test_str_method_exception_handling(self):
+        def broken_full_name():
+            raise AttributeError("Simulated error in full_name method")
+        
+        #Override at the instance level to force __str__ into an error state
+        self.user.full_name = broken_full_name  
+        result = str(self.user)
+        expected = super(User, self.user).__str__()
+        self.assertEqual(result, expected)
