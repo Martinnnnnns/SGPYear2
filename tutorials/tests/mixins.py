@@ -8,7 +8,7 @@ class AdminMixin:
             email="admin@example.com", username="@admin", password="Password123"
         )
         self.admin_user.roles.set([Role.objects.get(name=UserRoles.ADMIN)])
-        self.admin_user.current_active_role = self.admin_user.roles.first()  # Set active role
+        self.admin_user.current_active_role = self.admin_user.roles.first()  
         self.admin_user.save()
 
 class TutorMixin:
@@ -18,7 +18,7 @@ class TutorMixin:
             email="tutor@example.com", username="@tutor", password="Password123"
         )
         self.tutor_user.roles.set([Role.objects.get(name=UserRoles.TUTOR)])
-        self.tutor_user.current_active_role = self.tutor_user.roles.first()  # Set active role
+        self.tutor_user.current_active_role = self.tutor_user.roles.first()  
         self.tutor_user.save()
 
 class StudentMixin:
@@ -28,6 +28,6 @@ class StudentMixin:
             email="student@example.com", username="@student", password="Password123"
         )
         self.student_user.roles.set([Role.objects.get(name=UserRoles.STUDENT)])
-        self.student_user.current_active_role = self.student_user.roles.first()  # Set active role
+        self.student_user.current_active_role = self.student_user.roles.first()  
         self.student_user.save()
 
