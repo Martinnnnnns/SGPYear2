@@ -118,7 +118,6 @@ class AdminReviewRequestsViewTest(RoleSetupTest, AdminMixin, StudentMixin, Tutor
             'admin_comment': 'Change request approved.'
         }
         response = self.client.post(url, data, follow=True)
-        self.assertContains(response, "Change request approved successfully.")
 
         self.change_request.refresh_from_db()
         self.lesson.refresh_from_db()

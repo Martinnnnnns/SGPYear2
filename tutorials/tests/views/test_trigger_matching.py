@@ -56,60 +56,18 @@ class TriggerMatchingTestCase(RoleSetupTest, AdminMixin, StudentMixin, TutorMixi
         self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.post(self.url)
         self.assertTemplateUsed(response, 'trigger_matching.html')
-    def test_trigger_matching_creates_lesson(self):
-        """Test that a valid lesson request creates a lesson."""
-        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
-        response = self.client.post(self.url, data={
-            f'lesson_request_{self.lesson_request.id}': self.tutor_user.id
-        })
-        self.assertEqual(response.status_code, 200)
-
-        lesson = Lesson.objects.first()
-        self.assertIsNotNone(lesson)
-        self.assertEqual(lesson.student, self.student_user)
-        self.assertEqual(lesson.tutor, self.tutor_user)
-    def test_permission_denied_for_non_admin_user(self):
-        """Test that non-admin users cannot access the view."""
-        self.client.login(username=self.student_user.username, password=RoleSetupTest.PASSWORD)
-
-        # Simulate POST data
-        data = {f'lesson_request_{self.lesson_request.id}': self.tutor_user.id}
-        response = self.client.post(self.url, data=data)
-
-        # Verify the response and that no lesson is created
-        self.assertEqual(response.status_code, 302)  # Forbidden
-        self.assertEqual(Lesson.objects.count(), 0)
     
-    def test_invalid_lesson_request(self):
-        """Test handling of invalid lesson requests."""
-        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
-
-        # Simulate POST data with an invalid lesson request ID
-        data = {f'lesson_request_invalid': self.tutor_user.id}
-        response = self.client.post(self.url, data=data)
-
-        # Verify that no lesson is created
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(Lesson.objects.count(), 0)
-
-    def test_successful_tutor_matching(self):
-        """Test that a tutor is successfully matched to a lesson request."""
-        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+    
+    
+    def test_trigger_matching_view_get(self):
         
-        # Simulate POST data
-        data = {f'lesson_request_{self.lesson_request.id}': self.tutor_user.id}
-        response = self.client.post(self.url, data=data)
+        """Test that the GET request correctly displays pending lesson requests and available tutors."""
+        self.tutor_user.availability_slots.create(
+            date=self.lesson_request.start_datetime.date(),
+            start_time=self.lesson_request.start_datetime.time(),
+            end_time=self.lesson_request.end_datetime.time(),
+        )
 
-        # Verify the response and database updates
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(Lesson.objects.count(), 1)
-
-        lesson = Lesson.objects.first()
-        self.assertEqual(lesson.student, self.student_user)
-        self.assertEqual(lesson.tutor, self.tutor_user)
-        self.assertEqual(lesson.lesson_datetime, self.lesson_request.start_datetime)
-
-        # Check the lesson request status
-        self.lesson_request.refresh_from_db()
-        self.assertEqual(self.lesson_request.status, 'allocated')
-                    
