@@ -229,10 +229,6 @@ class LessonRequest(models.Model):
     def is_subject_language_matching(self, subject, language):
         """Check that the subject belongs to the correct language."""
         return subject.language == language
-
-    def is_subject_language_matching(self, subject, language):
-        """Check that the subject belongs to the correct language."""
-        return subject.language == language
         
     def __str__(self):
         subject_name = self.subject.name if self.subject else "No subject"
