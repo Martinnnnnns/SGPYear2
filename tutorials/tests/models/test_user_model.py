@@ -1,10 +1,8 @@
-"""Unit tests for the User model."""
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from tutorials.models import User
 
 class UserModelTestCase(TestCase):
-    """Unit tests for the User model."""
 
     fixtures = [
         'tutorials/tests/fixtures/default_user.json',
@@ -55,7 +53,6 @@ class UserModelTestCase(TestCase):
     def test_username_must_contain_only_one_at(self):
         self.user.username = '@@johndoe'
         self._assert_user_is_invalid()
-
 
     def test_first_name_must_not_be_blank(self):
         self.user.first_name = ''
@@ -146,7 +143,6 @@ class UserModelTestCase(TestCase):
     def _gravatar_url(self, size):
         gravatar_url = f"{UserModelTestCase.GRAVATAR_URL}?size={size}&default=mp"
         return gravatar_url
-
 
     def _assert_user_is_valid(self):
         try:

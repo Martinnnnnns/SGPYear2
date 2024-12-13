@@ -12,7 +12,6 @@ from tutorials.tests.mixins import StudentMixin, TutorMixin
 
 
 class AdminAddBookingFormTests(RoleSetupTest, StudentMixin, TutorMixin):
-
     def setUp(self):
         self.setup_student()
         self.setup_tutor()
@@ -30,8 +29,11 @@ class AdminAddBookingFormTests(RoleSetupTest, StudentMixin, TutorMixin):
             'lesson_datetime': timezone.now() + timedelta(days=1),
             'status': Lesson.STATUS_SCHEDULED
         }
+        self.assertEquals(Lesson.objects.count(), 0) #No lessons present yet.
         form = AdminAddBookingForm(data=form_data)
         self.assertTrue(form.is_valid(), "The form should be valid with correct data.")
+        form.save()
+        self.assertEquals(Lesson.objects.count(), 1)
 
     def test_missing_required_fields(self):
         """Test the form with missing required fields."""

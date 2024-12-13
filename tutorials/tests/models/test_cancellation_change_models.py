@@ -1,5 +1,3 @@
-# tutorials/tests/test_models.py
-
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from tutorials.models import CancellationRequest, ChangeRequest, Lesson, ProgrammingLanguage, Subject, TutorAvailability
@@ -53,6 +51,9 @@ class CancellationRequestModelTest(TestCase):
         with self.assertRaises(ValidationError):
             self.cancellation_request.status = 'invalid_status'
             self.cancellation_request.full_clean()
+    def test_cancellation_request_str_method(self):
+        expected_str = f"Cancellation Request by {self.cancellation_request.user.username} - {self.cancellation_request.get_request_type_display()} - {self.cancellation_request.get_status_display()}"
+        self.assertEqual(str(self.cancellation_request), expected_str)
 
 class ChangeRequestModelTest(TestCase):
     def setUp(self):
@@ -82,8 +83,7 @@ class ChangeRequestModelTest(TestCase):
         self.assertIn(self.lesson, self.change_request.lessons.all())
 
     def test_process_approval(self):
-        #Mock tutor availability
-        new_datetime = self.change_request.new_datetime  #This is a datetime object
+        new_datetime = self.change_request.new_datetime
         TutorAvailability.objects.create(
             tutor=self.tutor,
             date=new_datetime.date(),
@@ -110,3 +110,6 @@ class ChangeRequestModelTest(TestCase):
         with self.assertRaises(ValidationError):
             self.change_request.status = 'invalid_status'
             self.change_request.full_clean()
+    def test_change_request_str_method(self):
+        expected_str = f"Change Request by {self.change_request.user.username} - New Time: {self.change_request.new_datetime} - Status: {self.change_request.get_status_display()}"
+        self.assertEqual(str(self.change_request), expected_str)

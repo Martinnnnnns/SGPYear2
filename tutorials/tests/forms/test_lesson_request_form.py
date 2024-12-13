@@ -66,3 +66,16 @@ class LessonRequestFormTest(TestCase):
         form = LessonRequestForm(data)
         self.assertFalse(form.is_valid())  
         self.assertIn('start_time', form.errors)
+
+
+    def test_start_time_cannot_be_after_end_time(self):
+        data = {
+            'date': '2024-12-01',
+            'start_time': '12:00',  
+            'end_time': '10:00',
+            'language': self.language.id,
+            'subject': self.subject.id,
+        }
+        form = LessonRequestForm(data)
+        self.assertFalse(form.is_valid())  
+        self.assertIn('End time', form.errors.as_text())

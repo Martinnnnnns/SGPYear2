@@ -12,6 +12,5 @@ class InvoiceModelTest(RoleSetupTest, StudentMixin):
         )
 
     def test_invoice_str_method(self):
-        #Expected string representation
         expected_str = f"Invoice {self.invoice.id} for {self.student_user.username} - {self.invoice.status}"
         self.assertEqual(str(self.invoice), expected_str)

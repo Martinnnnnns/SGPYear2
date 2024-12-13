@@ -1,28 +1,70 @@
 {% extends "base_content.html" %}
 
 {% block content %}
-<div class="container-fluid d-flex justify-content-center align-items-center vh-100">
-    <div class="text-center">
+<div class="container-fluid mt-5">
+    <div class="col-12 text-center">
         {% if error %}
         <div class="alert alert-danger">{{ error }}</div>
         {% endif %}
-        <h1 class="mb-4">Select Your Role</h1>
-        <p class="text-muted mb-4">Choose a role to set it as your active role:</p>
+        <h1 class="display-4 fw-bold dashboard-title">Select Your Role</h1>
+        <p class="text-muted">Choose a role to set it as your active role:</p>
+    </div>
 
-        <form method="post">
+    <div class="row mt-4 justify-content-center">
+        <form method="post" class="w-100">
             {% csrf_token %}
-            <div class="d-flex flex-wrap justify-content-center">
-                {% for role in roles %}
-                    <button 
-                        type="submit" 
-                        name="role" 
-                        value="{{ role }}" 
-                        class="btn btn-primary m-2 px-4 py-2">
-                        Set as {{ role|title }}
-                    </button>
-                {% endfor %}
+            {% for role in roles %}
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4 mx-auto">
+                <button type="submit" name="role" value="{{ role }}" class="border-0 bg-transparent w-100">
+                    <div class="card dashboard-card">
+                        <div class="card-body dashboard-card-body">
+                            <i class="fas {% if role == 'student' %}fa-user-graduate{% else %}fa-chalkboard-teacher{% endif %} fa-2x text-primary mb-2"></i>
+                            <h5 class="dashboard-card-title">Set as {{ role|title }}</h5>
+                            <p class="card-text text-muted">Switch to {{ role }} role</p>
+                        </div>
+                    </div>
+                </button>
             </div>
+            {% endfor %}
         </form>
     </div>
 </div>
+
+<style>
+    .dashboard-card {
+        border: none;
+        transition: transform 0.2s ease;
+        min-height: 120px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .dashboard-title {
+        color: #1a1a1a;
+    }
+
+    .dashboard-card-body {
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+    .dashboard-card-title {
+        font-weight: bold;
+        color: var(--bs-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .lesson-card {
+        transition: transform 0.2s ease;
+    }
+
+    .lesson-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
 {% endblock %}

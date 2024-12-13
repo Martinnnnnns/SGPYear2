@@ -1,78 +1,91 @@
 {% extends "base_content.html" %}
-{% block title %}
-Tutor Page
-{% endblock %}
 {% block content %}
 
 <div class="container-fluid mt-5">
-  <div class="row">
     <div class="col-12 text-center">
-      <h1 class="display-4 fw-bold">Welcome, {{ user.first_name }}!</h1>
-      <p class="lead text-muted">You are logged in as a tutor.</p>
-    </div>
-  </div>
-
-  <div class="row mt-4 justify-content-center">
-    <div class="col-lg-4 col-md-6 mb-4">
-      <a href="{% url 'tutor_students_list' %}" class="text-decoration-none">
-        <div class="card shadow">
-          <div class="card-body text-center p-4">
-            <i class="fas fa-user-graduate fa-2x text-primary mb-3"></i>
-            <h6 class="card-title fw-bold">View Students</h6>
-            <p class="card-text text-muted small">Manage and review student information.</p>
-          </div>
-        </div>
-      </a>
+        <h1 class="display-4 fw-bold dashboard-title">Welcome, {{ user.first_name }}!</h1>
+        <p class="text-muted">Access your teaching tools and resources in one place - track student progress, manage your schedule, and grow your tutoring business.</p>
     </div>
 
-    <div class="col-lg-4 col-md-6 mb-4">
-      <a href="{% url 'schedule_sessions' %}" class="text-decoration-none">
-        <div class="card shadow">
-          <div class="card-body text-center p-4">
-            <i class="fas fa-calendar-alt fa-2x text-primary mb-3"></i>
-            <h6 class="card-title fw-bold">Manage Availability</h6>
-            <p class="card-text text-muted small">View and manage your availability.</p>
-          </div>
+    <div class="row mt-4 justify-content-center">
+        <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'tutor_students_list' %}" class="text-decoration-none">
+                <div class="card dashboard-card">
+                    <div class="card-body dashboard-card-body">
+                        <i class="fas fa-user-graduate fa-2x text-primary mb-2"></i>
+                        <h5 class="dashboard-card-title">View Students</h5>
+                        <p class="card-text text-muted">Manage and review student information</p>
+                    </div>
+                </div>
+            </a>
         </div>
-      </a>
+
+        <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'schedule_sessions' %}" class="text-decoration-none">
+                <div class="card dashboard-card">
+                    <div class="card-body dashboard-card-body">
+                        <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
+                        <h5 class="dashboard-card-title">Manage Availability</h5>
+                        <p class="card-text text-muted">View and manage your availability</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'reports' %}" class="text-decoration-none">
+                <div class="card dashboard-card">
+                    <div class="card-body dashboard-card-body">
+                        <i class="fas fa-chart-bar fa-2x text-primary mb-2"></i>
+                        <h5 class="dashboard-card-title">Reports</h5>
+                        <p class="card-text text-muted">Generate reports for your activities</p>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
-    <div class="col-lg-4 col-md-6 mb-4">
-      <a href="{% url 'reports' %}" class="text-decoration-none">
-        <div class="card shadow">
-          <div class="card-body text-center p-4">
-            <i class="fas fa-chart-bar fa-2x text-primary mb-3"></i>
-            <h6 class="card-title fw-bold">Reports</h6>
-            <p class="card-text text-muted small">Generate reports for your activities.</p>
-          </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'tutor_lessons' %}" class="text-decoration-none">
+                <div class="card dashboard-card">
+                    <div class="card-body dashboard-card-body">
+                        <i class="fas fa-chalkboard fa-2x text-primary mb-2"></i>
+                        <h5 class="dashboard-card-title">Manage Lessons</h5>
+                        <p class="card-text text-muted">View, cancel, or reschedule your lessons</p>
+                    </div>
+                </div>
+            </a>
         </div>
-      </a>
     </div>
-  </div>
-
-  <div class="row justify-content-center">
-    <div class="col-lg-4 col-md-6 mb-4">
-      <a href="{% url 'tutor_lessons' %}" class="text-decoration-none">
-        <div class="card shadow">
-          <div class="card-body text-center p-4">
-            <i class="fas fa-chalkboard fa-2x text-primary mb-3"></i>
-            <h6 class="card-title fw-bold">Manage Lessons</h6>
-            <p class="card-text text-muted small">View, cancel, or reschedule your lessons.</p>
-          </div>
-        </div>
-      </a>
-    </div>
-  </div>
 </div>
 
 <style>
-  .card {
-    min-height: 150px;
-    transition: transform 0.2s;
-  }
-  
-  .card:hover {
-    transform: translateY(-5px);
-  }
+    .dashboard-card {
+        border: none;
+        transition: transform 0.2s ease;
+        min-height: 120px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .dashboard-title {
+        color: #1a1a1a;
+    }
+
+    .dashboard-card-body {
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+    .dashboard-card-title {
+        font-weight: bold;
+        color: var(--bs-primary);
+        margin-bottom: 0.5rem;
+    }
 </style>
 {% endblock %}

@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-12 text-center">
             <h1 class="display-4 fw-bold" style="color: #1a1a1a;">Welcome, {{ user.first_name }}!</h1>
-            <p class="text-muted">Manage your lessons, requests, and profile.</p>
+            <p class="text-muted">Your personalized learning center - schedule lessons, track your progress, and connect with expert tutors to achieve your academic goals.</p>
         </div>
     </div>
 
@@ -81,12 +81,40 @@
 </div>
 
 <style>
-    .card {
+    .dashboard-card {
+        border: none;
+        transition: transform 0.2s ease;
+        min-height: 120px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
     }
-    .card:hover {
+    
+    .dashboard-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .dashboard-title {
+        color: #1a1a1a;
+    }
+
+    .dashboard-card-body {
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+    .dashboard-card-title {
+        font-weight: bold;
+        color: var(--bs-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .lesson-card {
+        transition: transform 0.2s ease;
+    }
+
+    .lesson-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 </style>
 {% endblock %}
