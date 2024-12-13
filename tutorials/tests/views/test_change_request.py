@@ -54,7 +54,6 @@ class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
 
         self.client.login(username=self.tutor_user.username, password=RoleSetupTest.PASSWORD)
 
-    # ---- Change Request Tests ----
     def test_successful_change_request(self):
         """Test that a valid change request updates the lesson datetime."""
         new_datetime = timezone.now() + timedelta(days=3)
@@ -104,7 +103,6 @@ class BookingViewsTest(RoleSetupTest, StudentMixin, TutorMixin):
         }
         response = self.client.post(self.change_url, form_data)
 
-    # ---- Cancellation Request Tests ----
     def test_successful_cancellation_request(self):
         """Test that a lesson can be successfully canceled."""
         form_data = {
