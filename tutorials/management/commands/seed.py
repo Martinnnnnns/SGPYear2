@@ -34,7 +34,16 @@ DEFAULT_STUDENT = {
     'last_name': 'Johnson',
     'roles': [UserRoles.STUDENT]
 }
-FIXED_USER_FIXTURES = (DEFAULT_ADMIN, DEFAULT_TUTOR, DEFAULT_STUDENT)
+
+DEFAULT_MODULE_LEAD = {
+    'username': '@bestmodulelead',
+    'email': 'jeroen.keppens@example.org',
+    'first_name': 'Jeroen',
+    'last_name': 'Keppens',
+    'roles': [UserRoles.TUTOR, UserRoles.STUDENT]
+}
+
+FIXED_USER_FIXTURES = (DEFAULT_ADMIN, DEFAULT_TUTOR, DEFAULT_STUDENT, DEFAULT_MODULE_LEAD)
 
 DEFAULT_LESSONS = [
     {
