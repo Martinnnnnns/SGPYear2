@@ -581,9 +581,9 @@ class TutorAvailabilityListView(LoginRequiredMixin, ListView):
         )
 
         for tutor in queryset:
-            if tutor.scheduled_lessons < 5:
+            if tutor.scheduled_lessons <10:
                 tutor.color = "green"
-            elif 5 <= tutor.scheduled_lessons < 10:
+            elif 5 <= tutor.scheduled_lessons < 20:
                 tutor.color = "yellow"
             else:
                 tutor.color = "red"
