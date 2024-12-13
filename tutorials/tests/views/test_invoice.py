@@ -59,23 +59,14 @@ class InvoiceModelTest(TestCase):
         self.assertContains(response, f"${self.invoice2.amount:.2f}")
         
     def test_generate_invoice_pdf(self):
-        # Use BytesIO to simulate a file buffer
         buffer = BytesIO()
         view = InvoicePDFView()
-
-        # Generate the PDF
         view.generate_invoice_pdf(buffer, self.invoice)
         buffer.seek(0)  # Move to the beginning of the buffer
-
-        # Use PyPDF2 to extract text from the PDF
         reader = PdfReader(buffer)
         pdf_text = ""
         for page in reader.pages:
             pdf_text += page.extract_text()
-
-        # Assert that the expected text is in the PDF
         self.assertIn(f"Invoice #{self.invoice.id}", pdf_text)
         self.assertIn(f"${self.invoice.amount:.2f}", pdf_text)
-
-        # Clean up
         buffer.close()
