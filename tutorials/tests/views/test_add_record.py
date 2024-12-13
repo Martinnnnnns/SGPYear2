@@ -80,3 +80,40 @@ class AddUserViewTests(RoleSetupTest, StudentMixin, AdminMixin, TutorMixin):
         #Check database for booking
         lesson = Lesson.objects.filter(student=self.student_user, tutor=self.tutor_user)
         self.assertIsNotNone(lesson)
+        
+    def test_get_add_student_view(self):
+        """Test correct form is displayed when adding a student."""
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+
+        url = reverse('add_record', kwargs={'role': 'student'})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'username')
+        self.assertContains(response, 'email')
+        
+    def test_get_add_tutor_view(self):
+        """Test correct form is displayed when adding a tutor."""
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+
+        url = reverse('add_record', kwargs={'role': 'tutor'})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'add_record.html')
+        self.assertContains(response, 'username')
+        self.assertContains(response, 'email')
+        
+    def test_get_add_booking_view(self):
+        """Test correct form is displayed when adding a booking."""
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+
+        url = reverse('add_record', kwargs={'role': 'booking'})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'add_record.html')
+        self.assertContains(response, 'student')
+        self.assertContains(response, 'tutor')
+        
+        
