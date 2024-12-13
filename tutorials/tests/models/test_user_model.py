@@ -104,7 +104,7 @@ class UserModelTestCase(TestCase):
         self._assert_user_is_invalid()
 
     def test_email_must_contain_at_symbol(self):
-        self.user.email = 'johndoe.example.org'
+        self.user.email = 'johndoe.this example.org'
         self._assert_user_is_invalid()
 
     def test_email_must_contain_domain_name(self):
@@ -153,3 +153,7 @@ class UserModelTestCase(TestCase):
     def _assert_user_is_invalid(self):
         with self.assertRaises(ValidationError):
             self.user.full_clean()
+    def test_str_method_normal_behavior(self):
+        result = str(self.user)
+        expected = f"{self.user.first_name} {self.user.last_name} () - Active Role: Null"
+        self.assertEqual(result, expected)

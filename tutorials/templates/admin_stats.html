@@ -24,7 +24,7 @@
                             <tbody>
                                 {% for role in user_counts_by_role %}
                                 <tr>
-                                    <td>{{ role.name }}</td>
+                                    <td>{{ role.name|capfirst }}</td>
                                     <td>{{ role.count }}</td>
                                 </tr>
                                 {% endfor %}
