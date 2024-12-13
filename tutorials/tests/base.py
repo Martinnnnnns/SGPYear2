@@ -13,7 +13,5 @@ class RoleSetupTest(TestCase):
         cls.tutor_role = Role.objects.create(name=UserRoles.TUTOR)
         cls.student_role = Role.objects.create(name=UserRoles.STUDENT)
 
-    def setUp(self):
-        pass
 
 

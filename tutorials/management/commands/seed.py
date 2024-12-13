@@ -34,7 +34,16 @@ DEFAULT_STUDENT = {
     'last_name': 'Johnson',
     'roles': [UserRoles.STUDENT]
 }
-FIXED_USER_FIXTURES = (DEFAULT_ADMIN, DEFAULT_TUTOR, DEFAULT_STUDENT)
+
+DEFAULT_MODULE_LEAD = {
+    'username': '@bestmodulelead',
+    'email': 'jeroen.keppens@example.org',
+    'first_name': 'Jeroen',
+    'last_name': 'Keppens',
+    'roles': [UserRoles.TUTOR, UserRoles.STUDENT]
+}
+
+FIXED_USER_FIXTURES = (DEFAULT_ADMIN, DEFAULT_TUTOR, DEFAULT_STUDENT, DEFAULT_MODULE_LEAD)
 
 DEFAULT_LESSONS = [
     {
@@ -287,7 +296,9 @@ class Command(BaseCommand):
             student = choice(User.objects.filter(roles__name=UserRoles.STUDENT).exclude(id=tutor.id))
             language = choice(ProgrammingLanguage.objects.all())
             subject = choice(Subject.objects.filter(language=language))
+            
             random_date = random_datetime(start_time, end_time)
+            random_date = random_date.replace(minute=choice([0, 30]))
             lesson_datetime = timezone.make_aware(random_date)
             
             lesson = Lesson.objects.create(
@@ -297,11 +308,11 @@ class Command(BaseCommand):
                 subject=subject, 
                 lesson_datetime=lesson_datetime
             )
-            invoice =Invoice.objects.create(
+            invoice = Invoice.objects.create(
                 student=student,
                 amount=lesson_cost,
-                status=choice(['paid', 'unpaid']) )
-            lesson.invoice= invoice
+                status=choice(['paid', 'unpaid']))
+            lesson.invoice = invoice
             lesson.save()
             
     def create_tutor_availability(self):
@@ -312,7 +323,7 @@ class Command(BaseCommand):
             for _ in range(num_slots):
                 date = self.faker.date_between(start_date='-30d', end_date='+30d') 
                 start_hour = randint(0, 23)  
-                start_minute = choice([0, 15, 30, 45])  
+                start_minute = choice([0, 30])  
                 start_time = time(start_hour, start_minute)
 
                 max_end_hour = min(23, start_hour + randint(1, 3))  

@@ -9,7 +9,7 @@ The members of the team are:
 - Mohammed Miah
 
 ## Project structure
-The project is called `task_manager`.  It currently consists of a single app `tasks`.
+The project is called `code_tutors`.  It currently consists of a single app `tasks`.
 
 ## Deployed version of the application
 The deployed version of the application can be found at [arifm1ah.pythonanywhere.com](arifm1ah.pythonanywhere.com).

@@ -12,7 +12,7 @@
     <div class="row mt-4 justify-content-center">
         <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
             <a href="{% url 'student_lesson_calendar' %}" class="text-decoration-none">
-                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                <div class="card dashboard-card">
                     <div class="card-body text-center p-4">
                         <h5 class="card-title fw-bold text-primary mb-2">Calendar</h5>
                         <p class="card-text text-muted">View your lesson schedule</p>
@@ -23,7 +23,7 @@
 
         <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
             <a href="{% url 'request_lesson' %}" class="text-decoration-none">
-                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                <div class="card dashboard-card">
                     <div class="card-body text-center p-4">
                         <h5 class="card-title fw-bold text-primary mb-2">Request Lesson</h5>
                         <p class="card-text text-muted">Book a new tutoring session</p>
@@ -34,7 +34,7 @@
 
         <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
             <a href="{% url 'student_invoices' %}" class="text-decoration-none">
-                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                <div class="card dashboard-card">
                     <div class="card-body text-center p-4">
                         <h5 class="card-title fw-bold text-primary mb-2">Invoices</h5>
                         <p class="card-text text-muted">View your payment history</p>
@@ -47,7 +47,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
             <a href="{% url 'student_pending_requests' %}" class="text-decoration-none">
-                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                <div class="card dashboard-card">
                     <div class="card-body text-center p-4">
                         <h5 class="card-title fw-bold text-primary mb-2">Pending Requests</h5>
                         <p class="card-text text-muted">Check request status</p>
@@ -58,10 +58,10 @@
 
         <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
             <a href="{% url 'student_profile' pk=user.id %}" class="text-decoration-none">
-                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                <div class="card dashboard-card">
                     <div class="card-body text-center p-4">
                         <h5 class="card-title fw-bold text-primary mb-2">Profile</h5>
-                        <p class="card-text text-muted">View and edit your profile</p>
+                        <p class="card-text text-muted">View your profile</p>
                     </div>
                 </div>
             </a>
@@ -69,7 +69,7 @@
 
         <div class="col-lg-4 col-md-4 col-sm-6 mb-4">
             <a href="{% url 'student_support' %}" class="text-decoration-none">
-                <div class="card shadow" style="border: none; transition: transform 0.2s ease; min-height: 120px;">
+                <div class="card dashboard-card">
                     <div class="card-body text-center p-4">
                         <h5 class="card-title fw-bold text-primary mb-2">Support</h5>
                         <p class="card-text text-muted">Get help and assistance</p>
