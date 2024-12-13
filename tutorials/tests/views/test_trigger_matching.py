@@ -71,3 +71,27 @@ class TriggerMatchingTestCase(RoleSetupTest, AdminMixin, StudentMixin, TutorMixi
         self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
+
+    def test_trigger_matching_invalid_tutor(self):
+        """Test that an invalid tutor ID does not create a lesson."""
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+        post_data = {
+            f'lesson_request_{self.lesson_request.id}': 9999,  # Invalid tutor ID
+        }
+        response = self.client.post(self.url, post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Lesson.objects.count(), 0)  # No lessons created
+
+    def test_trigger_matching_unmatched_requests(self):
+        """Test that unmatched requests are handled correctly."""
+        self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
+        post_data = {
+            f'lesson_request_{self.lesson_request.id}': 9999,  # Invalid tutor ID
+        }
+        response = self.client.post(self.url, post_data)
+
+        self.assertEqual(response.status_code, 200)
+        # Verify unmatched request
+        self.assertEqual(Lesson.objects.count(), 0)  # No lessons created
+        unmatched_requests = response.context['unmatched_requests']
+        self.assertIn(self.lesson_request, unmatched_requests)
