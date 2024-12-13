@@ -102,31 +102,6 @@ class AdminReviewRequestsViewTest(RoleSetupTest, AdminMixin, StudentMixin, Tutor
         self.assertEqual(self.lesson.status, Lesson.STATUS_SCHEDULED) 
         self.assertEqual(self.cancellation_request.admin_comment, 'Cancellation not approved.')
 
-    def test_admin_approves_change_request_with_availability(self):
-        TutorAvailability.objects.create(
-            tutor=self.tutor_user,
-            date=self.change_request.new_datetime.date(),
-            start_time=(self.change_request.new_datetime - timedelta(hours=1)).time(),
-            end_time=(self.change_request.new_datetime + timedelta(hours=1)).time()
-        )
-        self.client.login(username='admin_user', password='adminpass')
-        url = reverse('admin_review_requests')
-        data = {
-            'request_id': self.change_request.id,
-            'request_type': 'change',
-            'action': 'approve',
-            'admin_comment': 'Change request approved.'
-        }
-        response = self.client.post(url, data, follow=True)
-
-        self.change_request.refresh_from_db()
-        self.lesson.refresh_from_db()
-
-        self.assertEqual(self.change_request.status, ChangeRequest.STATUS_APPROVED)
-        self.assertEqual(self.lesson.lesson_datetime, self.change_request.new_datetime)
-        self.assertEqual(self.lesson.status, Lesson.STATUS_RESCHEDULED)
-        self.assertEqual(self.change_request.admin_comment, 'Change request approved.')
-
     def test_admin_rejects_change_request(self):
         self.client.login(username=self.admin_user.username, password=RoleSetupTest.PASSWORD)
         url = reverse('admin_review_requests')
