@@ -226,11 +226,12 @@ class AddRecordView(LoginRequiredMixin, RoleRequiredMixin, View):
             form = AdminAddUserForm(request.POST)
                     
         if form.is_valid():
-            new_record = form.save(commit=False)
-            
+            new_record = form.save(commit=True)
+                        
             if role != 'booking': 
                 new_record.set_password(form.cleaned_data['password'])
-                new_record.current_active_role = Role.objects.get(name=role)  
+                role_object = Role.objects.get(name=UserRoles.STUDENT)
+                new_record.roles.set([role_object])
             
             new_record.save()
 

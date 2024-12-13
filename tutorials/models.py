@@ -84,11 +84,23 @@ class User(AbstractUser):
         """Return a URL to a miniature version of the user's gravatar."""
         return self.gravatar(size=40)
     
+    '''
     def __str__(self):
         full_name = self.full_name()
         roles = ', '.join([role.name for role in self.roles.all()])
         active_role_name = self.current_active_role.name if self.current_active_role else 'Null'
         return f"{full_name} ({roles}) - Active Role: {active_role_name}"
+    '''
+
+    def __str__(self):
+        try:
+            full_name = self.full_name()
+            roles = ', '.join(self.roles.values_list('name', flat=True))  
+            active_role_name = self.current_active_role.name if self.current_active_role else 'Null'
+            return f"{full_name} ({roles}) - Active Role: {active_role_name}"
+        except Exception as e:
+            return super().__str__()
+
 
     
 class Invoice(models.Model):
