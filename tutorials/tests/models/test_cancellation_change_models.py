@@ -84,12 +84,14 @@ class ChangeRequestModelTest(TestCase):
 
     def test_process_approval(self):
         new_datetime = self.change_request.new_datetime
+        # Create availability covering the entire day to ensure it includes the requested time
+        from datetime import time
         TutorAvailability.objects.create(
             tutor=self.tutor,
             date=new_datetime.date(),
-            start_time=(datetime.combine(new_datetime.date(), new_datetime.time()) - timedelta(hours=1)).time(),
-            end_time=(datetime.combine(new_datetime.date(), new_datetime.time()) + timedelta(hours=1)).time()
-)
+            start_time=time(0, 0),  # Start of day
+            end_time=time(23, 59)   # End of day
+        )
         self.assertTrue(self.change_request.is_within_tutor_availability())
         self.change_request.process_approval()
         self.change_request.refresh_from_db()

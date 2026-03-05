@@ -9,7 +9,7 @@ The members of the team are:
 - Mohammed Miah
 
 ## Project structure
-The project is called `code_tutors`.  It currently consists of a single app `tasks`.
+The project is called `code_tutors`. It currently consists of a single app `tutorials` which provides a comprehensive tutoring management system with features for students, tutors, and administrators.
 
 ## Deployed version of the application
 The deployed version of the application can be found at [arifm1ah.pythonanywhere.com](arifm1ah.pythonanywhere.com).
@@ -48,9 +48,5 @@ Run all tests with:
 $ python3 manage.py test
 ```
 
-*The above instructions should work in your version of the application.  If there are deviations, declare those here in bold.  Otherwise, remove this line.*
-
 ## Sources
 The packages used by this application are specified in `requirements.txt`
-
-*Declare are other sources here, and remove this line*

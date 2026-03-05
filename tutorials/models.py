@@ -4,12 +4,6 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from libgravatar import Gravatar
-from django.contrib.auth.models import User
-from django.core.validators import RegexValidator
-from django.core.exceptions import ValidationError
-from django.contrib.auth.models import AbstractUser
-from django.db import models
-from libgravatar import Gravatar
 from datetime import datetime, timedelta
 
 class Role(models.Model):

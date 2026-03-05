@@ -30,11 +30,11 @@ class AdminAddBookingFormTests(RoleSetupTest, StudentMixin, TutorMixin):
 
     def test_valid_form_data(self):
         """Test the form with valid data."""
-        self.assertEquals(Lesson.objects.count(), 0) #No lessons present yet.
+        self.assertEqual(Lesson.objects.count(), 0) #No lessons present yet.
         form = AdminAddBookingForm(data=self.form_data)
         self.assertTrue(form.is_valid(), "The form should be valid with correct data.")
         form.save()
-        self.assertEquals(Lesson.objects.count(), 1)
+        self.assertEqual(Lesson.objects.count(), 1)
 
     def test_invalid_student_in_form_data(self):
         """Test the form raises a ValidationError for an invalid student."""
@@ -45,7 +45,7 @@ class AdminAddBookingFormTests(RoleSetupTest, StudentMixin, TutorMixin):
         form = AdminAddBookingForm(data=self.form_data)
         self.assertFalse(form.is_valid(), "The form should be invalid when the student role is missing.")
         self.assertIn("student", form.errors, "The form should have an error for the 'student' field.")
-        self.assertNotEquals(form.errors.as_text, "")
+        self.assertNotEqual(form.errors.as_text, "")
         self.assertEqual(Lesson.objects.count(), 0, "No lessons should be created with invalid form data.")
 
     def test_invalid_tutor_in_form_data(self):
@@ -57,7 +57,7 @@ class AdminAddBookingFormTests(RoleSetupTest, StudentMixin, TutorMixin):
         form = AdminAddBookingForm(data=self.form_data)
         self.assertFalse(form.is_valid(), "The form should be invalid when the tutor role is missing.")
         self.assertIn("tutor", form.errors, "The form should have an error for the 'tutor' field.")
-        self.assertNotEquals(form.errors.as_text, "")
+        self.assertNotEqual(form.errors.as_text, "")
         self.assertEqual(Lesson.objects.count(), 0, "No lessons should be created with invalid form data.")
 
     def test_missing_required_fields(self):
